@@ -257,6 +257,20 @@ bool HasFunction(const CHIR::Package& package, std::string funcName)
     }
     return false;
 }
+
+CHIR::Block* GetEntryBlock(const CHIR::BlockGroup& oldBG, std::vector<CHIR::Block*>& blocks)
+{
+    auto oldBlocks = oldBG.GetBlocks();
+    CJC_ASSERT(oldBlocks.size() == blocks.size());
+    CJC_ASSERT(!blocks.empty());
+    for (size_t i = 0; i < oldBlocks.size(); ++i) {
+        if (oldBlocks[i] == oldBG.GetEntryBlock()) {
+            return blocks[i];
+        }
+    }
+    CJC_ABORT();
+    return blocks.front();
+}
 } // namespace
 
 void WaveAspects::ReadInfo()
@@ -355,8 +369,11 @@ void WaveAspects::Run(CHIR::Func& func)
                     builder.CreateParameter(paramTy, CHIR::INVALID_LOCATION, *newFunc);
                 }
                 CHIR::BlockGroupCopyHelper helper(builder);
-                auto [clonedBlockGroup, newBlockGroupRetValue] = helper.CloneBlockGroup(*func.GetBody(), *newFunc);
-                newFunc->InitBody(*clonedBlockGroup);
+                auto newBody = builder.CreateBlockGroup(*newFunc);
+                newFunc->InitBody(*newBody);
+                auto [newBlocks, newBlockGroupRetValue] = helper.CloneBlockGroup(*func.GetBody(), *newBody);
+                newBody->SetEntryBlock(GetEntryBlock(*func.GetBody(), newBlocks));
+                newFunc->SetReturnValue(*newBlockGroupRetValue);
                 size_t retValueExprIdx = 0U;
                 for (auto expr : func.GetBody()->GetEntryBlock()->GetExpressions()) {
                     if (expr->GetExprKind() == Cangjie::CHIR::ExprKind::DEBUGEXPR) {
@@ -368,9 +385,9 @@ void WaveAspects::Run(CHIR::Func& func)
                     ++retValueExprIdx;
                 }
                 newFunc->SetReturnValue(
-                    *clonedBlockGroup->GetEntryBlock()->GetExpressionByIdx(retValueExprIdx)->GetResult());
+                    *newBody->GetEntryBlock()->GetExpressionByIdx(retValueExprIdx)->GetResult());
                 for (size_t i = 0; i < func.GetParams().size(); ++i) {
-                    func.GetParams()[i]->ReplaceWith(*newFunc->GetParams()[i], clonedBlockGroup);
+                    func.GetParams()[i]->ReplaceWith(*newFunc->GetParams()[i], newBody);
                 }
 
                 CHIR::BlockGroup* body = builder.CreateBlockGroup(func);
