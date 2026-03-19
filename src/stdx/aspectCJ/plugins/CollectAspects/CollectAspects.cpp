@@ -18,16 +18,16 @@
 using namespace Cangjie;
 
 // Used to collect @InsertAtEntry, @InsertAtExit, @ReplaceFuncBody information.
-struct CollectAspects : public MetaTransform<CHIR::Func> {
+struct CollectAspects : public MetaTransform<CHIR::Function> {
     friend class MyError;
     CollectAspects(CHIR::CHIRBuilder& builder) : builder(builder), packageName(builder.GetCurPackage()->GetName())
     {
     }
-    void Run(CHIR::Func& func);
+    void Run(CHIR::Function& func);
 
 private:
     bool GlobalVarsArePrimitiveLiterals();
-    void CheckAndCollect(CHIR::Func& func);
+    void CheckAndCollect(CHIR::Function& func);
 
     struct To {
         std::string packageName;
@@ -99,7 +99,7 @@ private:
     CollectAspects& plugin;
 };
 
-void CollectAspects::CheckAndCollect(CHIR::Func& func)
+void CollectAspects::CheckAndCollect(CHIR::Function& func)
 {
     auto annoInfo = func.GetAnnoInfo();
     if (annoInfo.annoPairs.empty()) {
@@ -311,7 +311,7 @@ void CollectAspects::CheckAndCollect(CHIR::Func& func)
 }
 
 // 实现 plugin
-void CollectAspects::Run(CHIR::Func& func)
+void CollectAspects::Run(CHIR::Function& func)
 {
     if (hasError) {
         return;
