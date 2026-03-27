@@ -65,6 +65,7 @@ typedef struct DynMsg {
 
 DynMsg* MallocDynMsg(void);
 void FreeDynMsg(DynMsg* dynMsgPtr);
+int CJ_OpenSSL_SetPath(const char* cryptoPath, const char* sslPath);
 
 char* DYN_OPENSSL_strdup(const char* str, DynMsg* dynMsg);
 char* DYN_OPENSSL_strndup(const char* str, size_t s, DynMsg* dynMsg);

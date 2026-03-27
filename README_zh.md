@@ -218,7 +218,8 @@ cjpm 的详细使用可以参考 [cjpm 文档](https://gitcode.com/Cangjie/cangj
 > - MacOS 使用 stdx 可能弹出未知来源或者无法检测是否包含恶意软件等弹框，可以在解压 stdx 后，终端执行 `xattr -dr com.apple.quarantine <stdx 解压路径> &> /dev/null || true` 来移除隔离属性。例如：`xattr -dr com.apple.quarantine ~/Downloads/darwin_x86_64_cjnative/ &> /dev/null || true`
 > - 如果导入 `stdx` 的静态库并使用 crypto、net 包：`Windows` 需要在 `compile-option` 里额外添加 `-lcrypt32`。
 > - 使用 `stdx` 动态二进制（`.so`/`.dll`）时，OpenSSL 会通过运行时加载方式解析：类 Unix 使用 `dlopen/dlsym`，Windows 使用 `LoadLibrary/GetProcAddress`；此时即使应用侧以静态方式链接 OpenSSL（`.a`/`.lib`），也不会被该运行时解析路径直接使用。
-> - `Linux` 下静态 `stdx` 使用 OpenSSL 解析 `auto` 模式：优先直连 OpenSSL 符号，必要时才回退到 `dlopen/dlsym`（若会走回退，需额外添加 `-ldl`）。当以静态方式链接 OpenSSL（`.a`）时，可能需要使用 `--whole-archive` 确保 `.a` 被真正拉入产物；否则回退路径可能尝试加载系统的 `libssl/libcrypto`。
+> - `Linux` 下默认静态 `stdx` 使用 OpenSSL 解析 `auto` 模式：优先直连 OpenSSL 符号，必要时才回退到 `dlopen/dlsym`；如果可能走回退路径，需要额外添加 `-ldl`。
+> - 对默认 `auto` 静态库以静态方式链接 OpenSSL（`.a`）时，可能需要使用 `--whole-archive` 确保 `libssl.a` 和 `libcrypto.a` 被真正拉入产物；否则回退路径仍可能尝试加载系统的 `libssl/libcrypto`。
 > - 以静态方式链接 OpenSSL 时，请将 `-lssl -lcrypto` 放在引用它们的 `stdx` 静态库之后，避免因静态链接顺序导致 “undefined reference”。
 > - 在交叉编译的场景下，如果有自行开发宏包的需求，且需要依赖 stdx 实现宏包中的业务逻辑，那么除了目标运行平台以外，还需要配置本地开发平台的 stdx 路径。
 
@@ -231,6 +232,57 @@ cjc -L $STATIC_OPENSSL_DIR --link-option "-Bstatic" --link-option "--whole-archi
 # Apple ld64
 cjc -L $STATIC_OPENSSL_DIR --link-option "-force_load" --link-option "$STATIC_OPENSSL_DIR/libssl.a" --link-option "-force_load" --link-option "$STATIC_OPENSSL_DIR/libcrypto.a" main.cj
 ```
+
+### 已安装二进制目录
+
+在 Linux/CJNATIVE 的已安装 SDK 产物中，`stdx` 主要包含以下目录：
+
+- `dynamic/stdx`：动态库及相关运行时产物
+- `static/stdx`：默认静态库和 FFI 归档
+- `static-static-link-extern/stdx`：对外静态链接使用的静态库目录
+
+### OpenSSL 静态链接目录
+
+已安装静态产物通过目录来区分两种 OpenSSL 链接方式：
+
+- `static/stdx`：默认静态库目录
+- `static-static-link-extern/stdx`：对外静态链接使用的静态库目录
+
+主要差异如下：
+
+- `static/stdx` 中的库在必要时可能回退到运行时 OpenSSL 加载。
+- `static-static-link-extern/stdx` 中的库不走 `dlopen/dlsym` 回退，也不依赖运行时的系统 OpenSSL 发现逻辑。
+- 使用 `static-static-link-extern/stdx` 时，最终应用链接阶段必须显式提供所需的 `libssl.a` 和 `libcrypto.a`。
+- 如果提供的 OpenSSL 静态归档缺少 `stdx` 所需符号，会在最终链接阶段直接失败，而不是在运行时回退。
+
+版本提醒：
+
+- `stdx` 依赖 `OpenSSL 3.x`。如果 OpenSSL 版本过低，可能缺少所需符号，导致构建失败或运行时报错。
+- 不要在编译、链接和运行阶段混用不同大版本的 OpenSSL。例如，使用 OpenSSL 3 头文件编译，但在链接或运行时接入 OpenSSL 1.1，可能导致符号缺失、ABI 不匹配或未定义行为。
+- 使用 `static-static-link-extern/stdx` 时，请确保 `libssl.a` 和 `libcrypto.a` 来自同一次 OpenSSL 构建和同一个版本。
+- 使用 `dynamic/stdx` 或 `static/stdx` 中的库时，请确保运行时加载的 `libssl` 和 `libcrypto` 来自同一 OpenSSL 版本系列。
+
+处理策略：
+
+- 如果 OpenSSL 版本过低，先升级到完整的 OpenSSL 3.x 版本，再重新构建或重新链接应用。
+- 如果编译期头文件、链接期静态库、运行期动态库不属于同一版本系列，请统一替换为同一套 OpenSSL 安装产物。
+- 如果使用 `static-static-link-extern/stdx`，请清理旧的链接输入，并使用同一版本、同一次构建产出的 `libssl.a` 和 `libcrypto.a` 重新链接。
+- 使用 `static-static-link-extern/stdx` 时，最终链接阶段需要由用户提供当前参与链接的 `stdx` 静态库所依赖的 OpenSSL 符号。
+- 如果在 `static-static-link-extern/stdx` 场景下使用了裁剪版 OpenSSL 静态库，并且最终链接报缺少 OpenSSL 符号，说明当前参与链接的这部分 `stdx` 仍然需要这些符号。
+- 不要只根据应用代码直接使用的 OpenSSL 符号来决定裁剪范围；还应检查当前参与链接的 `stdx` 静态库是否仍然引用了其他 OpenSSL 符号。
+- 不建议通过手工编写空实现来绕过这类链接错误。空实现只能让链接通过，不能保证运行时语义正确，可能导致资源泄漏、状态损坏、功能错误或安全问题，请开发者慎重考虑此行为。
+- 如果使用 `dynamic/stdx` 或 `static/stdx`，请从运行时搜索路径中移除冲突的旧版 `libssl` 和 `libcrypto`，只保留目标 OpenSSL 3.x 动态库可见。
+- 如果遇到缺符号错误，先确认实际参与链接或实际被加载的库文件，再检查这些文件的版本和架构是否一致。
+
+受该区分影响的典型 OpenSSL 相关静态库包括：
+
+- `libstdx.crypto.digest.a`
+- `libstdx.crypto.keys.a`
+- `libstdx.crypto.crypto.a`
+- `libstdx.crypto.x509.a`
+- `libstdx.net.tls.a`
+
+当你希望 OpenSSL 依赖边界固定、且不接受运行时回退行为时，应使用 `static-static-link-extern/stdx` 这一套静态库。在这种模式下，OpenSSL 静态库目录由应用侧现有链接参数控制，例如 `-L`、`link-option`。
 
 **配置示例**：假设开发环境为 Windows（架构为 x86_64），导入 `stdx` 的动态二进制，则 `cjpm.toml` 配置示例如下。
 

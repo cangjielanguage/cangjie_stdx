@@ -24,7 +24,15 @@ if(CANGJIE_CODEGEN_CJNATIVE_BACKEND)
         $<TARGET_OBJECTS:${libname}-objs>
         $<TARGET_OBJECTS:${CANGJIE_OPENSSL_FFI_OBJECTS_TARGET}>
     )
+    add_library(
+        ${libname}-strong
+        STATIC
+        $<TARGET_OBJECTS:${libname}-objs>
+        $<TARGET_OBJECTS:${CANGJIE_OPENSSL_FFI_STRONG_OBJECTS_TARGET}>
+    )
+    set_target_properties(${libname}-strong PROPERTIES OUTPUT_NAME ${libname}-strong)
     add_dependencies(${libname} ${CANGJIE_OPENSSL_FFI_OBJECTS_TARGET})
+    add_dependencies(${libname}-strong ${CANGJIE_OPENSSL_FFI_STRONG_OBJECTS_TARGET})
 endif()
 
 target_include_directories(${libname}-objs PRIVATE ${CMAKE_SOURCE_DIR}/src/stdx/dynamicLoader)
