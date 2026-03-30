@@ -61,7 +61,7 @@ private:
 bool CollectAspects::GlobalVarsArePrimitiveLiterals()
 {
     const CHIR::Package* package = builder.GetCurPackage();
-    for (auto gv : package->GetGlobalVars()) {
+    for (auto gv : package->GetGlobalVarsWithInit()) {
         if (gv->TestAttr(Cangjie::CHIR::Attribute::IMPORTED) || gv->TestAttr(Cangjie::CHIR::Attribute::COMPILER_ADD)) {
             continue;
         }

@@ -182,12 +182,12 @@ CHIR::Type* ComputeThisTypeOfCallee(const CHIR::Function& callee, const std::vec
 CHIR::Function* GetFuncByMangledName(CHIR::CHIRBuilder& builder, const std::string& funcMangledName)
 {
     auto curPackage = builder.GetChirContext().GetCurPackage();
-    for (auto func : curPackage->GetImportedFunctions()) {
+    for (auto func : curPackage->GetGlobalFuncsWithoutBody()) {
         if (func->GetIdentifierWithoutPrefix() == funcMangledName) {
             return func;
         }
     }
-    for (auto func : curPackage->GetGlobalFuncs()) {
+    for (auto func : curPackage->GetGlobalFuncsWithBody()) {
         if (func->GetIdentifierWithoutPrefix() == funcMangledName) {
             return func;
         }
@@ -217,9 +217,10 @@ CHIR::Function* WaveAspects::GetCalleeByProcessInfo(
     CHIR::Function* callee = GetFuncByMangledName(builder, pi.insert.methodMangledName);
     if (!callee) {
         if (pi.insert.paramsNum == 0) {
-            callee = builder.CreateImportedFuncSig(
+            callee = builder.CreateFunction(
                 builder.GetType<CHIR::FuncType>(std::vector<CHIR::Type*>{}, builder.GetUnitTy()),
                 pi.insert.methodMangledName, "", "", "");
+            callee->EnableAttr(Cangjie::CHIR::Attribute::IMPORTED);
         } else {
             std::vector<CHIR::Type*> paramTypes;
             CHIR::Type* retType = builder.GetUnitTy();
@@ -230,9 +231,10 @@ CHIR::Function* WaveAspects::GetCalleeByProcessInfo(
                 retType = func.GetReturnType();
                 paramTypes.emplace_back(builder.GetType<CHIR::FuncType>(paramTypes, retType));
             }
-            callee = builder.CreateImportedFuncSig(
+            callee = builder.CreateFunction(
                 builder.GetType<CHIR::FuncType>(paramTypes, builder.GetUnitTy()), pi.insert.methodMangledName, "", "",
                 "");
+            callee->EnableAttr(Cangjie::CHIR::Attribute::IMPORTED);
         }
     }
     return callee;
@@ -241,12 +243,12 @@ CHIR::Function* WaveAspects::GetCalleeByProcessInfo(
 namespace {
 bool HasFunction(const CHIR::Package& package, std::string funcName)
 {
-    for (auto func : package.GetGlobalFuncs()) {
+    for (auto func : package.GetGlobalFuncsWithBody()) {
         if (func->GetIdentifierWithoutPrefix() == funcName) {
             return true;
         }
     }
-    for (auto func : package.GetImportedFunctions()) {
+    for (auto func : package.GetGlobalFuncsWithoutBody()) {
         if (func->GetIdentifierWithoutPrefix() == funcName) {
             return true;
         }
@@ -291,9 +293,10 @@ void WaveAspects::ReadInfo()
                 auto pkgInit = builder.GetCurPackage()->GetPackageInitFunc();
                 auto bb = pkgInit->GetEntryBlock();
                 bb = bb->GetTerminator()->GetSuccessor(1);
-                auto initF = builder.CreateImportedFuncSig(
+                auto initF = builder.CreateFunction(
                     builder.GetType<CHIR::FuncType>(std::vector<CHIR::Type*>{}, builder.GetVoidTy()),
                     packageInitFuncName, "", "", "");
+                initF->EnableAttr(Cangjie::CHIR::Attribute::IMPORTED);
                 std::vector<CHIR::Value*> args;
                 auto funcCallCxt = CHIR::FuncCallContext {
                     .args = args,
@@ -358,8 +361,9 @@ void WaveAspects::Run(CHIR::Function& func)
                     ++suffix;
                     originalFuncName = funcName + ".original" + std::to_string(suffix);
                 }
-                auto newFunc = builder.CreateFuncWithBody(func.GetDebugLocation(), func.GetFuncType(), originalFuncName,
+                auto newFunc = builder.CreateFunction(func.GetFuncType(), originalFuncName,
                     func.GetSrcCodeIdentifier(), "", func.GetPackageName());
+                newFunc->SetDebugLocation(func.GetDebugLocation());
                 // create parameters
                 for (auto paramTy : func.GetFuncType()->GetParamTypes()) {
                     builder.CreateParameter(paramTy, CHIR::INVALID_LOCATION, *newFunc);
