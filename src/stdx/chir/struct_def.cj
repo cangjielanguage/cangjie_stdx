@@ -42,13 +42,9 @@ public class StructDef <: CustomTypeDef & Equatable<StructDef> {
         }
     }
 
-    /**
-     * Checks if this StructDef is equal to another StructDef.
-     * @param other The StructDef to compare with.
-     * @return true if the definitions are equal, false otherwise.
-     */
-    public operator func==(other: StructDef): Bool {
-        return isSameDef(other)
+    internal init(identifier: String, srcName: String, pkgName: String) {
+        super(CustomDefKind.Struct, identifier, srcName, pkgName)
+        this._hashCode = calculateHashCode()
     }
 
     protected override func printComment(): String {
@@ -59,8 +55,12 @@ public class StructDef <: CustomTypeDef & Equatable<StructDef> {
         return "// " + extraStr
     }
 
-    internal init(identifier: String, srcName: String, pkgName: String) {
-        super(CustomDefKind.Struct, identifier, srcName, pkgName)
-        this._hashCode = calculateHashCode()
+    /**
+     * Checks if this StructDef is equal to another StructDef.
+     * @param other The StructDef to compare with.
+     * @return true if the definitions are equal, false otherwise.
+     */
+    public operator func==(other: StructDef): Bool {
+        return isSameDef(other)
     }
 }

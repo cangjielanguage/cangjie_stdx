@@ -44,6 +44,86 @@ function(cj_resolve_depends out_var)
     set(${out_var} ${resolved} PARENT_SCOPE)
 endfunction()
 
+function(add_cangjie_macro_library_in_local target_name)
+    set(options
+        NO_SUB_PKG)
+    set(one_value_args
+        OUTPUT_NAME
+        OUTPUT_DIR
+        PACKAGE_NAME
+        MODULE_NAME
+        SOURCE_DIR)
+    set(multi_value_args SOURCES DEPENDS FFI)
+    cmake_parse_arguments(
+        CANGJIELIB
+        "${options}"
+        "${one_value_args}"
+        "${multi_value_args}"
+        ${ARGN})
+
+    # Do not use ${CMAKE_EXECUTABLE_SUFFIX} here, because its value is determined by the target platform, not the host.
+    # Determine the suffix according to the host instead.
+    set(cangjie_compiler_tool "cjc$<$<BOOL:${CMAKE_HOST_WIN32}>:.exe>")
+
+    # Set no-sub-pkg
+    if(CANGJIELIB_NO_SUB_PKG)
+        set(no_sub_pkg "--no-sub-pkg")
+    endif()
+
+    list(APPEND cangjie_compile_flags "--compile-macro")
+
+    if(NOT ("${CANGJIELIB_MODULE_NAME}" STREQUAL ""))
+        set(output_dir "${CANGJIE_LIB_DIR}/${TARGET_TRIPLE_DIRECTORY_PREFIX}_${BACKEND}/${CANGJIELIB_MODULE_NAME}")
+    else()
+        set(output_dir "${CANGJIE_LIB_DIR}/${TARGET_TRIPLE_DIRECTORY_PREFIX}_${BACKEND}")
+    endif()
+    if(NOT ("${CANGJIELIB_OUTPUT_DIR}" STREQUAL ""))
+        set(output_dir "${output_dir}/${CANGJIELIB_OUTPUT_DIR}")
+    endif()
+
+    if(NOT ("${CANGJIELIB_MODULE_NAME}" STREQUAL ""))
+        set(output_full_name "${CMAKE_BINARY_DIR}/${output_dir}/lib-macro_${CANGJIELIB_MODULE_NAME}.${CANGJIELIB_PACKAGE_NAME}")
+    else()
+        set(output_full_name "${CMAKE_BINARY_DIR}/${output_dir}/lib-macro_${CANGJIELIB_PACKAGE_NAME}")
+    endif()
+
+    set(COMPILE_CMD
+        ${cangjie_compiler_tool}
+        ${no_sub_pkg}
+        ${cangjie_compile_flags}
+        -p ${CANGJIELIB_SOURCE_DIR})
+
+    cj_resolve_depends(resolved_depends ${CANGJIELIB_DEPENDS})
+
+    # pre-process source files: optional explicit SOURCES (globs or paths relative to
+    # SOURCE_DIR); otherwise only top-level *.cj (subdirectories are not included).
+    if(CANGJIELIB_SOURCES)
+        set(source_files)
+        foreach(pattern IN LISTS CANGJIELIB_SOURCES)
+            if(pattern MATCHES "[*?]")
+                file(GLOB _cj CONFIGURE_DEPENDS ${CANGJIELIB_SOURCE_DIR}/${pattern})
+                list(APPEND source_files ${_cj})
+            else()
+                list(APPEND source_files ${CANGJIELIB_SOURCE_DIR}/${pattern})
+            endif()
+        endforeach()
+    else()
+        file(GLOB source_files CONFIGURE_DEPENDS ${CANGJIELIB_SOURCE_DIR}/*.cj)
+    endif()
+
+    add_custom_command(
+        OUTPUT ${output_full_name}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/${output_dir}
+        COMMAND ${CMAKE_COMMAND} -E env "CANGJIE_PATH=${CMAKE_BINARY_DIR}/modules/${output_cj_lib_dir}"  "LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib"
+                ${COMPILE_CMD}
+        DEPENDS ${resolved_depends} ${source_files} ${CANGJIELIB_SOURCE_DIR}
+        COMMENT "Generating ${target_name}")
+
+    add_custom_target(
+        ${target_name} ALL
+        DEPENDS ${output_full_name} ${CANGJIELIB_DEPENDS})
+endfunction()
+
 function(add_cangjie_library target_name
 )
     set(options

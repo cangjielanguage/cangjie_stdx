@@ -15,11 +15,19 @@ package stdx.chir
  * and provides methods to access class-specific information such as the super class.
  */
 public class ClassLikeDef <: CustomTypeDef & Equatable<ClassLikeDef> {
-    internal var _isClass: Bool
-
     internal var _isAnnotation: Bool = false
-
+    internal var _isClass: Bool
     internal var _superClass: ?ClassLikeType = None
+
+    /**
+     * Gets the ClassLikeType associated with this class definition.
+     * @type { ClassLikeType }
+     */
+    public prop classType: ClassLikeType {
+        get() {
+            return (_type.getOrThrow() as ClassLikeType).getOrThrow()
+        }
+    }
 
     /**
      * Gets or sets whether this class-like definition represents an annotation class.
@@ -31,16 +39,6 @@ public class ClassLikeDef <: CustomTypeDef & Equatable<ClassLikeDef> {
         }
         set(v) {
             _isAnnotation = v
-        }
-    }
-
-    /**
-     * Gets the ClassLikeType associated with this class definition.
-     * @type { ClassLikeType }
-     */
-    public prop classType: ClassLikeType {
-        get() {
-            return (_type.getOrThrow() as ClassLikeType).getOrThrow()
         }
     }
 
@@ -57,6 +55,12 @@ public class ClassLikeDef <: CustomTypeDef & Equatable<ClassLikeDef> {
         set(v) {
             _superClass = v
         }
+    }
+
+    internal init(identifier: String, srcName: String, pkgName: String, isClass: Bool) {
+        super(CustomDefKind.ClassLike, identifier, srcName, pkgName)
+        this._isClass = isClass
+        this._hashCode = calculateHashCode()
     }
 
     /**
@@ -83,15 +87,6 @@ public class ClassLikeDef <: CustomTypeDef & Equatable<ClassLikeDef> {
         _attributes.setAttr(Attribute.Sealed, enable)
     }
 
-    /**
-     * Checks if this ClassLikeDef is equal to another ClassLikeDef.
-     * @param other The ClassLikeDef to compare with.
-     * @return true if the definitions are equal, false otherwise.
-     */
-    public operator func==(other: ClassLikeDef): Bool {
-        return isSameDef(other)
-    }
-
     protected override func printTitle(): String {
         let superClassStr = StringBuilder()
         if (let Some(superClass) <- _superClass) {
@@ -101,9 +96,12 @@ public class ClassLikeDef <: CustomTypeDef & Equatable<ClassLikeDef> {
         return super.printTitle() + superClassStr.toString()
     }
 
-    internal init(identifier: String, srcName: String, pkgName: String, isClass: Bool) {
-        super(CustomDefKind.ClassLike, identifier, srcName, pkgName)
-        this._isClass = isClass
-        this._hashCode = calculateHashCode()
+    /**
+     * Checks if this ClassLikeDef is equal to another ClassLikeDef.
+     * @param other The ClassLikeDef to compare with.
+     * @return true if the definitions are equal, false otherwise.
+     */
+    public operator func==(other: ClassLikeDef): Bool {
+        return isSameDef(other)
     }
 }

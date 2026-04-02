@@ -16,6 +16,7 @@ internal enum CustomDefKind <: ToString {
     | Enum
     | Extend
     | Struct
+
     /**
      * Converts this custom definition kind to a short string tag.
      * @return One of "classLike", "enum", "extend", or "struct".
@@ -37,49 +38,13 @@ internal enum CustomDefKind <: ToString {
  * including their name, type, attributes, and debug location.
  */
 public class MemberVar <: ToString {
-    internal let _name: String
-
-    internal var _rawMangledName: String = String.empty
-
-    internal let _type: Type
-
-    internal var _attributes: AttributeInfo = AttributeInfo()
-
-    internal var _debugLocation: DebugLocation = DebugLocation.invalid()
-
     internal var _annoInfo: AnnoInfo = AnnoInfo()
-
+    internal var _attributes: AttributeInfo = AttributeInfo()
+    internal var _debugLocation: DebugLocation = DebugLocation.invalid()
+    internal let _name: String
     internal let _outerDef: CustomTypeDef
-
-    /**
-     * Gets the name of this member variable.
-     * @type { String }
-     */
-    public prop name: String {
-        get() {
-            return _name
-        }
-    }
-
-    /**
-     * Gets the type of this member variable.
-     * @type { Type }
-     */
-    public prop ty: Type {
-        get() {
-            return _type
-        }
-    }
-
-    /**
-     * Gets the source location of this member variable in the original code.
-     * @type { DebugLocation }
-     */
-    public prop location: DebugLocation {
-        get() {
-            return _debugLocation
-        }
-    }
+    internal var _rawMangledName: String = String.empty
+    internal let _type: Type
 
     /**
      * Gets or sets annotations on this member variable.
@@ -96,6 +61,26 @@ public class MemberVar <: ToString {
     }
 
     /**
+     * Gets the source location of this member variable in the original code.
+     * @type { DebugLocation }
+     */
+    public prop location: DebugLocation {
+        get() {
+            return _debugLocation
+        }
+    }
+
+    /**
+     * Gets the name of this member variable.
+     * @type { String }
+     */
+    public prop name: String {
+        get() {
+            return _name
+        }
+    }
+
+    /**
      * Gets the outer definition that contains this member variable.
      * @type { CustomTypeDef }
      */
@@ -106,11 +91,66 @@ public class MemberVar <: ToString {
     }
 
     /**
-     * Sets the READONLY attribute for this member variable.
-     * @param enable true to enable READONLY, false to disable.
+     * Gets the type of this member variable.
+     * @type { Type }
      */
-    public func setReadOnly(enable: Bool): Unit {
-        _attributes.setAttr(Attribute.ReadOnly, enable)
+    public prop ty: Type {
+        get() {
+            return _type
+        }
+    }
+
+    internal init(name: String, ty: Type, outerDef: CustomTypeDef) {
+        this._name = name
+        this._type = ty
+        this._outerDef = outerDef
+    }
+
+    /**
+     * Prints the string representation of this member variable to standard output.
+     */
+    public func dump(): Unit {
+        println(toString())
+    }
+
+    /**
+     * Checks if this member variable has INTERNAL access level.
+     * @return true if INTERNAL attribute is set, false otherwise.
+     */
+    public func isInternal(): Bool {
+        return _attributes.testAttr(Attribute.Internal)
+    }
+
+    /**
+     * Checks if this member variable has PRIVATE access level.
+     * @return true if PRIVATE attribute is set, false otherwise.
+     */
+    public func isPrivate(): Bool {
+        return _attributes.testAttr(Attribute.Private)
+    }
+
+    /**
+     * Checks if this member variable has PROTECTED access level.
+     * @return true if PROTECTED attribute is set, false otherwise.
+     */
+    public func isProtected(): Bool {
+        return _attributes.testAttr(Attribute.Protected)
+    }
+
+    /**
+     * Checks if this member variable has PUBLIC access level.
+     * @return true if PUBLIC attribute is set, false otherwise.
+     */
+    public func isPublic(): Bool {
+        return _attributes.testAttr(Attribute.Public)
+    }
+
+    /**
+     * Checks if this member variable is read-only.
+     * @return true if the READONLY attribute is set, false otherwise.
+     */
+    public func isReadOnly(): Bool {
+        return _attributes.testAttr(Attribute.ReadOnly)
     }
 
     /**
@@ -118,13 +158,6 @@ public class MemberVar <: ToString {
      */
     public func setInternal(): Unit {
         _attributes.setInternal()
-    }
-
-    /**
-     * Sets the PUBLIC access level attribute for this member variable.
-     */
-    public func setPublic(): Unit {
-        _attributes.setPublic()
     }
 
     /**
@@ -142,43 +175,18 @@ public class MemberVar <: ToString {
     }
 
     /**
-     * Checks if this member variable is read-only.
-     * @return true if the READONLY attribute is set, false otherwise.
+     * Sets the PUBLIC access level attribute for this member variable.
      */
-    public func isReadOnly(): Bool {
-        return _attributes.testAttr(Attribute.ReadOnly)
+    public func setPublic(): Unit {
+        _attributes.setPublic()
     }
 
     /**
-     * Checks if this member variable has INTERNAL access level.
-     * @return true if INTERNAL attribute is set, false otherwise.
+     * Sets the READONLY attribute for this member variable.
+     * @param enable true to enable READONLY, false to disable.
      */
-    public func isInternal(): Bool {
-        return _attributes.testAttr(Attribute.Internal)
-    }
-
-    /**
-     * Checks if this member variable has PUBLIC access level.
-     * @return true if PUBLIC attribute is set, false otherwise.
-     */
-    public func isPublic(): Bool {
-        return _attributes.testAttr(Attribute.Public)
-    }
-
-    /**
-     * Checks if this member variable has PRIVATE access level.
-     * @return true if PRIVATE attribute is set, false otherwise.
-     */
-    public func isPrivate(): Bool {
-        return _attributes.testAttr(Attribute.Private)
-    }
-
-    /**
-     * Checks if this member variable has PROTECTED access level.
-     * @return true if PROTECTED attribute is set, false otherwise.
-     */
-    public func isProtected(): Bool {
-        return _attributes.testAttr(Attribute.Protected)
+    public func setReadOnly(enable: Bool): Unit {
+        _attributes.setAttr(Attribute.ReadOnly, enable)
     }
 
     /**
@@ -202,19 +210,6 @@ public class MemberVar <: ToString {
         }
         return result.toString()
     }
-
-    /**
-     * Prints the string representation of this member variable to standard output.
-     */
-    public func dump(): Unit {
-        println(toString())
-    }
-
-    internal init(name: String, ty: Type, outerDef: CustomTypeDef) {
-        this._name = name
-        this._type = ty
-        this._outerDef = outerDef
-    }
 }
 
 /**
@@ -224,124 +219,55 @@ public class MemberVar <: ToString {
  * generic type parameters, instance variables, implemented interfaces, and extends.
  */
 sealed abstract class CustomTypeDef <: Base & Equatable<CustomTypeDef> & Hashable {
-    internal let _kind: CustomDefKind
-
+    internal var _extends = ArrayList<ExtendDef>()
+    internal var _genericDecl : ?CustomTypeDef = None
+    internal var _hashCode: Int64 = 0
     internal let _identifier: String
-
-    internal let _srcCodeName: String
-
+    internal var _implementedInterfaceTypes = ArrayList<ClassLikeType>()
+    internal var _instanceVars = ArrayList<MemberVar>()
+    internal let _kind: CustomDefKind
+    internal var _methods = ArrayList<Function>()
     internal var _packageName: String
-
+    internal let _srcCodeName: String
+    internal var _staticVars = ArrayList<GlobalVar>()
     internal var _type : ?CustomType = None
 
-    internal var _genericDecl : ?CustomTypeDef = None
-
-    internal var _hashCode: Int64 = 0
-
-    internal var _instanceVars = ArrayList<MemberVar>()
-
-    internal var _extends = ArrayList<ExtendDef>()
-
-    internal var _implementedInterfaceTypes = ArrayList<ClassLikeType>()
-
     /**
-     * Sets the PUBLIC visibility attribute on this custom type definition.
+     * Gets or sets the extend definitions nested under this type (e.g. inner extend blocks).
+     * @type { Array<ExtendDef> }
      */
-    public func setPublic(): Unit {
-        _attributes.setPublic()
+    public mut prop extends: Array<ExtendDef> {
+        get() {
+            return _extends.toArray()
+        }
+        set(v) {
+            _extends = ArrayList<ExtendDef>.of(v)
+        }
     }
 
     /**
-     * Sets the PRIVATE visibility attribute on this custom type definition.
+     * Gets or sets the generic declaration paired with this monomorphic definition.
+     *
+     * Used when the same source name has both a generic template and a concrete instantiation;
+     * constraints are documented on the setter.
+     * @type { ?CustomTypeDef }
      */
-    public func setPrivate(): Unit {
-        _attributes.setPrivate()
-    }
-
-    /**
-     * Sets the PROTECTED visibility attribute on this custom type definition.
-     */
-    public func setProtected(): Unit {
-        _attributes.setProtected()
-    }
-
-    /**
-     * Sets the INTERNAL visibility attribute on this custom type definition.
-     */
-    public func setInternal(): Unit {
-        _attributes.setInternal()
-    }
-
-    /**
-     * Checks whether this definition is marked as imported from another package.
-     * @return true if the Imported attribute is set.
-     */
-    public func isImported(): Bool {
-        return _attributes.testAttr(Attribute.Imported)
-    }
-
-    /**
-     * Checks whether this definition has PUBLIC visibility.
-     * @return true if the Public attribute is set.
-     */
-    public func isPublic(): Bool {
-        return _attributes.testAttr(Attribute.Public)
-    }
-
-    /**
-     * Checks whether this definition has PRIVATE visibility.
-     * @return true if the Private attribute is set.
-     */
-    public func isPrivate(): Bool {
-        return _attributes.testAttr(Attribute.Private)
-    }
-
-    /**
-     * Checks whether this definition has INTERNAL visibility.
-     * @return true if the Internal attribute is set.
-     */
-    public func isInternal(): Bool {
-        return _attributes.testAttr(Attribute.Internal)
-    }
-
-    /**
-     * Checks whether this definition has PROTECTED visibility.
-     * @return true if the Protected attribute is set.
-     */
-    public func isProtected(): Bool {
-        return _attributes.testAttr(Attribute.Protected)
-    }
-
-    /**
-     * Checks whether this definition is abstract.
-     * @return true if the Abstract attribute is set.
-     */
-    public func isAbstract(): Bool {
-        return _attributes.testAttr(Attribute.Abstract)
-    }
-
-    /**
-     * Checks whether this definition is open for subclassing / implementation (virtual or abstract).
-     * @return true if Virtual or Abstract attribute is set.
-     */
-    public func isOpen(): Bool {
-        return _attributes.testAttr(Attribute.Virtual) || _attributes.testAttr(Attribute.Abstract)
-    }
-
-    /**
-     * Checks whether this definition is sealed.
-     * @return true if the Sealed attribute is set.
-     */
-    public func isSealed(): Bool {
-        return _attributes.testAttr(Attribute.Sealed)
-    }
-
-    /**
-     * Checks whether this definition is generic.
-     * @return true if the Generic attribute is set.
-     */
-    public func isGeneric(): Bool {
-        return _attributes.testAttr(Attribute.Generic)
+    public mut prop genericDecl: ?CustomTypeDef {
+        get() {
+            return _genericDecl
+        }
+        set(v) {
+            if (let Some(gDef) <- v) {
+                assert(gDef._srcCodeName == _srcCodeName,
+                    "genericDecl's srcCodeName must be the same as the current def's srcCodeName")
+                assert(gDef._kind == _kind, "genericDecl's kind must be the same as the current def's kind")
+                assert(gDef.isGeneric(), "genericDecl must be generic")
+                assert(!this.isGeneric(), "current def can't be generic")
+                // we don't check whether this.ty meet generic constraint of gDef.ty, it will cost much time
+                // we will check it in ir checker
+            }
+            _genericDecl = v
+        }
     }
 
     /**
@@ -367,58 +293,12 @@ sealed abstract class CustomTypeDef <: Base & Equatable<CustomTypeDef> & Hashabl
     }
 
     /**
-     * Converts this CustomTypeDef to its string representation.
-     *
-     * The string includes attributes, title, generic constraints, member variables,
-     * and extends.
-     * @return A string representation of the custom type definition.
+     * Gets the internal identifier, a globally unique name.
+     * @type { String }
      */
-    public open func toString(): String {
-        /**
-         *  [public][generic][...] class XXX {      // loc: xxx, genericDecl: xxx
-         *  ^^^^^^^^^^^^^^ attr    ^^^^^^^^^ title  ^^^^^^^^^^^^^^^^^^ comment
-         *      local var
-         *      static var
-         *      method
-         *  }
-         */
-        let result = StringBuilder()
-        result.append(_attributes.toString())
-        result.append(printTitle())
-        result.append(genericTypeParamsConstraintToString(genericTypeParams))
-        result.append(" {")
-        result.append(printComment())
-        result.append(printMemberVars(INDENT_SPACE))
-        for (exDef in _extends) {
-            result.append("\n")
-            result.append(indentToString(INDENT_SPACE))
-            result.append("extend ")
-            result.append(exDef.identifier)
-        }
-        result.append("\n}")
-        return result.toString()
-    }
-
-    /**
-     * Gets all instance (member) variables declared on this custom type.
-     * @type { Array<MemberVar> }
-     */
-    public prop instanceVars: Array<MemberVar> {
+    public prop identifier: String {
         get() {
-            return _instanceVars.toArray()
-        }
-    }
-
-    /**
-     * Gets or sets the extend definitions nested under this type (e.g. inner extend blocks).
-     * @type { Array<ExtendDef> }
-     */
-    public mut prop extends: Array<ExtendDef> {
-        get() {
-            return _extends.toArray()
-        }
-        set(v) {
-            _extends = ArrayList<ExtendDef>.of(v)
+            return _identifier
         }
     }
 
@@ -432,6 +312,56 @@ sealed abstract class CustomTypeDef <: Base & Equatable<CustomTypeDef> & Hashabl
         }
         set(v) {
             _implementedInterfaceTypes = ArrayList<ClassLikeType>.of(v)
+        }
+    }
+
+    /**
+     * Gets all instance (member) variables declared on this custom type.
+     * @type { Array<MemberVar> }
+     */
+    public prop instanceVars: Array<MemberVar> {
+        get() {
+            return _instanceVars.toArray()
+        }
+    }
+
+    /**
+     * Gets the `methods` property.
+     * @type { Array<Function> }
+     */
+    public prop methods: Array<Function> {
+        get() {
+            return _methods.toArray()
+        }
+    }
+
+    /**
+     * Gets the package name where this custom type is defined.
+     * @type { String }
+     */
+    public prop packageName: String {
+        get() {
+            return _packageName
+        }
+    }
+
+    /**
+     * Gets the source code identifier of this custom type definition.
+     * @type { String }
+     */
+    public prop srcCodeName: String {
+        get() {
+            return _srcCodeName
+        }
+    }
+
+    /**
+     * Gets the `staticVars` property.
+     * @type { Array<GlobalVar> }
+     */
+    public prop staticVars: Array<GlobalVar> {
+        get() {
+            return _staticVars.toArray()
         }
     }
 
@@ -450,96 +380,52 @@ sealed abstract class CustomTypeDef <: Base & Equatable<CustomTypeDef> & Hashabl
         }
     }
 
-    /**
-     * Gets the hash code of this custom type definition.
-     * @return The hash code as an Int64.
-     */
-    public func hashCode(): Int64 {
-        return _hashCode
-    }
-
-    /**
-     * Gets the internal identifier, a globally unique name.
-     * @type { String }
-     */
-    public prop identifier: String {
+    internal prop identifierWithoutPrefix: String {
         get() {
-            return _identifier
+            return _identifier.removePrefix(GLOBAL_SYMBOL_PREFIX)
         }
     }
 
-    /**
-     * Gets the source code identifier of this custom type definition.
-     * @type { String }
-     */
-    public prop srcCodeName: String {
-        get() {
-            return _srcCodeName
-        }
+    internal init(kind: CustomDefKind, identifier: String, srcName: String, pkgName: String) {
+        this._kind = kind
+        this._identifier = identifier
+        this._srcCodeName = srcName
+        this._packageName = pkgName
     }
 
     /**
-     * Gets the package name where this custom type is defined.
-     * @type { String }
+     * Appends an instance member variable to this type definition and returns it.
+     *
+     * Used by plugins and tests to build CHIR; declaration order matches append order.
+     * @param name Source-level member name.
+     * @param ty Member type.
+     * @return The created `MemberVar`.
      */
-    public prop packageName: String {
-        get() {
-            return _packageName
-        }
+    public func appendInstanceMemberVar(name: String, ty: Type): MemberVar {
+        let v = MemberVar(name, ty, this)
+        _instanceVars.add(v)
+        return v
     }
 
     /**
-     * Checks if this definition is class-like (class or interface).
-     * @return true if the kind is ClassLike, false otherwise.
+     * Performs the public behavior of `appendMethod`.
+     * @param method The `method` parameter.
+     * @return The `Unit` result.
      */
-    public func isClassLike(): Bool {
-        return _kind == CustomDefKind.ClassLike
+    public func appendMethod(method: Function): Unit {
+        _methods.add(method)
+        method._declaredParent = this
     }
 
     /**
-     * Checks if this definition represents a class (not an interface).
-     * @return true if this is a class, false otherwise. Overridden in ClassLikeDef.
+     * Performs the public behavior of `appendStaticVar`.
+     * @param staticVar The `staticVar` parameter.
+     * @return The `Unit` result.
      */
-    public func isClass(): Bool {
-        if (_kind == CustomDefKind.ClassLike) {
-            return (this as ClassLikeDef).getOrThrow()._isClass
-        }
-        return false
-    }
-
-    /**
-     * Checks if this definition represents an interface (not a class).
-     * @return true if this is an interface, false otherwise. Overridden in ClassLikeDef.
-     */
-    public func isInterface(): Bool {
-        if (_kind == CustomDefKind.ClassLike) {
-            return !(this as ClassLikeDef).getOrThrow()._isClass
-        }
-        return false
-    }
-
-    /**
-     * Checks if this definition represents an enum.
-     * @return true if the kind is Enum, false otherwise.
-     */
-    public func isEnum(): Bool {
-        return _kind == CustomDefKind.Enum
-    }
-
-    /**
-     * Checks if this definition represents an extend.
-     * @return true if the kind is Extend, false otherwise.
-     */
-    public func isExtend(): Bool {
-        return _kind == CustomDefKind.Extend
-    }
-
-    /**
-     * Checks if this definition represents a struct.
-     * @return true if the kind is Struct, false otherwise.
-     */
-    public func isStruct(): Bool {
-        return _kind == CustomDefKind.Struct
+    public func appendStaticVar(staticVar: GlobalVar): Unit {
+        staticVar.setStatic(true)
+        _staticVars.add(staticVar)
+        staticVar._declaredParent = this
     }
 
     /**
@@ -585,61 +471,201 @@ sealed abstract class CustomTypeDef <: Base & Equatable<CustomTypeDef> & Hashabl
     }
 
     /**
-     * Checks if this CustomTypeDef is equal to another CustomTypeDef.
-     * @param other The CustomTypeDef to compare with.
-     * @return true if the definitions are equal (same kind, identifier, source code identifier, and package name), false otherwise.
+     * Gets the hash code of this custom type definition.
+     * @return The hash code as an Int64.
      */
-    public operator func==(other: CustomTypeDef): Bool {
-        return isSameDef(other)
+    public func hashCode(): Int64 {
+        return _hashCode
     }
 
     /**
-     * Gets or sets the generic declaration paired with this monomorphic definition.
-     *
-     * Used when the same source name has both a generic template and a concrete instantiation;
-     * constraints are documented on the setter.
-     * @type { ?CustomTypeDef }
+     * Checks whether this definition is abstract.
+     * @return true if the Abstract attribute is set.
      */
-    public mut prop genericDecl: ?CustomTypeDef {
-        get() {
-            return _genericDecl
-        }
-        set(v) {
-            if (let Some(gDef) <- v) {
-                assert(gDef._srcCodeName == _srcCodeName,
-                    "genericDecl's srcCodeName must be the same as the current def's srcCodeName")
-                assert(gDef._kind == _kind, "genericDecl's kind must be the same as the current def's kind")
-                assert(gDef.isGeneric(), "genericDecl must be generic")
-                assert(!this.isGeneric(), "current def can't be generic")
-                // we don't check whether this.ty meet generic constraint of gDef.ty, it will cost much time
-                // we will check it in ir checker
-            }
-            _genericDecl = v
-        }
+    public func isAbstract(): Bool {
+        return _attributes.testAttr(Attribute.Abstract)
     }
 
-    protected open func printTitle(): String {
-        var kindStr = String.empty
-        if (isInterface()) {
-            kindStr = "interface"
-        } else if (isClass()) {
-            kindStr = "class"
-        } else {
-            kindStr = _kind.toString()
+    /**
+     * Checks if this definition represents a class (not an interface).
+     * @return true if this is a class, false otherwise. Overridden in ClassLikeDef.
+     */
+    public func isClass(): Bool {
+        if (_kind == CustomDefKind.ClassLike) {
+            return (this as ClassLikeDef).getOrThrow()._isClass
         }
+        return false
+    }
+
+    /**
+     * Checks if this definition is class-like (class or interface).
+     * @return true if the kind is ClassLike, false otherwise.
+     */
+    public func isClassLike(): Bool {
+        return _kind == CustomDefKind.ClassLike
+    }
+
+    /**
+     * Checks if this definition represents an enum.
+     * @return true if the kind is Enum, false otherwise.
+     */
+    public func isEnum(): Bool {
+        return _kind == CustomDefKind.Enum
+    }
+
+    /**
+     * Checks if this definition represents an extend.
+     * @return true if the kind is Extend, false otherwise.
+     */
+    public func isExtend(): Bool {
+        return _kind == CustomDefKind.Extend
+    }
+
+    /**
+     * Checks whether this definition is generic.
+     * @return true if the Generic attribute is set.
+     */
+    public func isGeneric(): Bool {
+        return _attributes.testAttr(Attribute.Generic)
+    }
+
+    /**
+     * Checks whether this definition is marked as imported from another package.
+     * @return true if the Imported attribute is set.
+     */
+    public func isImported(): Bool {
+        return _attributes.testAttr(Attribute.Imported)
+    }
+
+    /**
+     * Checks if this definition represents an interface (not a class).
+     * @return true if this is an interface, false otherwise. Overridden in ClassLikeDef.
+     */
+    public func isInterface(): Bool {
+        if (_kind == CustomDefKind.ClassLike) {
+            return !(this as ClassLikeDef).getOrThrow()._isClass
+        }
+        return false
+    }
+
+    /**
+     * Checks whether this definition has INTERNAL visibility.
+     * @return true if the Internal attribute is set.
+     */
+    public func isInternal(): Bool {
+        return _attributes.testAttr(Attribute.Internal)
+    }
+
+    /**
+     * Checks whether this definition is open for subclassing / implementation (virtual or abstract).
+     * @return true if Virtual or Abstract attribute is set.
+     */
+    public func isOpen(): Bool {
+        return _attributes.testAttr(Attribute.Virtual) || _attributes.testAttr(Attribute.Abstract)
+    }
+
+    /**
+     * Checks whether this definition has PRIVATE visibility.
+     * @return true if the Private attribute is set.
+     */
+    public func isPrivate(): Bool {
+        return _attributes.testAttr(Attribute.Private)
+    }
+
+    /**
+     * Checks whether this definition has PROTECTED visibility.
+     * @return true if the Protected attribute is set.
+     */
+    public func isProtected(): Bool {
+        return _attributes.testAttr(Attribute.Protected)
+    }
+
+    /**
+     * Checks whether this definition has PUBLIC visibility.
+     * @return true if the Public attribute is set.
+     */
+    public func isPublic(): Bool {
+        return _attributes.testAttr(Attribute.Public)
+    }
+
+    /**
+     * Checks whether this definition is sealed.
+     * @return true if the Sealed attribute is set.
+     */
+    public func isSealed(): Bool {
+        return _attributes.testAttr(Attribute.Sealed)
+    }
+
+    /**
+     * Checks if this definition represents a struct.
+     * @return true if the kind is Struct, false otherwise.
+     */
+    public func isStruct(): Bool {
+        return _kind == CustomDefKind.Struct
+    }
+
+    /**
+     * Sets the INTERNAL visibility attribute on this custom type definition.
+     */
+    public func setInternal(): Unit {
+        _attributes.setInternal()
+    }
+
+    /**
+     * Sets the PRIVATE visibility attribute on this custom type definition.
+     */
+    public func setPrivate(): Unit {
+        _attributes.setPrivate()
+    }
+
+    /**
+     * Sets the PROTECTED visibility attribute on this custom type definition.
+     */
+    public func setProtected(): Unit {
+        _attributes.setProtected()
+    }
+
+    /**
+     * Sets the PUBLIC visibility attribute on this custom type definition.
+     */
+    public func setPublic(): Unit {
+        _attributes.setPublic()
+    }
+
+    /**
+     * Converts this CustomTypeDef to its string representation.
+     *
+     * The string includes attributes, title, generic constraints, member variables,
+     * and extends.
+     * @return A string representation of the custom type definition.
+     */
+    public open func toString(): String {
+        /**
+         *  [public][generic][...] class XXX {      // loc: xxx, genericDecl: xxx
+         *  ^^^^^^^^^^^^^^ attr    ^^^^^^^^^ title  ^^^^^^^^^^^^^^^^^^ comment
+         *      local var
+         *      static var
+         *      method
+         *  }
+         */
         let result = StringBuilder()
-        result.append(kindStr)
-        result.append(" ")
-        result.append(identifier)
-        result.append(typeVecToString("<", genericTypeParams, ">"))
-        if (!_implementedInterfaceTypes.isEmpty()) {
-            result.append(" <: ")
-            var superTypeStr = ArrayList<String>()
-            for (superType in _implementedInterfaceTypes) {
-                superTypeStr.add(superType.toString())
-            }
-            result.append(String.join(superTypeStr.toArray(), delimiter: " & "))
+        result.append(_attributes.toString())
+        result.append(printTitle())
+        result.append(genericTypeParamsConstraintToString(genericTypeParams))
+        result.append(" {")
+        result.append(printComment())
+        result.append(printMemberVars(INDENT_SPACE))
+        for (method in _methods) {
+            result.append("\n" + indentToString(INDENT_SPACE))
+            result.append(method._attributes.toString() + "func " + method._identifier + ": " + method._type.toString())
         }
+        for (exDef in _extends) {
+            result.append("\n")
+            result.append(indentToString(INDENT_SPACE))
+            result.append("extend ")
+            result.append(exDef._identifier)
+        }
+        result.append("\n}")
         return result.toString()
     }
 
@@ -667,50 +693,63 @@ sealed abstract class CustomTypeDef <: Base & Equatable<CustomTypeDef> & Hashabl
         let result = StringBuilder()
         var index = 0
         while (index < _instanceVars.size) {
-            result.append("\n")
-            result.append(indentToString(indent))
+            result.append("\n" + indentToString(indent))
             result.append(_instanceVars[index].toString())
+            index += 1
+        }
+        index = 0
+        while (index < _staticVars.size) {
+            result.append("\n" + indentToString(indent))
+            let staticVar = _staticVars[index]
+            result.append("[static] " + staticVar._identifier + ": " + staticVar._type.toString())
             index += 1
         }
         return result.toString()
     }
 
-    /**
-     * Appends an instance member variable to this type definition and returns it.
-     *
-     * Used by plugins and tests to build CHIR; declaration order matches append order.
-     * @param name Source-level member name.
-     * @param ty Member type.
-     * @return The created `MemberVar`.
-     */
-    public func appendInstanceMemberVar(name: String, ty: Type): MemberVar {
-        let v = MemberVar(name, ty, this)
-        _instanceVars.add(v)
-        return v
+    protected open func printTitle(): String {
+        var kindStr = String.empty
+        if (isInterface()) {
+            kindStr = "interface"
+        } else if (isClass()) {
+            kindStr = "class"
+        } else {
+            kindStr = _kind.toString()
+        }
+        let result = StringBuilder()
+        result.append(kindStr)
+        result.append(" ")
+        result.append(identifier)
+        result.append(typeVecToString("<", genericTypeParams, ">"))
+        if (!_implementedInterfaceTypes.isEmpty()) {
+            result.append(" <: ")
+            var superTypeStr = ArrayList<String>()
+            for (superType in _implementedInterfaceTypes) {
+                superTypeStr.add(superType.toString())
+            }
+            result.append(String.join(superTypeStr.toArray(), delimiter: " & "))
+        }
+        return result.toString()
     }
 
-    internal func isSameDef(other: CustomTypeDef): Bool {
-        return this.identifier == other.identifier
+    internal func calculateHashCode(): Int64 {
+        return identifier.hashCode()
     }
 
     internal func defIsExpected(packageName: String, srcCodeName: String): Bool {
         return this.packageName == packageName && this.srcCodeName == srcCodeName
     }
 
-    internal init(kind: CustomDefKind, identifier: String, srcName: String, pkgName: String) {
-        this._kind = kind
-        this._identifier = identifier
-        this._srcCodeName = srcName
-        this._packageName = pkgName
+    internal func isSameDef(other: CustomTypeDef): Bool {
+        return this.identifier == other.identifier
     }
 
-    internal prop identifierWithoutPrefix: String {
-        get() {
-            return _identifier.removePrefix(GLOBAL_SYMBOL_PREFIX)
-        }
-    }
-
-    internal func calculateHashCode(): Int64 {
-        return identifier.hashCode()
+    /**
+     * Checks if this CustomTypeDef is equal to another CustomTypeDef.
+     * @param other The CustomTypeDef to compare with.
+     * @return true if the definitions are equal (same kind, identifier, source code identifier, and package name), false otherwise.
+     */
+    public operator func==(other: CustomTypeDef): Bool {
+        return isSameDef(other)
     }
 }

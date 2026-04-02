@@ -14,44 +14,23 @@ package stdx.chir
  * An enum constructor is a variant of an enum type with optional parameters.
  */
 public class EnumCtorInfo <: ToString {
+    internal var _annotations = AnnoInfo()
+    internal let _funcType: FuncType
+    internal let _identifier: String
+    internal let _outerDef: EnumDef
     internal let _srcCodeName: String
 
-    internal let _identifier: String
-
-    internal let _funcType: FuncType
-
-    internal var _annotations = AnnoInfo()
-
-    internal let _outerDef: EnumDef
-
     /**
-     * Converts this EnumCtorInfo to its string representation.
-     * @return A string representation in the format "ConstructorName(param1, param2, ...)".
+     * Gets or sets annotations attached to this enum constructor.
+     * Getter returns all instances; setter replaces the whole list.
+     * @type { Array<Annotation> }
      */
-    public func toString(): String {
-        let result = StringBuilder()
-        result.append(_srcCodeName)
-        result.append(typeVecToString("(", _funcType.paramTypes, ")"))
-        return result.toString()
-    }
-
-    /**
-     * Gets the source code identifier of this enum constructor.
-     * @type { String }
-     */
-    public prop srcCodeName: String {
+    public mut prop annotations: Array<Annotation> {
         get() {
-            return _srcCodeName
+            return _annotations._annoClasses.toArray()
         }
-    }
-
-    /**
-     * Gets the internal identifier, a globally unique name.
-     * @type { String }
-     */
-    public prop identifier: String {
-        get() {
-            return _identifier
+        set(v) {
+            _annotations._annoClasses = ArrayList<Annotation>.of(v)
         }
     }
 
@@ -68,16 +47,22 @@ public class EnumCtorInfo <: ToString {
     }
 
     /**
-     * Gets or sets annotations attached to this enum constructor.
-     * Getter returns all instances; setter replaces the whole list.
-     * @type { Array<Annotation> }
+     * Gets the internal identifier, a globally unique name.
+     * @type { String }
      */
-    public mut prop annotations: Array<Annotation> {
+    public prop identifier: String {
         get() {
-            return _annotations._annoClasses.toArray()
+            return _identifier
         }
-        set(v) {
-            _annotations._annoClasses = ArrayList<Annotation>.of(v)
+    }
+
+    /**
+     * Gets the source code identifier of this enum constructor.
+     * @type { String }
+     */
+    public prop srcCodeName: String {
+        get() {
+            return _srcCodeName
         }
     }
 
@@ -86,6 +71,14 @@ public class EnumCtorInfo <: ToString {
         this._identifier = identifier
         this._funcType = funcType
         this._outerDef = outerDef
+    }
+
+    /**
+     * Converts this EnumCtorInfo to its string representation.
+     * @return A string representation in the format "ConstructorName(param1, param2, ...)".
+     */
+    public func toString(): String {
+        return enumCtorInfoToString(this, 0)
     }
 }
 
@@ -96,21 +89,8 @@ public class EnumCtorInfo <: ToString {
  * information such as whether it is exhaustive and its constructors.
  */
 public class EnumDef <: CustomTypeDef & Equatable<EnumDef> {
-    private var _nonExhaustive: Bool
-
     internal var _ctors = ArrayList<EnumCtorInfo>()
-
-    /**
-     * Checks if this enum is exhaustive.
-     *
-     * An exhaustive enum is one where all possible values are known at compile time.
-     * @type { Bool }
-     */
-    public prop isExhaustive: Bool {
-        get() {
-            return !_nonExhaustive
-        }
-    }
+    private var _nonExhaustive: Bool
 
     /**
      * Gets all enum constructors (variants) in declaration order.
@@ -133,6 +113,24 @@ public class EnumDef <: CustomTypeDef & Equatable<EnumDef> {
     }
 
     /**
+     * Checks if this enum is exhaustive.
+     *
+     * An exhaustive enum is one where all possible values are known at compile time.
+     * @type { Bool }
+     */
+    public prop isExhaustive: Bool {
+        get() {
+            return !_nonExhaustive
+        }
+    }
+
+    internal init(identifier: String, srcName: String, pkgName: String, nonExhaustive: Bool) {
+        super(CustomDefKind.Enum, identifier, srcName, pkgName)
+        this._nonExhaustive = nonExhaustive
+        this._hashCode = calculateHashCode()
+    }
+
+    /**
      * Appends a new enum constructor with the given parameter types.
      * @param identifier Globally unique name.
      * @param name Source-level constructor / variant name.
@@ -146,21 +144,12 @@ public class EnumDef <: CustomTypeDef & Equatable<EnumDef> {
         return ctor
     }
 
-    /**
-     * Checks if this EnumDef is equal to another EnumDef.
-     * @param other The EnumDef to compare with.
-     * @return true if the definitions are equal, false otherwise.
-     */
-    public operator func==(other: EnumDef): Bool {
-        return isSameDef(other)
-    }
-
     protected override func printMemberVars(indent: UInt64): String {
         let result = StringBuilder()
         for (ctor in _ctors) {
             result.append("\n")
-            result.append(indentToString(indent))
-            result.append(ctor.toString())
+            result.append(enumCtorInfoToString(ctor, indent))
+            result.append(" |")
         }
         if (_nonExhaustive) {
             result.append("\n")
@@ -170,9 +159,12 @@ public class EnumDef <: CustomTypeDef & Equatable<EnumDef> {
         return result.toString()
     }
 
-    internal init(identifier: String, srcName: String, pkgName: String, nonExhaustive: Bool) {
-        super(CustomDefKind.Enum, identifier, srcName, pkgName)
-        this._nonExhaustive = nonExhaustive
-        this._hashCode = calculateHashCode()
+    /**
+     * Checks if this EnumDef is equal to another EnumDef.
+     * @param other The EnumDef to compare with.
+     * @return true if the definitions are equal, false otherwise.
+     */
+    public operator func==(other: EnumDef): Bool {
+        return isSameDef(other)
     }
 }

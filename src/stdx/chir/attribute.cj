@@ -120,51 +120,6 @@ internal enum Attribute <: ToString {
         }
     }
 
-    internal func toUInt64(): UInt64 {
-        match (this) {
-            case AttrBegin              => 0  // just a placeholder
-            case Static                 => 0
-            case Public                 => 1
-            case Private                => 2
-            case Protected              => 3
-            case Abstract               => 4
-            case Virtual                => 5
-            case Override               => 6
-            case Redef                  => 7
-            case Sealed                 => 8
-            case Foreign                => 9
-            case Mut                    => 10
-            case Final                  => 11
-            case Operator               => 12
-            case ReadOnly               => 13
-            case Const                  => 14
-            case Imported               => 15
-            case GenericInstantiated    => 16
-            case NoDebugInfo            => 17
-            case Generic                => 18
-            case Internal               => 19
-            case CompilerAdd            => 20
-            case NoReflectInfo          => 21
-            case NoInline               => 22
-            case NonRecompile           => 23
-            case Unreachable            => 24
-            case NoSideEffect           => 25
-            case Common                 => 26
-            case Platform               => 27
-            case SkipAnalysis           => 28
-            case Deserialized           => 29
-            case Initializer            => 30
-            case Unsafe                 => 31
-            case JavaMirror             => 32
-            case JavaImpl               => 33
-            case ObjCMirror             => 34
-            case HasInitedField         => 35
-            case JavaHasDefault         => 36
-            case PreviouslyDeserialized => 37
-            case PluginAdded            => 38
-            case AttrEnd                => ATTR_SIZE  // Invalid, return size to indicate error
-        }
-    }
     internal func getNextAttribute(): Attribute {
         match (this) {
             case AttrBegin              => Static
@@ -208,6 +163,52 @@ internal enum Attribute <: ToString {
             case PreviouslyDeserialized => PluginAdded
             case PluginAdded            => AttrEnd
             case AttrEnd                => AttrEnd
+        }
+    }
+
+    internal func toUInt64(): UInt64 {
+        match (this) {
+            case AttrBegin              => 0  // just a placeholder
+            case Static                 => 0
+            case Public                 => 1
+            case Private                => 2
+            case Protected              => 3
+            case Abstract               => 4
+            case Virtual                => 5
+            case Override               => 6
+            case Redef                  => 7
+            case Sealed                 => 8
+            case Foreign                => 9
+            case Mut                    => 10
+            case Final                  => 11
+            case Operator               => 12
+            case ReadOnly               => 13
+            case Const                  => 14
+            case Imported               => 15
+            case GenericInstantiated    => 16
+            case NoDebugInfo            => 17
+            case Generic                => 18
+            case Internal               => 19
+            case CompilerAdd            => 20
+            case NoReflectInfo          => 21
+            case NoInline               => 22
+            case NonRecompile           => 23
+            case Unreachable            => 24
+            case NoSideEffect           => 25
+            case Common                 => 26
+            case Platform               => 27
+            case SkipAnalysis           => 28
+            case Deserialized           => 29
+            case Initializer            => 30
+            case Unsafe                 => 31
+            case JavaMirror             => 32
+            case JavaImpl               => 33
+            case ObjCMirror             => 34
+            case HasInitedField         => 35
+            case JavaHasDefault         => 36
+            case PreviouslyDeserialized => 37
+            case PluginAdded            => 38
+            case AttrEnd                => ATTR_SIZE  // Invalid, return size to indicate error
         }
     }
 }
@@ -263,14 +264,14 @@ internal struct AttributeInfo <: ToString {
             if (bitIndex < ATTR_SIZE) {
                 _attributesInfo |= UInt64(1)  << bitIndex
             } else {
-                throw Exception("set failed, Attribute index out of range")
+                throw CHIRException("set failed, Attribute index out of range")
             }
         } else {
             let bitIndex = attr.toUInt64()
             if (bitIndex < ATTR_SIZE) {
                 _attributesInfo &= !(UInt64(1) << bitIndex)
             } else {
-                throw Exception("set failed, Attribute index out of range")
+                throw CHIRException("set failed, Attribute index out of range")
             }
         }
     }

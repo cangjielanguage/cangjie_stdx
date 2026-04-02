@@ -74,25 +74,11 @@ public struct Position <: ToString {
  * Span in a source file (start/end positions and path) for CHIR debug info.
  */
 public class DebugLocation <: ToString {
-    private let _start: Position
-
-    private let _end: Position
-
-    private let _filePath: Path
-
     internal var _fileId: UInt64 = 0
-
     internal var _scopeInfo: ArrayList<Int64> = ArrayList<Int64>()
-
-    /**
-     * Start position of the span (inclusive).
-     * @type { Position }
-     */
-    public prop start: Position {
-        get() {
-            return _start
-        }
-    }
+    private let _end: Position
+    private let _filePath: Path
+    private let _start: Position
 
     /**
      * End position of the span.
@@ -112,6 +98,32 @@ public class DebugLocation <: ToString {
         get() {
             return _filePath
         }
+    }
+
+    /**
+     * Start position of the span (inclusive).
+     * @type { Position }
+     */
+    public prop start: Position {
+        get() {
+            return _start
+        }
+    }
+
+    internal init() {
+        this._start = Position()
+        this._end = Position()
+        this._filePath = Path(String.empty)
+    }
+
+    internal init(start: Position, end: Position, filePath: Path) {
+        this._start = start
+        this._end = end
+        this._filePath = filePath;
+    }
+
+    internal static func invalid(): DebugLocation {
+        return DebugLocation()
     }
 
     /**
@@ -140,21 +152,5 @@ public class DebugLocation <: ToString {
             result.append(String.join(scopeStr.toArray(), delimiter: "-"))
         }
         return result.toString()
-    }
-
-    internal init() {
-        this._start = Position()
-        this._end = Position()
-        this._filePath = Path(String.empty)
-    }
-
-    internal init(start: Position, end: Position, filePath: Path) {
-        this._start = start
-        this._end = end
-        this._filePath = filePath;
-    }
-
-    internal static func invalid(): DebugLocation {
-        return DebugLocation()
     }
 }
