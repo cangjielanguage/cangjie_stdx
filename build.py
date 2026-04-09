@@ -48,6 +48,7 @@ TARGET_DICTIONARY = {
     "android-aarch64": "aarch64-linux-android",
     "android31-aarch64": "aarch64-linux-android31",
     "android26-aarch64": "aarch64-linux-android26",
+    "android23-arm": "arm-linux-android23",
     "android-x86_64": "x86_64-linux-android",
     "android31-x86_64": "x86_64-linux-android31",
     "android26-x86_64": "x86_64-linux-android26"
@@ -93,6 +94,8 @@ def generate_cmake_defs(args):
             toolchain_file = "android_aarch64_toolchain.cmake"
         elif "x86_64-linux-android" in args.target:
             toolchain_file = "android_x86_64_toolchain.cmake"
+        elif "arm-linux-android" in args.target:
+            toolchain_file = "android_arm_toolchain.cmake"
         elif args.target == "arm64-apple-ios11-simulator":
             toolchain_file = "ios_simulator_arm64_toolchain.cmake"
         elif args.target == "x86_64-apple-ios11-simulator":
@@ -131,6 +134,10 @@ def generate_cmake_defs(args):
         result.append("-DCMAKE_ANDROID_API=" + (android_api_level if android_api_level else ""))
     if args.target and "x86_64-linux-android" in args.target:
         android_api_level = re.match(r'x86_64-linux-android(\d{2})?', args.target).group(1)
+        result.append("-DCMAKE_ANDROID_NDK=" + os.path.join(args.target_toolchain, "../../../../.."))
+        result.append("-DCMAKE_ANDROID_API=" + (android_api_level if android_api_level else ""))
+    if args.target and "arm-linux-android" in args.target:
+        android_api_level = "23"
         result.append("-DCMAKE_ANDROID_NDK=" + os.path.join(args.target_toolchain, "../../../../.."))
         result.append("-DCMAKE_ANDROID_API=" + (android_api_level if android_api_level else ""))
     return result
