@@ -549,10 +549,22 @@ static void EnsureLoadedImpl(void)
     }
 
     /*
-     * Fallback for crypto-only consumers. Keep the single-handle case intact, but do not stitch
-     * together two independently chosen backends: that can mix incompatible SSL implementations.
+     * If the preferred pair cannot be opened together, still probe the standalone fallback names
+     * for both libcrypto and libssl. This preserves Android compatibility when only unversioned
+     * names such as libcrypto.so/libssl.so are packaged.
      */
     g_singletonHandle = TryDlopen(cryptoCandidates, sizeof(cryptoCandidates) / sizeof(cryptoCandidates[0]));
+    g_singletonHandleSsl = TryDlopen(sslCandidates, sizeof(sslCandidates) / sizeof(sslCandidates[0]));
+    if (g_singletonHandle != NULL && g_singletonHandleSsl != NULL) {
+        g_singletonHandleOwned = true;
+        g_singletonHandleSslOwned = true;
+        return;
+    }
+
+    /*
+     * Keep the single-handle fallback for crypto-only consumers or ssl-only deployments.
+     * When only one backend is available, route both lookup paths through that handle.
+     */
     if (g_singletonHandle != NULL) {
         g_singletonHandleSsl = g_singletonHandle;
         g_singletonHandleOwned = true;
@@ -560,7 +572,6 @@ static void EnsureLoadedImpl(void)
         return;
     }
 
-    g_singletonHandleSsl = TryDlopen(sslCandidates, sizeof(sslCandidates) / sizeof(sslCandidates[0]));
     if (g_singletonHandleSsl != NULL) {
         g_singletonHandle = g_singletonHandleSsl;
         g_singletonHandleOwned = false;
