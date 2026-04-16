@@ -447,13 +447,13 @@ extern int DYN_CJVerifyX509Cert(struct RawX509Cert* rawCert, struct RawX509CertA
         return -1;
     }
     int status = 0;
-    // Create certificate store and add CA and intermediate certificates
+    // Create certificate store and add only root certificates as trust anchors
     X509_STORE* chains = DYN_X509_STORE_new(dynMsg);
     if (chains == NULL) {
         status = -1;
     }
     if (status != -1) {
-        // Add root certs
+        // Add root certs as trust anchors
         for (size_t i = 0; i < rawRoots->size; i++) {
             if (X509StoreRawCert(chains, &rawRoots->buffer[i].content, rawRoots->buffer[i].size, dynMsg) != 1) {
                 status = -1;
@@ -461,21 +461,37 @@ extern int DYN_CJVerifyX509Cert(struct RawX509Cert* rawCert, struct RawX509CertA
             }
         }
     }
-    if (status != -1) {
-        // Add intermediate certs
-        for (size_t i = 0; i < rawIntermediates->size; i++) {
-            if (X509StoreRawCert(
-                    chains, &rawIntermediates->buffer[i].content, rawIntermediates->buffer[i].size, dynMsg) != 1) {
-                status = -1;
-                break;
+    // Build untrusted chain from intermediate certificates
+    STACK_OF(X509) * untrustedChain = NULL;
+    if (status != -1 && rawIntermediates->size > 0) {
+        untrustedChain = (STACK_OF(X509) *)DYN_OPENSSL_sk_new_null(dynMsg);
+        if (untrustedChain == NULL) {
+            status = -1;
+        } else {
+            for (size_t i = 0; i < rawIntermediates->size; i++) {
+                X509* intermediate = DYN_d2i_X509(NULL, &rawIntermediates->buffer[i].content,
+                    (long)rawIntermediates->buffer[i].size, dynMsg);
+                if (intermediate == NULL) {
+                    status = -1;
+                    break;
+                }
+                if (DYN_OPENSSL_sk_push(untrustedChain, intermediate, dynMsg) <= 0) {
+                    DYN_X509_free(intermediate, dynMsg);
+                    status = -1;
+                    break;
+                }
             }
         }
     }
     X509_STORE_CTX* ctx = NULL;
     if (status != -1) {
-        // Create verification context and set certificate store
         ctx = DYN_X509_STORE_CTX_new(dynMsg);
-        if (DYN_X509_STORE_CTX_init(ctx, chains, cert, NULL, dynMsg) != 1) {
+        if (ctx == NULL) {
+            status = -1;
+        }
+    }
+    if (status != -1) {
+        if (DYN_X509_STORE_CTX_init(ctx, chains, cert, untrustedChain, dynMsg) != 1) {
             status = -1;
         }
     }
@@ -486,6 +502,9 @@ extern int DYN_CJVerifyX509Cert(struct RawX509Cert* rawCert, struct RawX509CertA
     // Clean up
     if (ctx != NULL) {
         DYN_X509_STORE_CTX_free(ctx, dynMsg);
+    }
+    if (untrustedChain != NULL) {
+        DynPopFree(untrustedChain, "X509_free", dynMsg);
     }
     if (chains != NULL) {
         DYN_X509_STORE_free(chains, dynMsg);
