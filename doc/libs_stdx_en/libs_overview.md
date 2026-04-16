@@ -129,6 +129,10 @@ $ cjc main.cj -L $CANGJIE_STDX_PATH -lstdx.actors -lstdx.aspectCJ -lstdx.encodin
 
 `CANGJIE_STDX_PATH` is the path to the stdx library.
 
+> **Note:**
+>
+> In cross-compilation scenarios, if there is a need to develop custom macro packages and their business logic must rely on stdx for implementation, the stdx path for the local development platform must also be configured in addition to that for the target runtime platform.
+
 For example, on Linux systems:
 ```shell
 export CANGJIE_STDX_PATH=/target/linux_x86_64_cjnative/dynamic/stdx

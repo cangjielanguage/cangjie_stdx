@@ -26,7 +26,7 @@ Parameters:
 
 Return Value:
 
-- [SerializableProvider](#class-serializableprovider)\<T> - Serialized iterator object.
+- [SerializableProvider](#class-serializableprovidert)\<T> - Serialized iterator object.
 
 ## class JsonStrategy\<T>
 

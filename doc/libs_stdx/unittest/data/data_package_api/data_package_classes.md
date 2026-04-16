@@ -26,7 +26,7 @@ public override func provider(configuration: Configuration): SerializableProvide
 
 返回值：
 
-- [SerializableProvider](#class-serializableprovider)\<T> - 序列化迭代器对象。
+- [SerializableProvider](#class-serializableprovidert)\<T> - 序列化迭代器对象。
 
 ## class JsonStrategy\<T>
 
