@@ -35,14 +35,16 @@ public class SequentialDispatcher {
                     return
                 }
 
-                match (mailbox.remove(timeout: Duration.second)) {
+                let f = match (mailbox.remove(timeout: Duration.second)) {
                     case Some((_, f)) =>
-                        try {
-                            f()
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    case None => ()
+                        f
+                    case None => continue
+                }
+
+                try {
+                    f()
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
         }
