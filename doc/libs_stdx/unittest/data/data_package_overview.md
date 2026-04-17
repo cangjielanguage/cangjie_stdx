@@ -20,6 +20,6 @@ unittest.data 库用于在编写仓颉项目单元测试代码时提供输入序
 
 |              类名          |           功能           |
 | --------------------------- | ------------------------ |
-| [CsvStrategy](./data_package_api/data_package_classes.md#class-csvstrategy) | `DataStrategy` 对 CSV 数据格式的序列化实现。 |
-| [JsonStrategy](./data_package_api/data_package_classes.md#class-jsonstrategy) | `DataStrategy` 对 JSON 数据格式的序列化实现。 |
-| [SerializableProvider](./data_package_api/data_package_classes.md#class-serializableprovider) | 获取序列化数据 DataProvider 接口的实现。 |
+| [CsvStrategy](./data_package_api/data_package_classes.md#class-csvstrategyt) | `DataStrategy` 对 CSV 数据格式的序列化实现。 |
+| [JsonStrategy](./data_package_api/data_package_classes.md#class-jsonstrategyt) | `DataStrategy` 对 JSON 数据格式的序列化实现。 |
+| [SerializableProvider](./data_package_api/data_package_classes.md#class-serializableprovidert) | 获取序列化数据 DataProvider 接口的实现。 |

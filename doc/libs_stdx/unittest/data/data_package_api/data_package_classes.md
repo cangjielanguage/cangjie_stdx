@@ -15,18 +15,18 @@ public class CsvStrategy<T> <: DataStrategy<T> where T <: Serializable<T> {}
 ### func provider(Configuration)
 
 ```cangjie
-public override func provider(configuration: Configuration): SerializableProvider<T>
+public override func provider(_: Configuration): SerializableProvider<T>
 ```
 
 功能：生成序列化数据迭代器。
 
 参数：
 
-- configuration: Configuration - 数据配置信息。
+- _: Configuration - 数据配置信息。
 
 返回值：
 
-- [SerializableProvider](#class-serializableprovider)\<T> - 序列化迭代器对象。
+- [SerializableProvider](#class-serializableprovidert)\<T> - 序列化迭代器对象。
 
 ## class JsonStrategy\<T>
 
@@ -43,14 +43,14 @@ public class JsonStrategy<T> <: DataStrategy<T> where T <: Serializable<T> {}
 ### func provider(Configuration)
 
 ```cangjie
-public override func provider(configuration: Configuration): SerializableProvider<T>
+public override func provider(_: Configuration): SerializableProvider<T>
 ```
 
 功能：生成序列化数据迭代器。
 
 参数：
 
-- configuration: Configuration - 数据配置信息。
+- _: Configuration - 数据配置信息。
 
 返回值：
 

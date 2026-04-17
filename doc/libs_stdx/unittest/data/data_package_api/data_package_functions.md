@@ -35,7 +35,7 @@ public func csv<T>(
 
 返回值：
 
-- [CsvStrategy](data_package_classes.md#class-csvstrategy)\<T> - T 可被序列化，数据值从 CSV 文件中读取。
+- [CsvStrategy](data_package_classes.md#class-csvstrategyt)\<T> - T 可被序列化，数据值从 CSV 文件中读取。
 
 异常：
 
@@ -55,7 +55,7 @@ public func json<T>(fileName: String): JsonStrategy<T> where T <: Serializable<T
 
 返回值：
 
-- [JsonStrategy](data_package_classes.md#class-jsonstrategy)\<T> - T 可被序列化，数据值从 JSON 文件中读取。
+- [JsonStrategy](data_package_classes.md#class-jsonstrategyt)\<T> - T 可被序列化，数据值从 JSON 文件中读取。
 
 示例：
 
@@ -160,7 +160,7 @@ public func tsv<T>(
 
 返回值：
 
-- [CsvStrategy](data_package_classes.md#class-csvstrategy)\<T> - T 可被序列化，数据值从 TSV 文件中读取。
+- [CsvStrategy](data_package_classes.md#class-csvstrategyt)\<T> - T 可被序列化，数据值从 TSV 文件中读取。
 
 异常：
 

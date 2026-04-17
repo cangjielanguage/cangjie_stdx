@@ -35,7 +35,7 @@ Parameters:
 
 Return Value:
 
-- [CsvStrategy](data_package_classes.md#class-csvstrategy)\<T> object, where T is serializable, with data values read from the CSV file.
+- [CsvStrategy](data_package_classes.md#class-csvstrategyt)\<T> object, where T is serializable, with data values read from the CSV file.
 
 Exceptions:
 
@@ -55,7 +55,7 @@ Parameters:
 
 Return Value:
 
-- [JsonStrategy](data_package_classes.md#class-jsonstrategy)\<T> - T is serializable, with data values read from the JSON file.
+- [JsonStrategy](data_package_classes.md#class-jsonstrategyt)\<T> - T is serializable, with data values read from the JSON file.
 
 Example:
 
@@ -150,7 +150,7 @@ Parameters:
 
 Return Value:
 
-- [CsvStrategy](data_package_classes.md#class-csvstrategy)\<T> - T is serializable, with data values read from the TSV file.
+- [CsvStrategy](data_package_classes.md#class-csvstrategyt)\<T> - T is serializable, with data values read from the TSV file.
 
 Exceptions:
 
