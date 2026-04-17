@@ -40,34 +40,37 @@ class SingleConsumerSemaphore {
         }
     }
     // It might appear that the following sequence would result in a deadlock:
-    // Pre: cnt == 0
-    // Consumer wait():
-    //   1) n = cnt.load()
-    //   2) n == 0 (true)
-    // Producer signal():
-    //   3) n = cnt.fetchAdd(1)
-    //   4) n == 0 (true)
-    //   5) synchronized(mtx) {
-    //   6)   cond.notifyAll()
-    //   7) }
-    // Consumer wait():
-    //   8) let startTime = DateTime.now()
-    //   9) synchronized(mtx) {
-    //  10)   ... wait(...)
-    // However, this is safe because the wait() has a timeout
+    // Pre-condition: cnt equals 0
+    // Consumer calling wait:
+    //   1) load cnt to n
+    //   2) check if n is equal to 0 returns true
+    // Producer calling signal:
+    //   3) fetchAdd cnt by 1 and return the new value to n
+    //   4) n equals to 0, returns true
+    //   5) enter the synchronized block on mtx
+    //   6) call notifyAll on the mutex condition variable
+    //   7) exit the synchronized block
+    // Consumer wait:
+    //   8) startTime equals to the current time
+    //   9) enter the synchronized block on mtx
+    //  10)   to the call of wait on the condition variable
+    // However, this is safe because the wait function has a timeout parameter
     // which will eventually break out of the loop.
     func wait(timeout: Duration): Bool {
         let n = cnt.load()
-        if (n == 0) {
-            let startTime = DateTime.now()
-            synchronized(mtx) {
-                while (cnt.load() == 0) {
-                    let timeElapsed = DateTime.now() - startTime
-                    if (timeElapsed >= timeout) {
-                        return false
-                    }
-                    cond.wait(timeout: timeout - timeElapsed)
+        if (n > 0) {
+            cnt.fetchSub(1)
+            return true
+        }
+
+        let startTime = DateTime.now()
+        synchronized(mtx) {
+            while (cnt.load() == 0) {
+                let timeElapsed = DateTime.now() - startTime
+                if (timeElapsed >= timeout) {
+                    return false
                 }
+                cond.wait(timeout: timeout - timeElapsed)
             }
         }
         cnt.fetchSub(1)
