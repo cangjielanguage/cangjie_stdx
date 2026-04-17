@@ -105,8 +105,29 @@ static void UnlockOpenSslConfig(void)
 #endif
 }
 
-static bool GetConfiguredOpenSslPaths(const char** cryptoPath, const char** sslPath)
+static char* DupCString(const char* src)
 {
+    if (src == NULL) {
+        return NULL;
+    }
+    size_t len = strlen(src) + 1;
+    char* copy = (char*)malloc(len);
+    if (copy == NULL) {
+        return NULL;
+    }
+    if (memcpy_s(copy, len, src, len) != EOK) {
+        free(copy);
+        return NULL;
+    }
+    return copy;
+}
+
+static bool GetConfiguredOpenSslPaths(char** cryptoPath, char** sslPath)
+{
+    const char* selectedCryptoPath = NULL;
+    const char* selectedSslPath = NULL;
+    char* cryptoCopy = NULL;
+    char* sslCopy = NULL;
     const char* envCryptoPath = NULL;
     const char* envSslPath = NULL;
 
@@ -116,30 +137,27 @@ static bool GetConfiguredOpenSslPaths(const char** cryptoPath, const char** sslP
     LockOpenSslConfig();
     envCryptoPath = getenv(STDX_OPENSSL_CRYPTO_FILE_ENV);
     envSslPath = getenv(STDX_OPENSSL_SSL_FILE_ENV);
-    if (envCryptoPath == NULL || envSslPath == NULL) {
-        if (g_configuredCryptoPath != NULL && g_configuredSslPath != NULL) {
-            *cryptoPath = g_configuredCryptoPath;
-            *sslPath = g_configuredSslPath;
-            UnlockOpenSslConfig();
-            return true;
-        }
-        UnlockOpenSslConfig();
-        return false;
+    if (envCryptoPath != NULL && envSslPath != NULL && envCryptoPath[0] != '\0' && envSslPath[0] != '\0') {
+        selectedCryptoPath = envCryptoPath;
+        selectedSslPath = envSslPath;
+    } else if (g_configuredCryptoPath != NULL && g_configuredSslPath != NULL) {
+        selectedCryptoPath = g_configuredCryptoPath;
+        selectedSslPath = g_configuredSslPath;
     }
-    if (envCryptoPath[0] == '\0' || envSslPath[0] == '\0') {
-        if (g_configuredCryptoPath != NULL && g_configuredSslPath != NULL) {
-            *cryptoPath = g_configuredCryptoPath;
-            *sslPath = g_configuredSslPath;
-            UnlockOpenSslConfig();
-            return true;
-        }
-        UnlockOpenSslConfig();
+    if (selectedCryptoPath != NULL && selectedSslPath != NULL) {
+        cryptoCopy = DupCString(selectedCryptoPath);
+        sslCopy = DupCString(selectedSslPath);
+    }
+    UnlockOpenSslConfig();
+
+    if (cryptoCopy == NULL || sslCopy == NULL) {
+        free(cryptoCopy);
+        free(sslCopy);
         return false;
     }
 
-    UnlockOpenSslConfig();
-    *cryptoPath = envCryptoPath;
-    *sslPath = envSslPath;
+    *cryptoPath = cryptoCopy;
+    *sslPath = sslCopy;
     return true;
 }
 #endif
@@ -164,23 +182,6 @@ void FreeDynMsg(DynMsg* dynMsgPtr)
 }
 
 #ifndef CANGJIE_OPENSSL_RESOLVE_STRONG
-static char* DupCString(const char* src)
-{
-    if (src == NULL) {
-        return NULL;
-    }
-    size_t len = strlen(src) + 1;
-    char* copy = (char*)malloc(len);
-    if (copy == NULL) {
-        return NULL;
-    }
-    if (memcpy_s(copy, len, src, len) != EOK) {
-        free(copy);
-        return NULL;
-    }
-    return copy;
-}
-
 int CJ_OpenSSL_SetPath(const char* cryptoPath, const char* sslPath)
 {
     char* cryptoCopy = NULL;
@@ -495,8 +496,8 @@ static void* FindDlopenedFunction(const char* name)
 #ifndef _WIN32
 static void EnsureLoadedImpl(void)
 {
-    const char* configuredCryptoPath = NULL;
-    const char* configuredSslPath = NULL;
+    char* configuredCryptoPath = NULL;
+    char* configuredSslPath = NULL;
 
     if (g_singletonHandle != NULL || g_singletonHandleSsl != NULL) {
         return;
@@ -511,6 +512,8 @@ static void EnsureLoadedImpl(void)
                 { configuredCryptoPath, configuredSslPath },
         };
         (void)TryLoadBackendPair(configuredCandidate, sizeof(configuredCandidate) / sizeof(configuredCandidate[0]));
+        free(configuredCryptoPath);
+        free(configuredSslPath);
         return;
     }
 #if defined(__APPLE__)
@@ -582,8 +585,8 @@ static void EnsureLoadedImpl(void)
 #else
 static BOOL CALLBACK EnsureLoadedOnceCallback(PINIT_ONCE initOnce, PVOID parameter, PVOID* context)
 {
-    const char* configuredCryptoPath = NULL;
-    const char* configuredSslPath = NULL;
+    char* configuredCryptoPath = NULL;
+    char* configuredSslPath = NULL;
 
     (void)initOnce;
     (void)parameter;
@@ -598,6 +601,8 @@ static BOOL CALLBACK EnsureLoadedOnceCallback(PINIT_ONCE initOnce, PVOID paramet
         g_singletonHandleSsl = LoadLibraryA(configuredSslPath);
         g_singletonHandleOwned = (g_singletonHandle != NULL);
         g_singletonHandleSslOwned = (g_singletonHandleSsl != NULL);
+        free(configuredCryptoPath);
+        free(configuredSslPath);
         return TRUE;
     }
     g_singletonHandle = LoadLibraryA(OPENSSLPATH);
