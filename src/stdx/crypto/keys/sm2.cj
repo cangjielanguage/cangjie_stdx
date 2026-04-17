@@ -116,14 +116,14 @@ public class SM2PublicKey <: PublicKey {
     var pkey = CPointer<UInt64>()
 
     init(blob: DerBlob) {
-        pkey = loadPublicKeySM2(blob.body)
+        pkey = loadPublicKey(NID_sm2, blob.body)
         if (pkey.isNull()) {
             throw CryptoException("Load public key failed.")
         }
     }
     public init(pri: SM2PrivateKey) {
         var content = getSM2PublicKeyDer(pri.pkey)
-        pkey = loadPublicKeySM2(content)
+        pkey = loadPublicKey(NID_sm2, content)
         if (pkey.isNull()) {
             throw CryptoException("Init public key failed.")
         }
@@ -251,30 +251,6 @@ func getSM2PublicKeyDer(pkey: CPointer<UInt64>) {
             releaseArrayRawData(read)
         }
         readBufPublicKey[0..Int64(readLen)]
-    }
-}
-
-func loadPublicKeySM2(der: Array<Byte>) {
-    unsafe {
-        let derHandle: CPointerHandle<Byte> = acquireArrayRawData(der)
-        var pkey = CPointer<UInt64>()
-        var ppkey = CPointer<CPointer<UInt64>>()
-        var readPtr = LibC.malloc<CPointer<Byte>>()
-        if (readPtr.isNull()) {
-            releaseArrayRawData(derHandle)
-            throw CryptoException("Memory allocation failed.")
-        }
-        readPtr.write(derHandle.pointer)
-        try {
-            pkey = d2Pubkey(ppkey, readPtr, der.size)
-            if (pkey.isNull()) {
-                throw CryptoException("Load public key failed.")
-            }
-        } finally {
-            LibC.free(readPtr)
-            releaseArrayRawData(derHandle)
-        }
-        return pkey
     }
 }
 
