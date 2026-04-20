@@ -38,7 +38,7 @@ __attribute__((visibility("hidden"))) unsigned int GetEcOrderBitsFromGroup(const
     return 0;
 }
 
-__attribute__((visibility("hidden"))) inline int8_t GetKeylessLogLevel()
+__attribute__((visibility("hidden"))) inline int8_t GetKeylessLogLevel(void)
 {
     static int8_t cached = -1;
     if (cached < 0) {
@@ -157,9 +157,10 @@ cleanup:
 __attribute__((visibility("hidden"))) char* GetCertSha256Hex(const X509* crt)
 {
     const size_t bufSize = 65; // 64 hex chars + null terminator
-    char buf[bufSize];
+    char* buf = (char*)malloc(bufSize);
 
     if (!CertIssuerSerialSha256Hex(crt, buf, bufSize)) {
+        free(buf);
         return NULL;
     }
 
@@ -167,9 +168,12 @@ __attribute__((visibility("hidden"))) char* GetCertSha256Hex(const X509* crt)
     char* out = DYN_OPENSSL_secure_malloc(bufSize, dynMsg);
     KeylessCheckDynMsg(dynMsg, "GetCertSha256Hex");
     if (!out) {
+        free(buf);
         return NULL;
     }
     (void)memcpy_s(out, bufSize, buf, bufSize);
+    free(buf);
+
     return out;
 }
 
