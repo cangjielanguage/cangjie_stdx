@@ -15,18 +15,18 @@ Parent Types:
 ### func provider(Configuration)
 
 ```cangjie
-public override func provider(configuration: Configuration): SerializableProvider<T>
+public override func provider(_: Configuration): SerializableProvider<T>
 ```
 
 Function: Generates a serialized data iterator.
 
 Parameters:
 
-- configuration: Configuration - Data configuration information.
+- _: Configuration - Data configuration information.
 
 Return Value:
 
-- [SerializableProvider](#class-serializableprovider)\<T> - Serialized iterator object.
+- [SerializableProvider](#class-serializableprovidert)\<T> - Serialized iterator object.
 
 ## class JsonStrategy\<T>
 
@@ -43,14 +43,14 @@ Parent Types:
 ### func provider(Configuration)
 
 ```cangjie
-public override func provider(configuration: Configuration): SerializableProvider<T>
+public override func provider(_: Configuration): SerializableProvider<T>
 ```
 
 Function: Generates a serialized data iterator.
 
 Parameters:
 
-- configuration: Configuration - Data configuration information.
+- _: Configuration - Data configuration information.
 
 Return Value:
 

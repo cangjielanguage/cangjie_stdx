@@ -20,6 +20,6 @@ For standard testing capabilities, please refer to the standard library API docu
 
 |              Class Name          |            Functionality           |
 | --------------------------- | ------------------------ |
-| [CsvStrategy](./data_package_api/data_package_classes.md#class-csvstrategy) | The serialization implementation of `DataStrategy` for CSV data format. |
-| [JsonStrategy](./data_package_api/data_package_classes.md#class-jsonstrategy) | The serialization implementation of `DataStrategy` for JSON data format. |
-| [SerializableProvider](./data_package_api/data_package_classes.md#class-serializableprovider) | Implementation of the DataProvider interface for obtaining serialized data. |
+| [CsvStrategy](./data_package_api/data_package_classes.md#class-csvstrategyt) | The serialization implementation of `DataStrategy` for CSV data format. |
+| [JsonStrategy](./data_package_api/data_package_classes.md#class-jsonstrategyt) | The serialization implementation of `DataStrategy` for JSON data format. |
+| [SerializableProvider](./data_package_api/data_package_classes.md#class-serializableprovidert) | Implementation of the DataProvider interface for obtaining serialized data. |
