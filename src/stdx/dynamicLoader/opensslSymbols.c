@@ -126,6 +126,7 @@ CANGJIE_PRAGMA_WEAK(BIO_s_mem)
 /* Used by DynPopFree() call sites. */
 CANGJIE_PRAGMA_WEAK(GENERAL_NAME_free)
 CANGJIE_PRAGMA_WEAK(X509_EXTENSION_free)
+CANGJIE_PRAGMA_WEAK(X509_free)
 
 /* Weak-mark all OpenSSL APIs referenced through defineFunction.inc. */
 #undef DEFINEFUNCTION
@@ -868,6 +869,8 @@ void DynPopFree(void* extlist, const char* funcName, DynMsg* dynMsg)
             func0 = (SSLFunc0)GENERAL_NAME_free;
         } else if (strcmp(funcName, "X509_EXTENSION_free") == 0 && &X509_EXTENSION_free != NULL) {
             func0 = (SSLFunc0)X509_EXTENSION_free;
+        } else if (strcmp(funcName, "X509_free") == 0 && &X509_free != NULL) {
+            func0 = (SSLFunc0)X509_free;
         }
     }
     if (func0 == NULL) {
