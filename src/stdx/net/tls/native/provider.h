@@ -139,7 +139,7 @@ __attribute__((visibility("hidden"))) int KeylessKeyUpRef(void* keyData);
 __attribute__((visibility("hidden"))) void KeylessKeyFreeExtern(void* keyData);
 __attribute__((visibility("hidden"))) size_t KeylessKeyGetRsaNLen(const void* keyData);
 __attribute__((visibility("hidden"))) int CertIssuerSerialSha256Hex(const X509* crt, char out_hex[65], size_t out_hex_len); /* 64(sha256 length)chars + NULL */
-__attribute__((visibility("hidden"))) int8_t GetKeylessLogLevel();
+__attribute__((visibility("hidden"))) int8_t GetKeylessLogLevel(void);
 __attribute__((visibility("hidden"))) int KeylessErrorLibInit(void);
 __attribute__((visibility("hidden"))) unsigned int GetEcOrderBitsFromGroup(const char* groupName);
 
