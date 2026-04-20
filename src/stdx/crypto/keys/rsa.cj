@@ -379,6 +379,10 @@ func loadPrivateKey(id: Int32, der: Array<Byte>) {
             if (pkey.isNull()) {
                 throw CryptoException("Load private key error.")
             }
+            if (!keyTypeCheck(id, pkey)) {
+                keyFree(pkey)
+                throw CryptoException("Private key type error.")
+            }
         } finally {
             LibC.free(readPtr)
             releaseArrayRawData(derHandle)
@@ -416,11 +420,17 @@ func loadPublicKey(id: Int32, der: Array<Byte>) {
 }
 
 func keyTypeCheck(id: Int32, pkey: CPointer<UInt64>) {
-    var baseId = getBaseId(pkey)
-    return match {
-        case baseId == id => true
-        case _ => false
+    let pkeyId = getPkeyId(pkey)
+    if (id == pkeyId) {
+        return true
     }
+    // if id is sm2 and getPkeyId return -1(find Provider Key failed) need check name again
+    if (pkeyId == -1 && id == NID_sm2) {
+        if (pkeyIs(pkey, "SM2")) { // SM2 is type name
+            return true
+        }
+    }
+    false
 }
 
 func getDigest(hash: Digest) {
