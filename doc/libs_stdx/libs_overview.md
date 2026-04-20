@@ -160,6 +160,10 @@ cjc main.cj -L $CANGJIE_STDX_PATH -lstdx.actors -lstdx.aspectCJ -lstdx.effect -l
 
 CANGJIE_STDX_PATH 是设置的 stdx 路径。
 
+> **注意：**
+>
+> 在交叉编译的场景下，如果有自行开发宏包的需求，且需要依赖 stdx 实现宏包中的业务逻辑，那么除了目标运行平台以外，还需要配置本地开发平台的 stdx 路径。
+
 例如在 linux 系统中设置：
 
 ```shell
