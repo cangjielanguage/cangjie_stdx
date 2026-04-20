@@ -213,9 +213,14 @@ class ClientStream {
                 v == "websocket"
             case None => false
         }
+        let authority = if (req.url.port.isEmpty()) {
+            req.url.host + ":443"
+        } else {
+            req.url.host
+        }
         var path: String
         // use proxy
-        if (host != req.url.hostName + ":" + req.url.port) {
+        if (host != authority) {
             path = req.url.toString()
         } else if (req.url.path.isEmpty() && req.method == "OPTIONS") {
             path = ASTERISK
@@ -228,11 +233,7 @@ class ClientStream {
                 path += "#${fragment}"
             }
         }
-        if (req.url.port.isEmpty()) {
-            headers.add((":authority", req.url.host + ":443"))
-        } else {
-            headers.add((":authority", req.url.host))
-        }
+        headers.add((":authority", authority))
         headers.add((":method", req.method))
         if (req.method != "CONNECT" || isWebsocket) {
             headers.add((":scheme", "https"))
