@@ -262,9 +262,9 @@ public class DataModelStruct <: DataModel {
      */
     public func add(fie: Field): DataModelStruct {
         let key = fie.getName()
-        for (field in fields) {
-            if (field.getName() == key) {
-                field.data = fie.data
+        for (i in 0..fields.size) {
+            if (fields[i].getName() == key) {
+                fields[i] = fie
                 return this
             }
         }
