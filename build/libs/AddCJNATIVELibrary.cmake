@@ -385,7 +385,8 @@ make_cangjie_lib(
     ${openssl_flags}
     $<$<BOOL:${MINGW}>:-lws2_32>
     $<$<NOT:$<BOOL:${WIN32}>>:-ldl>)
-add_library(stdx.net.http STATIC ${output_cj_object_dir}/stdx/net.http.o)
+get_target_property(HTTPOPENSSLFFI_OBJS cangjie-dynamicLoader-opensslFFI SOURCES)
+add_library(stdx.net.http STATIC ${HTTPOPENSSLFFI_OBJS} ${output_cj_object_dir}/stdx/net.http.o)
 set_target_properties(stdx.net.http PROPERTIES LINKER_LANGUAGE C)
 install(TARGETS stdx.net.http DESTINATION ${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx)
 
