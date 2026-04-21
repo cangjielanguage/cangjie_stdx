@@ -84,7 +84,7 @@ cjc -L $STATIC_OPENSSL_DIR --link-option "-force_load" --link-option "$STATIC_OP
 
 代码中导入上述包，用 cjc 命令去编译代码，需要严格按照上述包的依赖的顺序去链接。 如果是用 cjpm 则无需关注。
 
-如果使用静态库，在导入 crypto 和 net 库时，由于需要依赖系统符号，所以 `Windows` 操作系统 需要额外添加 `-lcrypt32`，`Linux` 操作系统 需要额外添加 `-ldl`。
+如果使用静态库，在导入 crypto 和 net 库时，由于需要依赖系统符号，所以 `Windows` 操作系统需要额外添加 `-lcrypt32`，`Linux` 操作系统需要额外添加 `-ldl`。在导入 syntax 库时，`Windows` 操作系统需要额外添加 `-lc++ -lunwind`，`macOS` 操作系统需要额外添加 `-lc++`，`Linux` 操作系统需要额外添加 `-lstdc++ -lgcc_s`，`Android` 操作系统需要额外添加 `-lc++ -lunwind`，`iOS` 操作系统需要额外添加 `-lc++`。
 
 ### cjc 使用命令示例
 
