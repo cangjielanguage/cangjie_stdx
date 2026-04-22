@@ -10,6 +10,14 @@ package stdx.chir
 
 import std.collection.*
 
+internal func updateLocalVarIdAndHashCode(v: LocalVar): Unit {
+    if (v._identifier.isEmpty()) {
+        let id = LOCAL_VAR_PREFIX + v.topLevelFunc.generateLocalId().toString()
+        v._identifier = id
+        v._hashCode = v.calculateHashCode()
+    }
+}
+
 internal func getFieldOfType(baseTy: Type, path: ArrayList<Int64>): Type {
     var resType = baseTy
     for (i in path) {
@@ -40,23 +48,23 @@ internal func getEnumSelectorType(def: EnumDef): TypeKind {
 private func getFieldOfTypeImpl(baseTy: Type, index: Int64): Type {
     if (baseTy.isRefType()) {
         return getFieldOfTypeImpl(baseTy.stripAllRefs(), index)
-    } else if (baseTy.isTupleType()) {
-        return (baseTy as TupleType).getOrThrow().elementTypes[index]
-    } else if (baseTy.isStructType() || baseTy.isClassLikeType()) {
-        let memberVarTypes = (baseTy as CustomType).getOrThrow().getInstantiatedMemberVarTypes()
-        assert(memberVarTypes.size > index, "Member variable size mismatch, ${memberVarTypes.size} vs ${index}")
-        return memberVarTypes[index]
-    } else if (baseTy.isEnumType()) {
+    } else if (let Some(tt) <- (baseTy as TupleType)) {
+        return tt.elementTypes[index]
+    } else if (let Some(et) <- (baseTy as EnumType)) {
         assert(index == 0, "Enum type can only have one element")
-        let enumType = (baseTy as EnumType).getOrThrow()
-        if (getEnumSelectorType(enumType.enumDef) == TypeKind.`Bool`) {
+        if (getEnumSelectorType(et.enumDef) == TypeKind.`Bool`) {
             return BoolType.get()
         }
         return IntType.getUInt32()
-    } else if (baseTy.isRawArrayType()) {
-        return (baseTy as RawArrayType).getOrThrow().elementType
+    } else if (let Some(ct) <- (baseTy as CustomType)) {
+        // only struct type and class type have member variables
+        let memberVarTypes = ct.getInstantiatedMemberVarTypes()
+        assert(memberVarTypes.size > index, "Member variable size mismatch, ${memberVarTypes.size} vs ${index}")
+        return memberVarTypes[index]
+    } else if (let Some(rat) <- (baseTy as RawArrayType)) {
+        return rat.elementType
     }
-    throw Exception("Invalid type: " + baseTy.toString())
+    throw CHIRException("Invalid type: " + baseTy.toString())
 }
 
 internal func getFieldOfType(baseTy: Type, fieldNames: ArrayList<String>): Type {
@@ -70,10 +78,11 @@ internal func getFieldOfType(baseTy: Type, fieldNames: ArrayList<String>): Type 
 private func getFieldOfTypeImpl(baseTy: Type, name: String): Type {
     if (baseTy.isRefType()) {
         return getFieldOfTypeImpl(baseTy.stripAllRefs(), name)
-    } else if (baseTy.isStructType() || baseTy.isClassLikeType()) {
-        return (baseTy as CustomType).getOrThrow().getMemberVarInstantiatedType(name)
+    } else if (let Some(ct) <- (baseTy as CustomType)) {
+        // only struct type and class type have member variables
+        return ct.getMemberVarInstantiatedType(name)
     }
-    throw Exception("Invalid type: " + baseTy.toString())
+    throw CHIRException("Invalid type: " + baseTy.toString())
 }
 
 internal func getInstMapFromCurDefAndExDefToCurType(curType: CustomType): HashMap<GenericType, Type> {
@@ -88,23 +97,35 @@ internal func getInstMapFromCurDefAndExDefToCurType(curType: CustomType): HashMa
     return instMap
 }
 
-internal func paramTypeIsEquivalent(paramType: Type, argType: Type): Bool {
-    if (paramType == argType) {
-        return true
+internal func getInstType(genericType: Type, f: Value, funcCallCtx: FuncCallContext): Type {
+    if (!genericType.isGenericRelated()) {
+        return genericType
     }
-    // `NothingType` is any type's sub type, so it's equivalent to any type
-    if (argType.isNothingType()) {
-        return true
+    let genericTypeParams: Array<GenericType>
+    if (let Some(lv) <- (f as LocalVar)) {
+        let e = lv.expr as Lambda
+        genericTypeParams = e.getOrThrow().genericTypeParams
+    } else if (let Some(tempFunc) <- (f as Function)) {
+        genericTypeParams = tempFunc.genericTypeParams
+    } else {
+        // maybe parameter or something else
+        return genericType
     }
-    if (paramType.isBoxRefTypeOf(argType) || argType.isBoxRefTypeOf(paramType)) {
-        return true
-    }
-    return meetClosureType(argType.stripAllRefs(), paramType.stripAllRefs())
-}
 
-internal func meetClosureType(subType: Type, parentType: Type): Bool {
-    return subType.isClosureInstBaseType() && parentType.isClosureGenericBaseType() &&
-        (subType as ClassLikeType).getOrThrow().classLikeDef.superClass.getOrThrow() == parentType
+    if (genericTypeParams.size != funcCallCtx.instTypeArgs.size) {
+        throw CHIRException("getInstType: genericTypeParams.size != instArgs.size")
+    }
+    var replaceTable: HashMap<GenericType, Type> = HashMap<GenericType, Type>()
+    let instParentType = getInstParentCustomTypeOfCallee(f, funcCallCtx)
+    if (let Some(ct) <- (instParentType as CustomType)) {
+        replaceTable = getInstMapFromCurDefAndExDefToCurType(ct)
+    }
+    for (i in 0..genericTypeParams.size) {
+        let genericTypeParam = genericTypeParams[i]
+        let instType = funcCallCtx.instTypeArgs[i]
+        replaceTable.add(genericTypeParam, instType)
+    }
+    return getInstType(genericType, replaceTable)
 }
 
 internal func getInstType(genericType: Type, replaceTable: HashMap<GenericType, Type>): Type {
@@ -162,7 +183,7 @@ internal func createNewTypeWithArgs(oldType: Type, newTypeArgs: ArrayList<Type>)
             let size = (oldType as VArrayType).getOrThrow().size
             return VArrayType.get(elementType, size)
         case _ =>
-            throw Exception(oldType.toString() + " doesn't have type args")
+            throw CHIRException(oldType.toString() + " doesn't have type args")
     }
 }
 
@@ -181,6 +202,163 @@ internal func getAllInstantiatedParentTypes(cur: ClassLikeType, parentTypes: Arr
 
 internal func assert(condition: Bool, message: String): Unit {
     if (!condition) {
-        throw Exception(message)
+        throw CHIRException(message)
     }
+}
+
+internal func calculateFunctionInstType(f: Function, instantiateTypes: ArrayList<Type>): Type {
+    var replaceTable = HashMap<GenericType, Type>()
+    var index: Int64 = 0
+    if (let Some(parentDef) <- f.declaredParent) {
+        let tmpTypeArgs = parentDef.ty.typeArgs
+        while (index < tmpTypeArgs.size) {
+            let ty = tmpTypeArgs[index]
+            if (ty.isGenericRelated()) {
+                assert(ty.calculateGeneric2InstTypeMapImpl(instantiateTypes[index], replaceTable), "Failed to calculate generic type to inst type")
+            }
+            index++
+        }
+    }
+    let funcGenericTypeParams = f.genericTypeParams
+    for (i in 0..funcGenericTypeParams.size) {
+        let ty = funcGenericTypeParams[i]
+        replaceTable.add(ty, instantiateTypes[i + index])
+    }
+    return getInstType(f.ty, replaceTable)
+}
+
+internal func getInstParentCustomTypeOfCallee(v: Value, funcCallCtx: FuncCallContext): ?Type {
+    if (!v.isFunction()) {
+        return None  // call a lambda
+    }
+    let f = (v as Function).getOrThrow()
+    if (!f.isMemberMethod()) {
+        return None  // global function
+    }
+    var parentDef = f.declaredParent.getOrThrow()
+    if (!funcCallCtx._objType.isSome()) {
+        return parentDef.ty  // call a member method with implicit `this`
+    }
+    if (!parentDef.ty.isBuiltinType() && parentDef.isExtend()) {
+        parentDef = (parentDef.ty as CustomType).getOrThrow().def
+    }
+    let derefThisType = funcCallCtx._objType.getOrThrow().stripAllRefs()
+    let typeAndDefIsEquivalent = { ty: CustomType, def: CustomTypeDef =>
+        /**
+         * 1. def equals def, maybe `def` is generic, `type` is instantiated
+         * 2. type equals type, maybe `def` is instantiated
+         */
+        return ty.def == def || ty == def.ty
+    }
+    if (derefThisType.isCustomType() && typeAndDefIsEquivalent((derefThisType as CustomType).getOrThrow(), parentDef)) {
+        /**
+         * 1. a function declared in generic custom type def, is called by instantiated custom type
+         *  class A<T> {
+         *      func foo() {}
+         *  }
+         *  A<Bool>.foo()  // `thisType` is A<Bool>, `foo`'s parent def is A<T>
+         *
+         * 2. a function declared in instantiated custom type def, is called by instantiated custom type
+         *  class A<T> {
+         *      func foo() {}
+         *  }
+         *  class A_Bool {  // A<T> is instantiated by Bool
+         *      func foo_Bool() {}
+         *  }
+         *  A<Bool>.foo_Bool()  // `thisType` is A<Bool>, `foo`'s parent def is A_Bool
+         */
+        return derefThisType
+    } else if (derefThisType.isBuiltinType() && derefThisType._kind == parentDef.ty._kind) {
+        // we should compare type pointer, but CPointer<T> is generic type, so we have to compare type kind
+        return derefThisType
+    } else {
+        /**
+         * a function declared in parent def, but called by sub type, then we need to compute instantiated parent type
+         * 1. a function declared in generic custom type def, is called by instantiated sub custom type
+         *  interface A<T> {
+         *      func foo() {}
+         *  }
+         *  class B<T> <: A<T> {}
+         *  B<Bool>.foo()  // `thisType` is B<Bool>, `foo`'s parent def is A<T>, then parent type is A<Bool>
+         *
+         * 2. a function declared in instantiated custom type def, is called by instantiated sub custom type
+         *  interface A<T> {
+         *      func foo() {}
+         *  }
+         *  class B<T> <: A<T> {}
+         *  interface A_Bool {
+         *      func foo_Bool() {}
+         *  }
+         *  class B_Bool <: A_Bool {}
+         *  B<Bool>.foo_Bool()  // `thisType` is B<Bool>, `foo`'s parent def is A_Bool, then parent type is A<Bool>
+         *
+         * 3. sub class inherit the same parent class more than once with different instantiated type
+         *  interface A<T> {
+         *      func foo(a: T) {}
+         *  }
+         *  class B <: A<Bool> & A<Int64> {}
+         *  B().foo(1)  // `thisType` is B<Bool>, `foo`'s parent def is A<T>, then parent type is A<Int64>
+         */
+        let allParentTypes = if (derefThisType.isBuiltinType()) {
+            (derefThisType as BuiltinType).getOrThrow().getSuperTypesRecusively()
+        } else {
+            (derefThisType as CustomType).getOrThrow().getSuperTypesRecusively()
+        }
+        var matchedTypes = ArrayList<ClassLikeType>()
+        for (parentType in allParentTypes) {
+            if (typeAndDefIsEquivalent(parentType, parentDef)) {
+                matchedTypes.add(parentType)
+            }
+        }
+        assert(!matchedTypes.isEmpty(), "No matched parent type found")
+        return getInstParentType(matchedTypes.toArray(), f, funcCallCtx.args)
+    }
+}
+
+internal func getInstParentType(candidate: Array<ClassLikeType>, f: Function, args: Array<Value>): ClassLikeType {
+    if (candidate.size == 1) {
+        return candidate.first.getOrThrow()
+    }
+    let offset = if (f.isStatic()) { 0 } else { 1 }
+    let argTypes = ArrayList<Type>(args.size - offset, { i => args[i + offset].ty })
+    let paramTypes = ArrayList<Type>.of(f.funcType.paramTypes)
+    if (f.isStatic()) {
+        paramTypes.remove(at: 0)
+    }
+    assert(argTypes.size == paramTypes.size, "Argument type size mismatch, ${argTypes.size} vs ${paramTypes.size}")
+    for (p in candidate) {
+        let (res, instMap) = p.def.ty.calculateGeneric2InstTypeMap(p)
+        assert(res, "Failed to calculate generic 2 inst type map")
+        var argTypeMatched = true
+        for (i in 0..paramTypes.size) {
+            let instType = getInstType(paramTypes[i], instMap)
+            if (!paramTypeIsEquivalent(instType, argTypes[i])) {
+                argTypeMatched = false
+                break
+            }
+        }
+        if (argTypeMatched) {
+            return p
+        }
+    }
+    throw CHIRException("No matched parent type found")
+}
+
+internal func paramTypeIsEquivalent(paramType: Type, argType: Type): Bool {
+    if (paramType == argType) {
+        return true
+    }
+    // `NothingType` is any type's sub type, so it's equivalent to any type
+    if (argType.isNothingType()) {
+        return true
+    }
+    if (paramType.isBoxRefTypeOf(argType) || argType.isBoxRefTypeOf(paramType)) {
+        return true
+    }
+    return meetClosureType(argType.stripAllRefs(), paramType.stripAllRefs())
+}
+
+internal func meetClosureType(subType: Type, parentType: Type): Bool {
+    return subType.isClosureInstBaseType() && parentType.isClosureGenericBaseType() &&
+        (subType as ClassLikeType).getOrThrow().classLikeDef.superClass.getOrThrow() == parentType
 }

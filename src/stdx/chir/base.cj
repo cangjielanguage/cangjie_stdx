@@ -18,11 +18,11 @@ internal abstract class Base {
 
     internal func baseCommentToString(): String {
         var result = ArrayList<String>()
-        if (let str <- chirAnnoToString() && !str.isEmpty()) {
-            result.add(str)
-        }
         if (_debugLocation.isValid()) {
             result.add("loc: " + _debugLocation.toString())
+        }
+        if (let str <- chirAnnoToString() && !str.isEmpty()) {
+            result.add(str)
         }
         return String.join(result.toArray(), delimiter: ", ")
     }

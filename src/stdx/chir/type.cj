@@ -10,6 +10,7 @@ package stdx.chir
 
 import std.collection.*
 import std.deriving.*
+import stdx.chir.toStringMacro.*
 
 /**
  * Enumeration of all type kinds in the type system.
@@ -19,8 +20,9 @@ import std.deriving.*
  * and special types.
  */
 @Derive[Equatable]
-internal enum TypeKind <: ToString {
-    Invalid
+@CHIREnumToString
+internal enum TypeKind {
+    | Invalid
     | `Int8`
     | `Int16`
     | `Int32`
@@ -51,6 +53,20 @@ internal enum TypeKind <: ToString {
     | Box
     | `This`
     | Func
+
+    /**
+     * Checks if this type kind is a C type.
+     * @return true if the type kind is a C type, false otherwise.
+     */
+    internal func isCType(): Bool {
+        match (this) {
+            case `Int8` | `Int16` | `Int32` | `Int64` | `IntNative` |
+                `UInt8` | `UInt16` | `UInt32` | `UInt64` | `UIntNative` |
+                `Float16` | `Float32` | `Float64` |
+                `Bool` | `Rune` | `Unit` | CPointer | CString => true
+            case _ => false
+        }
+    }
 
     internal func toUInt(): UInt32 {
         match (this) {
@@ -87,59 +103,6 @@ internal enum TypeKind <: ToString {
             case Func =>         30
         }
     }
-
-    /**
-     * Checks if this type kind is a C type.
-     * @return true if the type kind is a C type, false otherwise.
-     */
-    internal func isCType(): Bool {
-        match (this) {
-            case `Int8` | `Int16` | `Int32` | `Int64` | `IntNative` |
-                `UInt8` | `UInt16` | `UInt32` | `UInt64` | `UIntNative` |
-                `Float16` | `Float32` | `Float64` |
-                `Bool` | `Rune` | `Unit` | CPointer | CString => true
-            case _ => false
-        }
-    }
-    /**
-     * Converts the type kind to its string representation.
-     * @return A string representation of the type kind.
-     */
-    public func toString(): String {
-        match (this) {
-            case Invalid =>      "Invalid"
-            case `Int8` =>       "Int8"
-            case `Int16` =>      "Int16"
-            case `Int32` =>      "Int32"
-            case `Int64` =>      "Int64"
-            case `IntNative` =>  "IntNative"
-            case `UInt8` =>      "UInt8"
-            case `UInt16` =>     "UInt16"
-            case `UInt32` =>     "UInt32"
-            case `UInt64` =>     "UInt64"
-            case `UIntNative` => "UIntNative"
-            case `Float16` =>    "Float16"
-            case `Float32` =>    "Float32"
-            case `Float64` =>    "Float64"
-            case `Bool` =>       "Bool"
-            case `Rune` =>       "Rune"
-            case `Unit` =>       "Unit"
-            case `Nothing` =>    "Nothing"
-            case ClassLike =>    "ClassLike"
-            case Enum =>         "Enum"
-            case Struct =>       "Struct"
-            case Tuple =>        "Tuple"
-            case CPointer =>     "CPointer"
-            case CString =>      "CString"
-            case RawArray =>     "RawArray"
-            case `VArray` =>     "VArray"
-            case Generic =>      "Generic"
-            case Ref =>          "Ref"
-            case Box =>          "Box"
-            case `This` =>       "This"
-            case Func =>         "Func"
-        }
-    }
 }
 
 /**
@@ -150,176 +113,9 @@ internal enum TypeKind <: ToString {
  * equality comparison, hashing, and string conversion.
  */
 sealed abstract class Type <: ToString & Hashable & Equatable<Type> {
-    internal let _kind: TypeKind
-
-    internal let _typeArgs: ArrayList<Type>
-
     internal var _hashCode: Int64 = 0
-
-    /**
-     * Checks if this type is equal to another type.
-     * @param other The type to compare with.
-     * @return true if the types have the same kind and type arguments, false otherwise.
-     */
-    public operator func ==(other: Type): Bool {
-        if (other.isBuiltinType() && this.isBuiltinType()) {
-            return (this as BuiltinType).getOrThrow() == (other as BuiltinType).getOrThrow()
-        } else if (other.isCustomType() && this.isCustomType()) {
-            return (this as CustomType).getOrThrow() == (other as CustomType).getOrThrow()
-        } else if (other.isFuncType() && this.isFuncType()) {
-            return (this as FuncType).getOrThrow() == (other as FuncType).getOrThrow()
-        } else if (other.isGenericType() && this.isGenericType()) {
-            return (this as GenericType).getOrThrow() == (other as GenericType).getOrThrow()
-        } else if (other.isBoxType() && this.isBoxType()) {
-            return (this as BoxType).getOrThrow() == (other as BoxType).getOrThrow()
-        } else if (other.isRefType() && this.isRefType()) {
-            return (this as RefType).getOrThrow() == (other as RefType).getOrThrow()
-        } else if (other.isTupleType() && this.isTupleType()) {
-            return (this as TupleType).getOrThrow() == (other as TupleType).getOrThrow()
-        } else if (other.isThisType() && this.isThisType()) {
-            return (this as ThisType).getOrThrow() == (other as ThisType).getOrThrow()
-        }
-        return hasSameTypeKindAndArgs(other)
-    }
-
-    /**
-     * Gets the type arguments of this type.
-     * @type { Array<Type> }
-     */
-    public prop typeArgs: Array<Type> {
-        get() {
-            return _typeArgs.toArray()
-        }
-    }
-
-    /**
-     * Gets the hash code of this type.
-     * @return The hash code as an Int64.
-     */
-    public func hashCode(): Int64 {
-        return _hashCode
-    }
-
-    /**
-     * Prints the string representation of this type to standard output.
-     */
-    public func dump(): Unit {
-        println(toString())
-    }
-
-    /**
-     * Converts this type to its string representation.
-     * @return A string representation of the type.
-     */
-    public open func toString(): String {
-        return _kind.toString()
-    }
-
-    /**
-     * Checks if this type is a floating-point type.
-     * @return true if the type is Float16, Float32, or Float64, false otherwise.
-     */
-    public func isFloatType(): Bool {
-        return _kind == TypeKind.`Float16` || _kind == TypeKind.`Float32` || _kind == TypeKind.`Float64`
-    }
-
-    /**
-     * Checks if this type is an integer type (signed or unsigned).
-     * @return true if the type is any integer type, false otherwise.
-     */
-    public func isIntType(): Bool {
-        let kindId = this._kind.toUInt()
-        return kindId >= TypeKind.`Int8`.toUInt() && kindId <= TypeKind.`UIntNative`.toUInt()
-    }
-
-    /**
-     * Checks if this type is a signed integer type.
-     * @return true if the type is a signed integer type, false otherwise.
-     */
-    public func isSignedIntType(): Bool {
-        let kindId = this._kind.toUInt()
-        return kindId >= TypeKind.`Int8`.toUInt() && kindId <= TypeKind.`IntNative`.toUInt()
-    }
-
-    /**
-     * Checks if this type is an unsigned integer type.
-     * @return true if the type is an unsigned integer type, false otherwise.
-     */
-    public func isUnsignedIntType(): Bool {
-        let kindId = this._kind.toUInt()
-        return kindId >= TypeKind.`UInt8`.toUInt() && kindId <= TypeKind.`UIntNative`.toUInt()
-    }
-
-    /**
-     * Checks if this type is a numeric type (integer or floating-point).
-     * @return true if the type is numeric, false otherwise.
-     */
-    public func isNumericType(): Bool {
-        return isFloatType() || isIntType()
-    }
-
-    /**
-     * Checks if this type is the boolean type.
-     * @return true if the type is Bool, false otherwise.
-     */
-    public func isBoolType(): Bool {
-        return _kind == TypeKind.`Bool`
-    }
-
-    /**
-     * Checks if this type is the rune type.
-     * @return true if the type is Rune, false otherwise.
-     */
-    public func isRuneType(): Bool {
-        return _kind == TypeKind.`Rune`
-    }
-
-    /**
-     * Checks if this type is the unit type.
-     * @return true if the type is Unit, false otherwise.
-     */
-    public func isUnitType(): Bool {
-        return _kind == TypeKind.`Unit`
-    }
-
-    /**
-     * Checks if this type is the nothing type.
-     * @return true if the type is Nothing, false otherwise.
-     */
-    public func isNothingType(): Bool {
-        return _kind == TypeKind.`Nothing`
-    }
-
-    /**
-     * Checks if this type is a reference type.
-     * @return true if the type is a reference type, false otherwise.
-     */
-    public func isRefType(): Bool {
-        return _kind == TypeKind.Ref
-    }
-
-    /**
-     * Checks if this type is a primitive type.
-     * @return true if the type is primitive (Int, Float, Bool, Rune, Unit, or Nothing), false otherwise.
-     */
-    public func isPrimitiveType(): Bool {
-        let kindId = this._kind.toUInt()
-        return kindId >= TypeKind.`Int8`.toUInt() && kindId <= TypeKind.`Nothing`.toUInt()
-    }
-
-    /**
-     * Strips all reference wrappers from this type.
-     *
-     * Recursively removes all Ref type wrappers until a non-reference type is reached.
-     * @return The base type after removing all reference wrappers.
-     */
-    public func stripAllRefs(): Type {
-        var baseTy: Type = this
-        while (baseTy.isRefType()) {
-            baseTy = baseTy._typeArgs[0]
-        }
-        return baseTy
-    }
+    internal let _kind: TypeKind
+    internal let _typeArgs: ArrayList<Type>
 
     /**
      * Gets the qualified name of this type.
@@ -356,6 +152,85 @@ sealed abstract class Type <: ToString & Hashable & Equatable<Type> {
     }
 
     /**
+     * Gets the type arguments of this type.
+     * @type { Array<Type> }
+     */
+    public prop typeArgs: Array<Type> {
+        get() {
+            return _typeArgs.toArray()
+        }
+    }
+
+    internal init(kind: TypeKind) {
+        this._kind = kind
+        this._typeArgs = ArrayList<Type>()
+    }
+
+    internal init(kind: TypeKind, args: ArrayList<Type>) {
+        this._kind = kind
+        this._typeArgs = args
+    }
+
+    /**
+     * Prints the string representation of this type to standard output.
+     */
+    public func dump(): Unit {
+        println(toString())
+    }
+
+    /**
+     * Gets the hash code of this type.
+     * @return The hash code as an Int64.
+     */
+    public func hashCode(): Int64 {
+        return _hashCode
+    }
+
+    /**
+     * Performs the public behavior of `isAnyTypeInStd`.
+     * @return The `Bool` result.
+     */
+    public func isAnyTypeInStd(): Bool {
+        if (_kind != TypeKind.ClassLike) {
+            return false
+        }
+        return (this as ClassLikeType).getOrThrow().classLikeDef.defIsExpected(CORE_PACKAGE_NAME, ANY_NAME_IN_STD)
+    }
+
+    /**
+     * Checks if this type is the boolean type.
+     * @return true if the type is Bool, false otherwise.
+     */
+    public func isBoolType(): Bool {
+        return _kind == TypeKind.`Bool`
+    }
+
+    /**
+     * Performs the public behavior of `isBoxRefTypeOf`.
+     * @param other The `other` parameter.
+     * @return The `Bool` result.
+     */
+    public func isBoxRefTypeOf(other: Type): Bool {
+        if (!this.isRefType()) {
+            return false
+        }
+        let boxType = (this as RefType).getOrThrow().baseType
+        if (!boxType.isBoxType()) {
+            return false
+        }
+        let baseType = (boxType as BoxType).getOrThrow().baseType
+        return baseType == other
+    }
+
+    /**
+     * Checks if this type is a box type.
+     * @return true if the type is a box type, false otherwise.
+     */
+    public func isBoxType(): Bool {
+        return _kind == TypeKind.Box
+    }
+
+    /**
      * Checks if this type is a builtin type.
      * @return true if the type is a builtin type, false otherwise.
      */
@@ -369,43 +244,14 @@ sealed abstract class Type <: ToString & Hashable & Equatable<Type> {
     }
 
     /**
-     * Checks if this type is a custom type (class, enum, or struct).
-     * @return true if the type is a custom type, false otherwise.
+     * Checks if this type is a C function type.
+     * @return true if the type is a C function type, false otherwise.
      */
-    public func isCustomType(): Bool {
-        return isClassLikeType() || isEnumType() || isStructType()
-    }
-
-    /**
-     * Checks if this type is a class like type.
-     * @return true if the type is a class like type, false otherwise.
-     */
-    public func isClassLikeType(): Bool {
-        return _kind == TypeKind.ClassLike
-    }
-
-    /**
-     * Checks if this type is an enum type.
-     * @return true if the type is an enum type, false otherwise.
-     */
-    public func isEnumType(): Bool {
-        return _kind == TypeKind.Enum
-    }
-
-    /**
-     * Checks if this type is a struct type.
-     * @return true if the type is a struct type, false otherwise.
-     */
-    public func isStructType(): Bool {
-        return _kind == TypeKind.Struct
-    }
-
-    /**
-     * Checks if this type is a tuple type.
-     * @return true if the type is a tuple type, false otherwise.
-     */
-    public func isTupleType(): Bool {
-        return _kind == TypeKind.Tuple
+    public func isCFuncType(): Bool {
+        if (!isFuncType()) {
+            return false
+        }
+        return (this as FuncType).getOrThrow().isCFunc
     }
 
     /**
@@ -425,93 +271,9 @@ sealed abstract class Type <: ToString & Hashable & Equatable<Type> {
     }
 
     /**
-     * Checks if this type is a raw array type.
-     * @return true if the type is a raw array type, false otherwise.
+     * Performs the public behavior of `isCTypeInStd`.
+     * @return The `Bool` result.
      */
-    public func isRawArrayType(): Bool {
-        return _kind == TypeKind.RawArray
-    }
-
-    /**
-     * Checks if this type is a VArray type.
-     * @return true if the type is a VArray type, false otherwise.
-     */
-    public func isVArrayType(): Bool {
-        return _kind == TypeKind.`VArray`
-    }
-
-    /**
-     * Checks if this type is a generic type.
-     * @return true if the type is a generic type, false otherwise.
-     */
-    public func isGenericType(): Bool {
-        return _kind == TypeKind.Generic
-    }
-
-    /**
-     * Checks if this type is a box type.
-     * @return true if the type is a box type, false otherwise.
-     */
-    public func isBoxType(): Bool {
-        return _kind == TypeKind.Box
-    }
-
-    /**
-     * Checks if this type is a This type.
-     * @return true if the type is a This type, false otherwise.
-     */
-    public func isThisType(): Bool {
-        return _kind == TypeKind.`This`
-    }
-
-    /**
-     * Checks if this type is a function type.
-     * @return true if the type is a function type, false otherwise.
-     */
-    public func isFuncType(): Bool {
-        return _kind == TypeKind.Func
-    }
-
-    /**
-     * Checks if this type is a C function type.
-     * @return true if the type is a C function type, false otherwise.
-     */
-    public func isCFuncType(): Bool {
-        if (!isFuncType()) {
-            return false
-        }
-        return (this as FuncType).getOrThrow().isCFunc
-    }
-
-    public func isClosureType(): Bool {
-        if (_kind != TypeKind.ClassLike) {
-            return false
-        }
-        return (this as ClassLikeType).getOrThrow().classLikeDef.getAnno<IsAutoEnvClass, Bool>()
-    }
-
-    public func isClosureBaseType(): Bool {
-        if (!isClosureType()) {
-            return false
-        }
-        return (this as ClassLikeType).getOrThrow().classLikeDef.isAbstract()
-    }
-
-    public func isClosureGenericBaseType(): Bool {
-        return isClosureBaseType() && !typeArgs.isEmpty()
-    }
-
-    public func isClosureInstBaseType(): Bool {
-        return isClosureBaseType() && typeArgs.isEmpty()
-    }
-
-    public func isAnyTypeInStd(): Bool {
-        if (_kind != TypeKind.ClassLike) {
-            return false
-        }
-        return (this as ClassLikeType).getOrThrow().classLikeDef.defIsExpected(CORE_PACKAGE_NAME, ANY_NAME_IN_STD)
-    }
-
     public func isCTypeInStd(): Bool {
         if (_kind != TypeKind.ClassLike) {
             return false
@@ -519,28 +281,74 @@ sealed abstract class Type <: ToString & Hashable & Equatable<Type> {
         return (this as ClassLikeType).getOrThrow().classLikeDef.defIsExpected(CORE_PACKAGE_NAME, CTYPE_NAME_IN_STD)
     }
 
-    public func isValueType(): Bool {
-        return isPrimitiveType() || isEnumType() || isTupleType() ||
-            isStructType() || isVArrayType() || isCPointerType() ||
-            isCStringType() || isFuncType()
+    /**
+     * Checks if this type is a class like type.
+     * @return true if the type is a class like type, false otherwise.
+     */
+    public func isClassLikeType(): Bool {
+        return _kind == TypeKind.ClassLike
     }
 
-    public func isReferenceType(): Bool {
-        return isClassLikeType() || isRawArrayType() || isBoxType() || isThisType()
-    }
-
-    public func isGenericRelated(): Bool {
-        if (isGenericType()) {
-            return true
+    /**
+     * Performs the public behavior of `isClosureBaseType`.
+     * @return The `Bool` result.
+     */
+    public func isClosureBaseType(): Bool {
+        if (!isClosureType()) {
+            return false
         }
-        for (arg in _typeArgs) {
-            if (arg.isGenericRelated()) {
-                return true
-            }
-        }
-        return false
+        return (this as ClassLikeType).getOrThrow().classLikeDef.isAbstract()
     }
 
+    /**
+     * Performs the public behavior of `isClosureGenericBaseType`.
+     * @return The `Bool` result.
+     */
+    public func isClosureGenericBaseType(): Bool {
+        return isClosureBaseType() && !typeArgs.isEmpty()
+    }
+
+    /**
+     * Performs the public behavior of `isClosureInstBaseType`.
+     * @return The `Bool` result.
+     */
+    public func isClosureInstBaseType(): Bool {
+        return isClosureBaseType() && typeArgs.isEmpty()
+    }
+
+    /**
+     * Performs the public behavior of `isClosureType`.
+     * @return The `Bool` result.
+     */
+    public func isClosureType(): Bool {
+        if (_kind != TypeKind.ClassLike) {
+            return false
+        }
+        return (this as ClassLikeType).getOrThrow().classLikeDef.getAnno<IsAutoEnvClass, Bool>()
+    }
+
+    /**
+     * Checks if this type is a custom type (class, enum, or struct).
+     * @return true if the type is a custom type, false otherwise.
+     */
+    public func isCustomType(): Bool {
+        return isClassLikeType() || isEnumType() || isStructType()
+    }
+
+    /**
+     * Checks if this type is an enum type.
+     * @return true if the type is an enum type, false otherwise.
+     */
+    public func isEnumType(): Bool {
+        return _kind == TypeKind.Enum
+    }
+
+    /**
+     * Performs the public behavior of `isEqualOrInstantiatedTypeOf`.
+     * @param genericRelatedType The `genericRelatedType` parameter.
+     * @param visited The `visited ` parameter.
+     * @return The `Bool` result.
+     */
     public func isEqualOrInstantiatedTypeOf(genericRelatedType: Type, visited !: ArrayList<(Type, Type)> = ArrayList<(Type, Type)>()): Bool {
         if (this == genericRelatedType) {
             return true
@@ -560,16 +368,12 @@ sealed abstract class Type <: ToString & Hashable & Equatable<Type> {
         return true
     }
 
-    public func satisfyGenericConstraints(gType: GenericType, instMap: HashMap<GenericType, Type>, visited !: ArrayList<(Type, Type)> = ArrayList<(Type, Type)>()): Bool {
-        for (upperBound in gType.upperBounds) {
-            let instType = getInstType(upperBound, instMap)
-            if (!this.isEqualOrSubTypeOf(instType, visited: visited)) {
-                return false
-            }
-        }
-        return true
-    }
-
+    /**
+     * Performs the public behavior of `isEqualOrSubTypeOf`.
+     * @param parent The `parent` parameter.
+     * @param visited The `visited ` parameter.
+     * @return The `Bool` result.
+     */
     public func isEqualOrSubTypeOf(parent: Type, visited !: ArrayList<(Type, Type)> = ArrayList<(Type, Type)>()): Bool {
         if (this == parent) {
             return true
@@ -661,6 +465,184 @@ sealed abstract class Type <: ToString & Hashable & Equatable<Type> {
         return false
     }
 
+    /**
+     * Checks if this type is a floating-point type.
+     * @return true if the type is Float16, Float32, or Float64, false otherwise.
+     */
+    public func isFloatType(): Bool {
+        return _kind == TypeKind.`Float16` || _kind == TypeKind.`Float32` || _kind == TypeKind.`Float64`
+    }
+
+    /**
+     * Checks if this type is a function type.
+     * @return true if the type is a function type, false otherwise.
+     */
+    public func isFuncType(): Bool {
+        return _kind == TypeKind.Func
+    }
+
+    /**
+     * Performs the public behavior of `isGenericRelated`.
+     * @return The `Bool` result.
+     */
+    public func isGenericRelated(): Bool {
+        if (isGenericType()) {
+            return true
+        }
+        for (arg in _typeArgs) {
+            if (arg.isGenericRelated()) {
+                return true
+            }
+        }
+        return false
+    }
+
+    /**
+     * Checks if this type is a generic type.
+     * @return true if the type is a generic type, false otherwise.
+     */
+    public func isGenericType(): Bool {
+        return _kind == TypeKind.Generic
+    }
+
+    /**
+     * Checks if this type is an integer type (signed or unsigned).
+     * @return true if the type is any integer type, false otherwise.
+     */
+    public func isIntType(): Bool {
+        let kindId = this._kind.toUInt()
+        return kindId >= TypeKind.`Int8`.toUInt() && kindId <= TypeKind.`UIntNative`.toUInt()
+    }
+
+    /**
+     * Checks if this type is the nothing type.
+     * @return true if the type is Nothing, false otherwise.
+     */
+    public func isNothingType(): Bool {
+        return _kind == TypeKind.`Nothing`
+    }
+
+    /**
+     * Checks if this type is a numeric type (integer or floating-point).
+     * @return true if the type is numeric, false otherwise.
+     */
+    public func isNumericType(): Bool {
+        return isFloatType() || isIntType()
+    }
+
+    /**
+     * Checks if this type is a primitive type.
+     * @return true if the type is primitive (Int, Float, Bool, Rune, Unit, or Nothing), false otherwise.
+     */
+    public func isPrimitiveType(): Bool {
+        let kindId = this._kind.toUInt()
+        return kindId >= TypeKind.`Int8`.toUInt() && kindId <= TypeKind.`Nothing`.toUInt()
+    }
+
+    /**
+     * Checks if this type is a raw array type.
+     * @return true if the type is a raw array type, false otherwise.
+     */
+    public func isRawArrayType(): Bool {
+        return _kind == TypeKind.RawArray
+    }
+
+    /**
+     * Checks if this type is a reference type.
+     * @return true if the type is a reference type, false otherwise.
+     */
+    public func isRefType(): Bool {
+        return _kind == TypeKind.Ref
+    }
+
+    /**
+     * Performs the public behavior of `isReferenceType`.
+     * @return The `Bool` result.
+     */
+    public func isReferenceType(): Bool {
+        return isClassLikeType() || isRawArrayType() || isBoxType() || isThisType()
+    }
+
+    /**
+     * Checks if this type is the rune type.
+     * @return true if the type is Rune, false otherwise.
+     */
+    public func isRuneType(): Bool {
+        return _kind == TypeKind.`Rune`
+    }
+
+    /**
+     * Checks if this type is a signed integer type.
+     * @return true if the type is a signed integer type, false otherwise.
+     */
+    public func isSignedIntType(): Bool {
+        let kindId = this._kind.toUInt()
+        return kindId >= TypeKind.`Int8`.toUInt() && kindId <= TypeKind.`IntNative`.toUInt()
+    }
+
+    /**
+     * Checks if this type is a struct type.
+     * @return true if the type is a struct type, false otherwise.
+     */
+    public func isStructType(): Bool {
+        return _kind == TypeKind.Struct
+    }
+
+    /**
+     * Checks if this type is a This type.
+     * @return true if the type is a This type, false otherwise.
+     */
+    public func isThisType(): Bool {
+        return _kind == TypeKind.`This`
+    }
+
+    /**
+     * Checks if this type is a tuple type.
+     * @return true if the type is a tuple type, false otherwise.
+     */
+    public func isTupleType(): Bool {
+        return _kind == TypeKind.Tuple
+    }
+
+    /**
+     * Checks if this type is the unit type.
+     * @return true if the type is Unit, false otherwise.
+     */
+    public func isUnitType(): Bool {
+        return _kind == TypeKind.`Unit`
+    }
+
+    /**
+     * Checks if this type is an unsigned integer type.
+     * @return true if the type is an unsigned integer type, false otherwise.
+     */
+    public func isUnsignedIntType(): Bool {
+        let kindId = this._kind.toUInt()
+        return kindId >= TypeKind.`UInt8`.toUInt() && kindId <= TypeKind.`UIntNative`.toUInt()
+    }
+
+    /**
+     * Checks if this type is a VArray type.
+     * @return true if the type is a VArray type, false otherwise.
+     */
+    public func isVArrayType(): Bool {
+        return _kind == TypeKind.`VArray`
+    }
+
+    /**
+     * Performs the public behavior of `isValueType`.
+     * @return The `Bool` result.
+     */
+    public func isValueType(): Bool {
+        return isPrimitiveType() || isEnumType() || isTupleType() ||
+            isStructType() || isVArrayType() || isCPointerType() ||
+            isCStringType() || isFuncType()
+    }
+
+    /**
+     * Performs the public behavior of `satisfyCType`.
+     * @return The `Bool` result.
+     */
     public func satisfyCType(): Bool {
         if (_kind.isCType()) {
             return true
@@ -677,16 +659,43 @@ sealed abstract class Type <: ToString & Hashable & Equatable<Type> {
         return false
     }
 
-    public func isBoxRefTypeOf(other: Type): Bool {
-        if (!this.isRefType()) {
-            return false
+    /**
+     * Performs the public behavior of `satisfyGenericConstraints`.
+     * @param gType The `gType` parameter.
+     * @param instMap The `instMap` parameter.
+     * @param visited The `visited ` parameter.
+     * @return The `Bool` result.
+     */
+    public func satisfyGenericConstraints(gType: GenericType, instMap: HashMap<GenericType, Type>, visited !: ArrayList<(Type, Type)> = ArrayList<(Type, Type)>()): Bool {
+        for (upperBound in gType.upperBounds) {
+            let instType = getInstType(upperBound, instMap)
+            if (!this.isEqualOrSubTypeOf(instType, visited: visited)) {
+                return false
+            }
         }
-        let boxType = (this as RefType).getOrThrow().baseType
-        if (!boxType.isBoxType()) {
-            return false
+        return true
+    }
+
+    /**
+     * Strips all reference wrappers from this type.
+     *
+     * Recursively removes all Ref type wrappers until a non-reference type is reached.
+     * @return The base type after removing all reference wrappers.
+     */
+    public func stripAllRefs(): Type {
+        var baseTy: Type = this
+        while (baseTy.isRefType()) {
+            baseTy = baseTy._typeArgs[0]
         }
-        let baseType = (boxType as BoxType).getOrThrow().baseType
-        return baseType == other
+        return baseTy
+    }
+
+    /**
+     * Converts this type to its string representation.
+     * @return A string representation of the type.
+     */
+    public open func toString(): String {
+        return _kind.toString()
     }
 
     internal func calculateGeneric2InstTypeMap(instType: Type): (Bool, HashMap<GenericType, Type>) {
@@ -697,29 +706,7 @@ sealed abstract class Type <: ToString & Hashable & Equatable<Type> {
         return (true, result)
     }
 
-    internal init(kind: TypeKind) {
-        this._kind = kind
-        this._typeArgs = ArrayList<Type>()
-    }
-
-    internal init(kind: TypeKind, args: ArrayList<Type>) {
-        this._kind = kind
-        this._typeArgs = args
-    }
-
-    internal func setHashCode(): Unit {
-        _hashCode = toString().hashCode()
-    }
-
-    internal func hasSameTypeKindAndArgs(other: Type): Bool {
-        return this._kind == other._kind && this._typeArgs == other._typeArgs
-    }
-
-    internal func hasSameTypeKindWith(other: Type): Bool {
-        return this._kind == other._kind
-    }
-
-    private func calculateGeneric2InstTypeMapImpl(instType: Type, result: HashMap<GenericType, Type>): Bool {
+    internal func calculateGeneric2InstTypeMapImpl(instType: Type, result: HashMap<GenericType, Type>): Bool {
         if (this == instType) {
             return true
         }
@@ -755,6 +742,18 @@ sealed abstract class Type <: ToString & Hashable & Equatable<Type> {
         return true
     }
 
+    internal func hasSameTypeKindAndArgs(other: Type): Bool {
+        return this._kind == other._kind && this._typeArgs == other._typeArgs
+    }
+
+    internal func hasSameTypeKindWith(other: Type): Bool {
+        return this._kind == other._kind
+    }
+
+    internal func setHashCode(): Unit {
+        _hashCode = toString().hashCode()
+    }
+
     private func qualifiedNameOfCustomType(t: CustomType): String {
         let packageName = t.def.packageName.replace("::", "/")
         let defName = t.def.srcCodeName
@@ -762,6 +761,32 @@ sealed abstract class Type <: ToString & Hashable & Equatable<Type> {
             return packageName + ":" + t.def.identifierWithoutPrefix
         }
         return packageName + ":" + defName
+    }
+
+    /**
+     * Checks if this type is equal to another type.
+     * @param other The type to compare with.
+     * @return true if the types have the same kind and type arguments, false otherwise.
+     */
+    public operator func ==(other: Type): Bool {
+        if (other.isBuiltinType() && this.isBuiltinType()) {
+            return (this as BuiltinType).getOrThrow() == (other as BuiltinType).getOrThrow()
+        } else if (other.isCustomType() && this.isCustomType()) {
+            return (this as CustomType).getOrThrow() == (other as CustomType).getOrThrow()
+        } else if (other.isFuncType() && this.isFuncType()) {
+            return (this as FuncType).getOrThrow() == (other as FuncType).getOrThrow()
+        } else if (other.isGenericType() && this.isGenericType()) {
+            return (this as GenericType).getOrThrow() == (other as GenericType).getOrThrow()
+        } else if (other.isBoxType() && this.isBoxType()) {
+            return (this as BoxType).getOrThrow() == (other as BoxType).getOrThrow()
+        } else if (other.isRefType() && this.isRefType()) {
+            return (this as RefType).getOrThrow() == (other as RefType).getOrThrow()
+        } else if (other.isTupleType() && this.isTupleType()) {
+            return (this as TupleType).getOrThrow() == (other as TupleType).getOrThrow()
+        } else if (other.isThisType() && this.isThisType()) {
+            return (this as ThisType).getOrThrow() == (other as ThisType).getOrThrow()
+        }
+        return hasSameTypeKindAndArgs(other)
     }
 }
 
@@ -772,6 +797,41 @@ sealed abstract class Type <: ToString & Hashable & Equatable<Type> {
  */
 sealed abstract class BuiltinType <: Type & Equatable<BuiltinType> {
     internal let _extends = ArrayList<ExtendDef>()
+
+    internal init(kind: TypeKind) {
+        super(kind)
+    }
+
+    internal init(kind: TypeKind, typeArgs: ArrayList<Type>) {
+        super(kind, typeArgs)
+    }
+
+    /**
+     * Attaches an extend definition to this built-in type (e.g. plugin-generated extends).
+     * @param extendDef The extend block to register.
+     */
+    public func addExtend(extendDef: ExtendDef): Unit {
+        _extends.add(extendDef)
+    }
+
+    /**
+     * Collects all class-like super types reachable from extend-implemented interfaces.
+     * @param visited Optional cache of (from, to) pairs to avoid cycles.
+     * @return All instantiated parent ClassLikeType nodes.
+     */
+    public func getSuperTypesRecusively(visited !: ArrayList<(Type, Type)> = ArrayList<(Type, Type)>()): Array<ClassLikeType> {
+        var result: ArrayList<ClassLikeType> = ArrayList<ClassLikeType>()
+        for (exDef in getExtendDefs()) {
+            for (p in exDef.implementedInterfaceTypes) {
+                getAllInstantiatedParentTypes(p, result, visited)
+            }
+        }
+        return result.toArray()
+    }
+
+    protected open func getExtendDefs(): Array<ExtendDef> {
+        return _extends.toArray()
+    }
 
     /**
      * Equality for built-in types: same kind and same type arguments.
@@ -798,41 +858,6 @@ sealed abstract class BuiltinType <: Type & Equatable<BuiltinType> {
         }
         return hasSameTypeKindAndArgs(other)
     }
-
-    /**
-     * Collects all class-like super types reachable from extend-implemented interfaces.
-     * @param visited Optional cache of (from, to) pairs to avoid cycles.
-     * @return All instantiated parent ClassLikeType nodes.
-     */
-    public func getSuperTypesRecusively(visited !: ArrayList<(Type, Type)> = ArrayList<(Type, Type)>()): Array<ClassLikeType> {
-        var result: ArrayList<ClassLikeType> = ArrayList<ClassLikeType>()
-        for (exDef in getExtendDefs()) {
-            for (p in exDef.implementedInterfaceTypes) {
-                getAllInstantiatedParentTypes(p, result, visited)
-            }
-        }
-        return result.toArray()
-    }
-
-    /**
-     * Attaches an extend definition to this built-in type (e.g. plugin-generated extends).
-     * @param extendDef The extend block to register.
-     */
-    public func addExtend(extendDef: ExtendDef): Unit {
-        _extends.add(extendDef)
-    }
-
-    protected open func getExtendDefs(): Array<ExtendDef> {
-        return _extends.toArray()
-    }
-
-    internal init(kind: TypeKind) {
-        super(kind)
-    }
-
-    internal init(kind: TypeKind, typeArgs: ArrayList<Type>) {
-        super(kind, typeArgs)
-    }
 }
 
 /**
@@ -843,13 +868,9 @@ sealed abstract class BuiltinType <: Type & Equatable<BuiltinType> {
 public class BoolType <: BuiltinType & Equatable<BoolType> {
     private static let BOOL_TYPE = BoolType()
 
-    /**
-     * Checks if this BoolType is equal to another BoolType.
-     * @param _ The other BoolType to compare with (unused, always returns true).
-     * @return Always returns true since all BoolType instances are equal.
-     */
-    public operator func ==(_: BoolType): Bool {
-        return true
+    private init() {
+        super(TypeKind.`Bool`)
+        setHashCode()
     }
 
     /**
@@ -860,9 +881,13 @@ public class BoolType <: BuiltinType & Equatable<BoolType> {
         return BOOL_TYPE
     }
 
-    private init() {
-        super(TypeKind.`Bool`)
-        setHashCode()
+    /**
+     * Checks if this BoolType is equal to another BoolType.
+     * @param _ The other BoolType to compare with (unused, always returns true).
+     * @return Always returns true since all BoolType instances are equal.
+     */
+    public operator func ==(_: BoolType): Bool {
+        return true
     }
 }
 
@@ -875,6 +900,21 @@ public class BoolType <: BuiltinType & Equatable<BoolType> {
 public class CPointerType <: BuiltinType & Equatable<CPointerType> {
     //                          elementType -> CPointerType
     private static var CACHE = HashMap<Type, CPointerType>()
+
+    /**
+     * Gets the element type that this CPointerType points to.
+     * @type { Type }
+     */
+    public prop elementType: Type {
+        get() {
+            return _typeArgs[0]
+        }
+    }
+
+    private init(elementType: Type) {
+        super(TypeKind.CPointer, ArrayList<Type>([elementType]))
+        setHashCode()
+    }
 
     /**
      * Gets or creates a CPointerType for the given element type.
@@ -904,25 +944,6 @@ public class CPointerType <: BuiltinType & Equatable<CPointerType> {
         return result.toString()
     }
 
-    /**
-     * Gets the element type that this CPointerType points to.
-     * @type { Type }
-     */
-    public prop elementType: Type {
-        get() {
-            return _typeArgs[0]
-        }
-    }
-
-    /**
-     * Checks if this CPointerType is equal to another CPointerType.
-     * @param other The CPointerType to compare with.
-     * @return true if the types are equal, false otherwise.
-     */
-    public operator func ==(other: CPointerType): Bool {
-        return hasSameTypeKindAndArgs(other)
-    }
-
     protected override func getExtendDefs(): Array<ExtendDef> {
         var result: ArrayList<ExtendDef> = ArrayList<ExtendDef>()
         for ((_, cpType) in CACHE) {
@@ -933,9 +954,13 @@ public class CPointerType <: BuiltinType & Equatable<CPointerType> {
         return result.toArray()
     }
 
-    private init(elementType: Type) {
-        super(TypeKind.CPointer, ArrayList<Type>([elementType]))
-        setHashCode()
+    /**
+     * Checks if this CPointerType is equal to another CPointerType.
+     * @param other The CPointerType to compare with.
+     * @return true if the types are equal, false otherwise.
+     */
+    public operator func ==(other: CPointerType): Bool {
+        return hasSameTypeKindAndArgs(other)
     }
 }
 
@@ -948,13 +973,9 @@ public class CPointerType <: BuiltinType & Equatable<CPointerType> {
 public class CStringType <: BuiltinType & Equatable<CStringType> {
     private static let C_STRING_TYPE = CStringType()
 
-    /**
-     * Checks if this CStringType is equal to another CStringType.
-     * @param _ The other CStringType to compare with (unused, always returns true).
-     * @return Always returns true since all CStringType instances are equal.
-     */
-    public operator func ==(_: CStringType): Bool {
-        return true
+    private init() {
+        super(TypeKind.CString)
+        setHashCode()
     }
 
     /**
@@ -965,9 +986,13 @@ public class CStringType <: BuiltinType & Equatable<CStringType> {
         return C_STRING_TYPE
     }
 
-    private init() {
-        super(TypeKind.CString)
-        setHashCode()
+    /**
+     * Checks if this CStringType is equal to another CStringType.
+     * @param _ The other CStringType to compare with (unused, always returns true).
+     * @return Always returns true since all CStringType instances are equal.
+     */
+    public operator func ==(_: CStringType): Bool {
+        return true
     }
 }
 
@@ -979,13 +1004,9 @@ public class CStringType <: BuiltinType & Equatable<CStringType> {
 public class NothingType <: BuiltinType & Equatable<NothingType> {
     private static let NOTHING_TYPE = NothingType()
 
-    /**
-     * Checks if this NothingType is equal to another NothingType.
-     * @param _ The other NothingType to compare with (unused, always returns true).
-     * @return Always returns true since all NothingType instances are equal.
-     */
-    public operator func ==(_: NothingType): Bool {
-        return true
+    private init() {
+        super(TypeKind.`Nothing`)
+        setHashCode()
     }
 
     /**
@@ -996,9 +1017,13 @@ public class NothingType <: BuiltinType & Equatable<NothingType> {
         return NOTHING_TYPE
     }
 
-    private init() {
-        super(TypeKind.`Nothing`)
-        setHashCode()
+    /**
+     * Checks if this NothingType is equal to another NothingType.
+     * @param _ The other NothingType to compare with (unused, always returns true).
+     * @return Always returns true since all NothingType instances are equal.
+     */
+    public operator func ==(_: NothingType): Bool {
+        return true
     }
 }
 
@@ -1009,6 +1034,10 @@ public class NothingType <: BuiltinType & Equatable<NothingType> {
  * integer and floating-point types.
  */
 sealed abstract class NumericType <: BuiltinType & Equatable<NumericType> {
+    internal init(kind: TypeKind) {
+        super(kind)
+    }
+
     /**
      * Checks if this numeric type is equal to another numeric type.
      * @param other The numeric type to compare with.
@@ -1022,10 +1051,6 @@ sealed abstract class NumericType <: BuiltinType & Equatable<NumericType> {
         }
         return hasSameTypeKindAndArgs(other)
     }
-
-    internal init(kind: TypeKind) {
-        super(kind)
-    }
 }
 
 /**
@@ -1035,10 +1060,21 @@ sealed abstract class NumericType <: BuiltinType & Equatable<NumericType> {
  */
 public class FloatType <: NumericType & Equatable<FloatType> {
     private static let FLOAT16_TYPE = FloatType(TypeKind.`Float16`)
-
     private static let FLOAT32_TYPE = FloatType(TypeKind.`Float32`)
-
     private static let FLOAT64_TYPE = FloatType(TypeKind.`Float64`)
+
+    private init(kind: TypeKind) {
+        super(kind)
+        setHashCode()
+    }
+
+    /**
+     * Gets the Float16 type instance.
+     * @return The Float16 type.
+     */
+    public static func getFloat16(): FloatType {
+        return FLOAT16_TYPE
+    }
 
     /**
      * Gets the Float32 type instance.
@@ -1064,19 +1100,6 @@ public class FloatType <: NumericType & Equatable<FloatType> {
     public operator func ==(other: FloatType): Bool {
         return other._kind == this._kind
     }
-
-    /**
-     * Gets the Float16 type instance.
-     * @return The Float16 type.
-     */
-    public static func getFloat16(): FloatType {
-        return FLOAT16_TYPE
-    }
-
-    private init(kind: TypeKind) {
-        super(kind)
-        setHashCode()
-    }
 }
 
 /**
@@ -1085,25 +1108,21 @@ public class FloatType <: NumericType & Equatable<FloatType> {
  * This class represents both signed and unsigned integer types of various sizes.
  */
 public class IntType <: NumericType & Equatable<IntType> {
-    private static let INT8_TYPE = IntType(TypeKind.`Int8`)
-
     private static let INT16_TYPE = IntType(TypeKind.`Int16`)
-
     private static let INT32_TYPE = IntType(TypeKind.`Int32`)
-
     private static let INT64_TYPE = IntType(TypeKind.`Int64`)
-
+    private static let INT8_TYPE = IntType(TypeKind.`Int8`)
     private static let INT_NATIVE_TYPE = IntType(TypeKind.`IntNative`)
-
-    private static let UINT8_TYPE = IntType(TypeKind.`UInt8`)
-
     private static let UINT16_TYPE = IntType(TypeKind.`UInt16`)
-
     private static let UINT32_TYPE = IntType(TypeKind.`UInt32`)
-
     private static let UINT64_TYPE = IntType(TypeKind.`UInt64`)
-
+    private static let UINT8_TYPE = IntType(TypeKind.`UInt8`)
     private static let UINT_NATIVE_TYPE = IntType(TypeKind.`UIntNative`)
+
+    private init(kind: TypeKind) {
+        super(kind)
+        setHashCode()
+    }
 
     /**
      * Gets the Int16 type instance.
@@ -1130,19 +1149,19 @@ public class IntType <: NumericType & Equatable<IntType> {
     }
 
     /**
+     * Gets the Int8 type instance.
+     * @return The Int8 type.
+     */
+    public static func getInt8(): IntType {
+        return INT8_TYPE
+    }
+
+    /**
      * Gets the IntNative type instance.
      * @return The IntNative type.
      */
     public static func getIntNative(): IntType {
         return INT_NATIVE_TYPE
-    }
-
-    /**
-     * Gets the UInt8 type instance.
-     * @return The UInt8 type.
-     */
-    public static func getUInt8(): IntType {
-        return UINT8_TYPE
     }
 
     /**
@@ -1170,20 +1189,19 @@ public class IntType <: NumericType & Equatable<IntType> {
     }
 
     /**
+     * Gets the UInt8 type instance.
+     * @return The UInt8 type.
+     */
+    public static func getUInt8(): IntType {
+        return UINT8_TYPE
+    }
+
+    /**
      * Gets the UIntNative type instance.
      * @return The UIntNative type.
      */
     public static func getUIntNative(): IntType {
         return UINT_NATIVE_TYPE
-    }
-
-    /**
-     * Checks if this IntType is equal to another IntType.
-     * @param other The IntType to compare with.
-     * @return true if the types are equal, false otherwise.
-     */
-    public operator func ==(other: IntType): Bool {
-        return this._kind == other._kind
     }
 
     /**
@@ -1195,16 +1213,12 @@ public class IntType <: NumericType & Equatable<IntType> {
     }
 
     /**
-     * Gets the Int8 type instance.
-     * @return The Int8 type.
+     * Checks if this IntType is equal to another IntType.
+     * @param other The IntType to compare with.
+     * @return true if the types are equal, false otherwise.
      */
-    public static func getInt8(): IntType {
-        return INT8_TYPE
-    }
-
-    private init(kind: TypeKind) {
-        super(kind)
-        setHashCode()
+    public operator func ==(other: IntType): Bool {
+        return this._kind == other._kind
     }
 }
 
@@ -1216,13 +1230,9 @@ public class IntType <: NumericType & Equatable<IntType> {
 public class RuneType <: BuiltinType & Equatable<RuneType> {
     private static let RUNE_TYPE = RuneType()
 
-    /**
-     * Checks if this RuneType is equal to another RuneType.
-     * @param _ The other RuneType to compare with (unused, always returns true).
-     * @return Always returns true since all RuneType instances are equal.
-     */
-    public operator func ==(_: RuneType): Bool {
-        return true
+    private init() {
+        super(TypeKind.`Rune`)
+        setHashCode()
     }
 
     /**
@@ -1233,9 +1243,13 @@ public class RuneType <: BuiltinType & Equatable<RuneType> {
         return RUNE_TYPE
     }
 
-    private init() {
-        super(TypeKind.`Rune`)
-        setHashCode()
+    /**
+     * Checks if this RuneType is equal to another RuneType.
+     * @param _ The other RuneType to compare with (unused, always returns true).
+     * @return Always returns true since all RuneType instances are equal.
+     */
+    public operator func ==(_: RuneType): Bool {
+        return true
     }
 }
 
@@ -1247,13 +1261,9 @@ public class RuneType <: BuiltinType & Equatable<RuneType> {
 public class UnitType <: BuiltinType & Equatable<UnitType> {
     private static let UNIT_TYPE = UnitType()
 
-    /**
-     * Checks if this UnitType is equal to another UnitType.
-     * @param _ The other UnitType to compare with (unused, always returns true).
-     * @return Always returns true since all UnitType instances are equal.
-     */
-    public operator func ==(_: UnitType): Bool {
-        return true
+    private init() {
+        super(TypeKind.`Unit`)
+        setHashCode()
     }
 
     /**
@@ -1264,9 +1274,13 @@ public class UnitType <: BuiltinType & Equatable<UnitType> {
         return UNIT_TYPE
     }
 
-    private init() {
-        super(TypeKind.`Unit`)
-        setHashCode()
+    /**
+     * Checks if this UnitType is equal to another UnitType.
+     * @param _ The other UnitType to compare with (unused, always returns true).
+     * @return Always returns true since all UnitType instances are equal.
+     */
+    public operator func ==(_: UnitType): Bool {
+        return true
     }
 }
 
@@ -1278,11 +1292,8 @@ public class UnitType <: BuiltinType & Equatable<UnitType> {
 internal class InvalidType <: Type & Equatable<InvalidType> {
     private static let INVALID_TYPE = InvalidType()
 
-    /**
-     * All InvalidType instances compare equal.
-     */
-    public operator func ==(_: InvalidType): Bool {
-        return true
+    private init() {
+        super(TypeKind.Invalid)
     }
 
     /**
@@ -1293,8 +1304,11 @@ internal class InvalidType <: Type & Equatable<InvalidType> {
         return INVALID_TYPE
     }
 
-    private init() {
-        super(TypeKind.Invalid)
+    /**
+     * All InvalidType instances compare equal.
+     */
+    public operator func ==(_: InvalidType): Bool {
+        return true
     }
 }
 
@@ -1307,6 +1321,21 @@ internal class InvalidType <: Type & Equatable<InvalidType> {
 public class RefType <: Type & Equatable<RefType> {
     //                             baseType -> RefType
     private static var CACHE = HashMap<Type, RefType>()
+
+    /**
+     * Gets the base type that this reference type refers to.
+     * @type { Type }
+     */
+    public prop baseType: Type {
+        get() {
+            return _typeArgs[0]
+        }
+    }
+
+    private init(baseType: Type) {
+        super(TypeKind.Ref, ArrayList<Type>([baseType]))
+        setHashCode()
+    }
 
     /**
      * Gets or creates a RefType for the given base type.
@@ -1322,16 +1351,6 @@ public class RefType <: Type & Equatable<RefType> {
         let newRefType = RefType(baseType)
         CACHE[baseType] = newRefType
         return newRefType
-    }
-
-    /**
-     * Gets the base type that this reference type refers to.
-     * @type { Type }
-     */
-    public prop baseType: Type {
-        get() {
-            return _typeArgs[0]
-        }
     }
 
     /**
@@ -1353,11 +1372,6 @@ public class RefType <: Type & Equatable<RefType> {
     public operator func ==(other: RefType): Bool {
         return this._typeArgs[0] == other._typeArgs[0]
     }
-
-    private init(baseType: Type) {
-        super(TypeKind.Ref, ArrayList<Type>([baseType]))
-        setHashCode()
-    }
 }
 
 /**
@@ -1369,6 +1383,21 @@ public class RefType <: Type & Equatable<RefType> {
 public class BoxType <: Type & Equatable<BoxType> {
     //                             baseType -> BoxType
     private static var CACHE = HashMap<Type, BoxType>()
+
+    /**
+     * Gets the base type that this box type wraps.
+     * @type { Type }
+     */
+    public prop baseType: Type {
+        get() {
+            return _typeArgs[0]
+        }
+    }
+
+    private init(baseType: Type) {
+        super(TypeKind.Box, ArrayList<Type>([baseType]))
+        setHashCode()
+    }
 
     /**
      * Gets or creates a BoxType for the given base type.
@@ -1399,27 +1428,12 @@ public class BoxType <: Type & Equatable<BoxType> {
     }
 
     /**
-     * Gets the base type that this box type wraps.
-     * @type { Type }
-     */
-    public prop baseType: Type {
-        get() {
-            return _typeArgs[0]
-        }
-    }
-
-    /**
      * Checks if this BoxType is equal to another BoxType.
      * @param other The BoxType to compare with.
      * @return true if the types are equal, false otherwise.
      */
     public operator func ==(other: BoxType): Bool {
         return hasSameTypeKindAndArgs(other)
-    }
-
-    private init(baseType: Type) {
-        super(TypeKind.Box, ArrayList<Type>([baseType]))
-        setHashCode()
     }
 }
 
@@ -1430,10 +1444,35 @@ public class BoxType <: Type & Equatable<BoxType> {
  * The class maintains a cache of all raw array types to ensure uniqueness.
  */
 public class RawArrayType <: BuiltinType & Equatable<RawArrayType> {
-    internal let _dims: UInt32
-
     //                          element type -> (dims, RawArrayType)
     private static var CACHE = HashMap<Type, HashMap<UInt32, RawArrayType>>()
+    internal let _dims: UInt32
+
+    /**
+     * Gets the number of dimensions of this raw array.
+     * @type { UInt32 }
+     */
+    public prop dims: UInt32 {
+        get() {
+            return _dims
+        }
+    }
+
+    /**
+     * Gets the element type of this raw array.
+     * @type { Type }
+     */
+    public prop elementType: Type {
+        get() {
+            return _typeArgs[0]
+        }
+    }
+
+    private init(elementType: Type, dims: UInt32) {
+        super(TypeKind.RawArray, ArrayList<Type>([elementType]))
+        this._dims = dims
+        setHashCode()
+    }
 
     /**
      * Gets or creates a RawArrayType for the given element type and dimensions.
@@ -1482,32 +1521,6 @@ public class RawArrayType <: BuiltinType & Equatable<RawArrayType> {
     public operator func ==(other: RawArrayType): Bool {
         return hasSameTypeKindAndArgs(other) && this._dims == other._dims
     }
-
-    /**
-     * Gets the element type of this raw array.
-     * @type { Type }
-     */
-    public prop elementType: Type {
-        get() {
-            return _typeArgs[0]
-        }
-    }
-
-    /**
-     * Gets the number of dimensions of this raw array.
-     * @type { UInt32 }
-     */
-    public prop dims: UInt32 {
-        get() {
-            return _dims
-        }
-    }
-
-    private init(elementType: Type, dims: UInt32) {
-        super(TypeKind.RawArray, ArrayList<Type>([elementType]))
-        this._dims = dims
-        setHashCode()
-    }
 }
 
 /**
@@ -1517,23 +1530,8 @@ public class RawArrayType <: BuiltinType & Equatable<RawArrayType> {
  * The class maintains a cache of all VArray types to ensure uniqueness.
  */
 public class VArrayType <: BuiltinType & Equatable<VArrayType> {
-    internal let _size: Int64
-
     private static var CACHE = HashMap<Type, HashMap<Int64, VArrayType>>()
-
-    /**
-     * Converts this VArrayType to its string representation.
-     * @return A string representation of the VArray type (VArray<elementType, $size>).
-     */
-    public func toString(): String {
-        let result = StringBuilder()
-        result.append("VArray<")
-        result.append(elementType.toString())
-        result.append(", $")
-        result.append(size.toString())
-        result.append(">")
-        return result.toString()
-    }
+    internal let _size: Int64
 
     /**
      * Gets the element type of this VArray.
@@ -1555,13 +1553,10 @@ public class VArrayType <: BuiltinType & Equatable<VArrayType> {
         }
     }
 
-    /**
-     * Checks if this VArrayType is equal to another VArrayType.
-     * @param other The VArrayType to compare with.
-     * @return true if the types are equal, false otherwise.
-     */
-    public operator func ==(other: VArrayType): Bool {
-        return hasSameTypeKindAndArgs(other) && this._size == other._size
+    private init(elementType: Type, size: Int64) {
+        super(TypeKind.`VArray`, ArrayList<Type>([elementType]))
+        this._size = size
+        setHashCode()
     }
 
     /**
@@ -1587,10 +1582,27 @@ public class VArrayType <: BuiltinType & Equatable<VArrayType> {
         return newVArrayType
     }
 
-    private init(elementType: Type, size: Int64) {
-        super(TypeKind.`VArray`, ArrayList<Type>([elementType]))
-        this._size = size
-        setHashCode()
+    /**
+     * Converts this VArrayType to its string representation.
+     * @return A string representation of the VArray type (VArray<elementType, $size>).
+     */
+    public func toString(): String {
+        let result = StringBuilder()
+        result.append("VArray<")
+        result.append(elementType.toString())
+        result.append(", $")
+        result.append(size.toString())
+        result.append(">")
+        return result.toString()
+    }
+
+    /**
+     * Checks if this VArrayType is equal to another VArrayType.
+     * @param other The VArrayType to compare with.
+     * @return true if the types are equal, false otherwise.
+     */
+    public operator func ==(other: VArrayType): Bool {
+        return hasSameTypeKindAndArgs(other) && this._size == other._size
     }
 }
 
@@ -1603,12 +1615,23 @@ sealed abstract class CustomType <: Type & Equatable<CustomType> {
     internal var _def: CustomTypeDef
 
     /**
-     * Checks if this CustomType is equal to another CustomType.
-     * @param other The CustomType to compare with.
-     * @return true if the types are equal, false otherwise.
+     * All instance member names in linearization order (superclass chain then this type).
+     * @type { Array<String> }
      */
-    public operator func ==(other: CustomType): Bool {
-        return hasSameTypeKindAndArgs(other) && this._def == other._def
+    public prop allMemberVarNames: Array<String> {
+        get() {
+            var result: ArrayList<String> = ArrayList<String>()
+            if (isClassLikeType()) {
+                let classLikeDef = (def as ClassLikeDef).getOrThrow()
+                if (let Some(superClass) <- classLikeDef.superClass) {
+                    result = ArrayList<String>.of(superClass.allMemberVarNames)
+                }
+            }
+            for (memberVar in def.instanceVars) {
+                result.add(memberVar.name)
+            }
+            return result.toArray()
+        }
     }
 
     /**
@@ -1631,24 +1654,38 @@ sealed abstract class CustomType <: Type & Equatable<CustomType> {
         }
     }
 
-    /**
-     * All instance member names in linearization order (superclass chain then this type).
-     * @type { Array<String> }
-     */
-    public prop allMemberVarNames: Array<String> {
+    internal prop generic2InstTypeMap: HashMap<GenericType, Type> {
         get() {
-            var result: ArrayList<String> = ArrayList<String>()
-            if (isClassLikeType()) {
-                let classLikeDef = (def as ClassLikeDef).getOrThrow()
-                if (let Some(superClass) <- classLikeDef.superClass) {
-                    result = ArrayList<String>.of(superClass.allMemberVarNames)
-                }
+            let genericTypeParams = def.genericTypeParams
+            assert(genericTypeParams.size == genericTypeArgs.size, "Generic type params size mismatch")
+            var replaceTable: HashMap<GenericType, Type> = HashMap<GenericType, Type>()
+            for (i in 0..genericTypeParams.size) {
+                let genericTypeParam = genericTypeParams[i]
+                let genericTypeArg = genericTypeArgs[i]
+                replaceTable.add(genericTypeParam, genericTypeArg)
             }
-            for (memberVar in def.instanceVars) {
-                result.add(memberVar.name)
-            }
-            return result.toArray()
+            return replaceTable
         }
+    }
+
+    internal init(kind: TypeKind, def: CustomTypeDef, genericTypeParams: ArrayList<Type>) {
+        super(kind, genericTypeParams)
+        this._def = def
+    }
+
+    /**
+     * Extend definitions whose extended type matches this type or an instantiation of it.
+     * @param visited Used when matching generic-related extended types.
+     * @return Applicable ExtendDef nodes from the owning CustomTypeDef.
+     */
+    public func getExtendDefs(visited !: ArrayList<(Type, Type)> = ArrayList<(Type, Type)>()): Array<ExtendDef> {
+        var result: ArrayList<ExtendDef> = ArrayList<ExtendDef>()
+        for (exDef in def.extends) {
+            if (this.isEqualOrInstantiatedTypeOf(exDef.extendedType, visited: visited)) {
+                result.add(exDef)
+            }
+        }
+        return result.toArray()
     }
 
     /**
@@ -1718,20 +1755,7 @@ sealed abstract class CustomType <: Type & Equatable<CustomType> {
             }
             index -= 1
         }
-        throw Exception("Member variable `" + name + "` not found in " + toString())
-    }
-
-    /**
-     * Converts this CustomType to its string representation.
-     * @return A string representation of the custom type.
-     */
-    public func toString(): String {
-        let result = StringBuilder()
-        result.append(this._kind.toString())
-        result.append("-")
-        result.append(_def.identifierWithoutPrefix)
-        result.append(typeVecToString("<", genericTypeArgs, ">"))
-        return result.toString()
+        throw CHIRException("Member variable `" + name + "` not found in " + toString())
     }
 
     /**
@@ -1751,37 +1775,25 @@ sealed abstract class CustomType <: Type & Equatable<CustomType> {
     }
 
     /**
-     * Extend definitions whose extended type matches this type or an instantiation of it.
-     * @param visited Used when matching generic-related extended types.
-     * @return Applicable ExtendDef nodes from the owning CustomTypeDef.
+     * Converts this CustomType to its string representation.
+     * @return A string representation of the custom type.
      */
-    public func getExtendDefs(visited !: ArrayList<(Type, Type)> = ArrayList<(Type, Type)>()): Array<ExtendDef> {
-        var result: ArrayList<ExtendDef> = ArrayList<ExtendDef>()
-        for (exDef in def.extends) {
-            if (this.isEqualOrInstantiatedTypeOf(exDef.extendedType, visited: visited)) {
-                result.add(exDef)
-            }
-        }
-        return result.toArray()
+    public func toString(): String {
+        let result = StringBuilder()
+        result.append(this._kind.toString())
+        result.append("-")
+        result.append(_def.identifierWithoutPrefix)
+        result.append(typeVecToString("<", genericTypeArgs, ">"))
+        return result.toString()
     }
 
-    internal prop generic2InstTypeMap: HashMap<GenericType, Type> {
-        get() {
-            let genericTypeParams = def.genericTypeParams
-            assert(genericTypeParams.size == genericTypeArgs.size, "Generic type params size mismatch")
-            var replaceTable: HashMap<GenericType, Type> = HashMap<GenericType, Type>()
-            for (i in 0..genericTypeParams.size) {
-                let genericTypeParam = genericTypeParams[i]
-                let genericTypeArg = genericTypeArgs[i]
-                replaceTable.add(genericTypeParam, genericTypeArg)
-            }
-            return replaceTable
-        }
-    }
-
-    internal init(kind: TypeKind, def: CustomTypeDef, genericTypeParams: ArrayList<Type>) {
-        super(kind, genericTypeParams)
-        this._def = def
+    /**
+     * Checks if this CustomType is equal to another CustomType.
+     * @param other The CustomType to compare with.
+     * @return true if the types are equal, false otherwise.
+     */
+    public operator func ==(other: CustomType): Bool {
+        return hasSameTypeKindAndArgs(other) && this._def == other._def
     }
 }
 
@@ -1805,13 +1817,9 @@ public class ClassLikeType <: CustomType & Equatable<ClassLikeType> {
         }
     }
 
-    /**
-     * Checks if this ClassLikeType is equal to another ClassLikeType.
-     * @param other The ClassLikeType to compare with.
-     * @return true if the types are equal, false otherwise.
-     */
-    public operator func ==(other: ClassLikeType): Bool {
-        return hasSameTypeKindAndArgs(other) && this._def == other._def
+    private init(def: ClassLikeDef, genericTypeParams: ArrayList<Type>) {
+        super(TypeKind.ClassLike, def, genericTypeParams)
+        setHashCode()
     }
 
     /**
@@ -1839,14 +1847,6 @@ public class ClassLikeType <: CustomType & Equatable<ClassLikeType> {
     }
 
     /**
-     * Checks if this class type has a super class.
-     * @return true if the class has a super class, false otherwise.
-     */
-    internal func hasSuperClassType(): Bool {
-        return classLikeDef.superClass.isSome()
-    }
-
-    /**
      * Gets the super class type of this class.
      * @return The super class type.
      */
@@ -1855,9 +1855,21 @@ public class ClassLikeType <: CustomType & Equatable<ClassLikeType> {
         return (res as ClassLikeType).getOrThrow()
     }
 
-    private init(def: ClassLikeDef, genericTypeParams: ArrayList<Type>) {
-        super(TypeKind.ClassLike, def, genericTypeParams)
-        setHashCode()
+    /**
+     * Checks if this class type has a super class.
+     * @return true if the class has a super class, false otherwise.
+     */
+    internal func hasSuperClassType(): Bool {
+        return classLikeDef.superClass.isSome()
+    }
+
+    /**
+     * Checks if this ClassLikeType is equal to another ClassLikeType.
+     * @param other The ClassLikeType to compare with.
+     * @return true if the types are equal, false otherwise.
+     */
+    public operator func ==(other: ClassLikeType): Bool {
+        return hasSameTypeKindAndArgs(other) && this._def == other._def
     }
 }
 
@@ -1870,6 +1882,21 @@ public class ClassLikeType <: CustomType & Equatable<ClassLikeType> {
 public class StructType <: CustomType & Equatable<StructType> {
     //                def -> (generic type args signature -> StructType)
     private static var CACHE = HashMap<StructDef, HashMap<String, StructType>>()
+
+    /**
+     * Gets the StructDef associated with this struct type.
+     * @type { StructDef }
+     */
+    public prop structDef: StructDef {
+        get() {
+            return (def as StructDef).getOrThrow()
+        }
+    }
+
+    private init(def: StructDef, genericTypeParams: ArrayList<Type>) {
+        super(TypeKind.Struct, def, genericTypeParams)
+        setHashCode()
+    }
 
     /**
      * Gets or creates a StructType for the given struct definition and generic type parameters.
@@ -1896,27 +1923,12 @@ public class StructType <: CustomType & Equatable<StructType> {
     }
 
     /**
-     * Gets the StructDef associated with this struct type.
-     * @type { StructDef }
-     */
-    public prop structDef: StructDef {
-        get() {
-            return (def as StructDef).getOrThrow()
-        }
-    }
-
-    /**
      * Checks if this StructType is equal to another StructType.
      * @param other The StructType to compare with.
      * @return true if the types are equal, false otherwise.
      */
     public operator func ==(other: StructType): Bool {
         return hasSameTypeKindAndArgs(other) && this._def == other._def
-    }
-
-    private init(def: StructDef, genericTypeParams: ArrayList<Type>) {
-        super(TypeKind.Struct, def, genericTypeParams)
-        setHashCode()
     }
 }
 
@@ -1929,6 +1941,21 @@ public class StructType <: CustomType & Equatable<StructType> {
 public class EnumType <: CustomType & Equatable<EnumType> {
     //              def -> (generic type args signature -> EnumType)
     private static var CACHE = HashMap<EnumDef, HashMap<String, EnumType>>()
+
+    /**
+     * Gets the EnumDef associated with this enum type.
+     * @type { EnumDef }
+     */
+    public prop enumDef: EnumDef {
+        get() {
+            return (def as EnumDef).getOrThrow()
+        }
+    }
+
+    private init(def: EnumDef, genericTypeParams: ArrayList<Type>) {
+        super(TypeKind.Enum, def, genericTypeParams)
+        setHashCode()
+    }
 
     /**
      * Gets or creates an EnumType for the given enum definition and generic type parameters.
@@ -1955,27 +1982,12 @@ public class EnumType <: CustomType & Equatable<EnumType> {
     }
 
     /**
-     * Gets the EnumDef associated with this enum type.
-     * @type { EnumDef }
-     */
-    public prop enumDef: EnumDef {
-        get() {
-            return (def as EnumDef).getOrThrow()
-        }
-    }
-
-    /**
      * Checks if this EnumType is equal to another EnumType.
      * @param other The EnumType to compare with.
      * @return true if the types are equal, false otherwise.
      */
     public operator func ==(other: EnumType): Bool {
         return hasSameTypeKindAndArgs(other) && this._def == other._def
-    }
-
-    private init(def: EnumDef, genericTypeParams: ArrayList<Type>) {
-        super(TypeKind.Enum, def, genericTypeParams)
-        setHashCode()
     }
 }
 
@@ -1990,28 +2002,6 @@ public class FuncType <: Type & Equatable<FuncType> {
     private static var CACHE = HashMap<String, FuncType>()
     private let _hasVarArg: Bool
     private let _isCFunc: Bool
-
-    /**
-     * Gets or creates a FuncType for the given parameter types and return type.
-     *
-     * This method ensures that only one FuncType instance exists for each function signature.
-     * @param paramTypes The parameter types.
-     * @param retType The return type.
-     * @param varArg Whether the function has variable arguments (default: false).
-     * @param cFunc Whether this is a C function (default: false).
-     * @return The FuncType instance.
-     */
-    public static func get(paramTypes: Array<Type>, retType: Type, varArg!: Bool = false, cFunc!: Bool = false): FuncType {
-        var key = typeVecToString("(", paramTypes, ")") + "->" + retType.toString()
-        key += if (varArg) { "|1" } else { "|0" }
-        key += if (cFunc)  { "|1" } else { "|0" }
-        if (let Some(funcType) <- CACHE.get(key)) {
-            return funcType
-        }
-        let newFuncType = FuncType(ArrayList<Type>.of(paramTypes), retType, varArg, cFunc)
-        CACHE[key] = newFuncType
-        return newFuncType
-    }
 
     /**
      * Checks if this function type has variable arguments.
@@ -2053,6 +2043,36 @@ public class FuncType <: Type & Equatable<FuncType> {
         }
     }
 
+    private init(paramTypes: ArrayList<Type>, retType: Type, varArg: Bool, cFunc: Bool) {
+        super(TypeKind.Func, paramTypes)
+        this._hasVarArg = varArg
+        this._isCFunc = cFunc
+        _typeArgs.add(retType)
+        setHashCode()
+    }
+
+    /**
+     * Gets or creates a FuncType for the given parameter types and return type.
+     *
+     * This method ensures that only one FuncType instance exists for each function signature.
+     * @param paramTypes The parameter types.
+     * @param retType The return type.
+     * @param varArg Whether the function has variable arguments (default: false).
+     * @param cFunc Whether this is a C function (default: false).
+     * @return The FuncType instance.
+     */
+    public static func get(paramTypes: Array<Type>, retType: Type, varArg!: Bool = false, cFunc!: Bool = false): FuncType {
+        var key = typeVecToString("(", paramTypes, ")") + "->" + retType.toString()
+        key += if (varArg) { "|1" } else { "|0" }
+        key += if (cFunc)  { "|1" } else { "|0" }
+        if (let Some(funcType) <- CACHE.get(key)) {
+            return funcType
+        }
+        let newFuncType = FuncType(ArrayList<Type>.of(paramTypes), retType, varArg, cFunc)
+        CACHE[key] = newFuncType
+        return newFuncType
+    }
+
     /**
      * Converts this FuncType to its string representation.
      * @return A string representation of the function type.
@@ -2090,14 +2110,6 @@ public class FuncType <: Type & Equatable<FuncType> {
             this._hasVarArg == other._hasVarArg &&
             this._isCFunc == other._isCFunc
     }
-
-    private init(paramTypes: ArrayList<Type>, retType: Type, varArg: Bool, cFunc: Bool) {
-        super(TypeKind.Func, paramTypes)
-        this._hasVarArg = varArg
-        this._isCFunc = cFunc
-        _typeArgs.add(retType)
-        setHashCode()
-    }
 }
 
 /**
@@ -2110,25 +2122,8 @@ public class GenericType <: Type & Equatable<GenericType> {
     //                            identifier -> GenericType
     private static var CACHE = HashMap<String, GenericType>()
     internal let _identifier: String
-    private let _srcCodeName: String
     internal var _upperBounds: ArrayList<Type> = ArrayList<Type>()
-
-    /**
-     * Gets or creates a GenericType for the given identifier.
-     *
-     * This method ensures that only one GenericType instance exists for each identifier.
-     * @param identifier The internal identifier of the generic type.
-     * @param srcCodeName The source code identifier of the generic type.
-     * @return The GenericType instance.
-     */
-    public static func get(identifier: String, srcCodeName: String): GenericType {
-        if (let Some(gType) <- CACHE.get(identifier)) {
-            return gType
-        }
-        let newGType = GenericType(identifier, srcCodeName)
-        CACHE[identifier] = newGType
-        return newGType
-    }
+    private let _srcCodeName: String
 
     /**
      * Gets the source code identifier of this generic type.
@@ -2161,6 +2156,30 @@ public class GenericType <: Type & Equatable<GenericType> {
         }
     }
 
+    private init(identifier: String, srcCodeName: String) {
+        super(TypeKind.Generic)
+        this._identifier = identifier
+        this._srcCodeName = srcCodeName
+        setHashCode()
+    }
+
+    /**
+     * Gets or creates a GenericType for the given identifier.
+     *
+     * This method ensures that only one GenericType instance exists for each identifier.
+     * @param identifier The internal identifier of the generic type.
+     * @param srcCodeName The source code identifier of the generic type.
+     * @return The GenericType instance.
+     */
+    public static func get(identifier: String, srcCodeName: String): GenericType {
+        if (let Some(gType) <- CACHE.get(identifier)) {
+            return gType
+        }
+        let newGType = GenericType(identifier, srcCodeName)
+        CACHE[identifier] = newGType
+        return newGType
+    }
+
     /**
      * Converts this GenericType to its string representation.
      * @return A string representation of the generic type.
@@ -2183,13 +2202,6 @@ public class GenericType <: Type & Equatable<GenericType> {
             this._srcCodeName == other.srcCodeName &&
             this._upperBounds == other._upperBounds
     }
-
-    private init(identifier: String, srcCodeName: String) {
-        super(TypeKind.Generic)
-        this._identifier = identifier
-        this._srcCodeName = srcCodeName
-        setHashCode()
-    }
 }
 
 /**
@@ -2201,13 +2213,9 @@ public class GenericType <: Type & Equatable<GenericType> {
 public class ThisType <: Type & Equatable<ThisType> {
     private static let THIS_TYPE = ThisType()
 
-    /**
-     * Checks if this ThisType is equal to another ThisType.
-     * @param _ The other ThisType to compare with (unused, always returns true).
-     * @return Always returns true since all ThisType instances are equal.
-     */
-    public operator func ==(_: ThisType): Bool {
-        return true
+    private init() {
+        super(TypeKind.`This`)
+        setHashCode()
     }
 
     /**
@@ -2218,9 +2226,13 @@ public class ThisType <: Type & Equatable<ThisType> {
         return THIS_TYPE
     }
 
-    private init() {
-        super(TypeKind.`This`)
-        setHashCode()
+    /**
+     * Checks if this ThisType is equal to another ThisType.
+     * @param _ The other ThisType to compare with (unused, always returns true).
+     * @return Always returns true since all ThisType instances are equal.
+     */
+    public operator func ==(_: ThisType): Bool {
+        return true
     }
 }
 
@@ -2233,6 +2245,21 @@ public class ThisType <: Type & Equatable<ThisType> {
 public class TupleType <: Type & Equatable<TupleType> {
     //                             signature -> TupleType
     private static var CACHE = HashMap<String, TupleType>()
+
+    /**
+     * Gets the element types of this tuple.
+     * @type { Array<Type> }
+     */
+    public prop elementTypes: Array<Type> {
+        get() {
+            return _typeArgs.toArray()
+        }
+    }
+
+    private init(elementType: ArrayList<Type>) {
+        super(TypeKind.Tuple, elementType)
+        setHashCode()
+    }
 
     /**
      * Gets or creates a TupleType for the given element types.
@@ -2263,27 +2290,12 @@ public class TupleType <: Type & Equatable<TupleType> {
     }
 
     /**
-     * Gets the element types of this tuple.
-     * @type { Array<Type> }
-     */
-    public prop elementTypes: Array<Type> {
-        get() {
-            return _typeArgs.toArray()
-        }
-    }
-
-    /**
      * Checks if this TupleType is equal to another TupleType.
      * @param other The TupleType to compare with.
      * @return true if the types are equal, false otherwise.
      */
     public operator func ==(other: TupleType): Bool {
         return hasSameTypeKindAndArgs(other)
-    }
-
-    private init(elementType: ArrayList<Type>) {
-        super(TypeKind.Tuple, elementType)
-        setHashCode()
     }
 }
 

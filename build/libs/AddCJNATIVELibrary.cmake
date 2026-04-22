@@ -675,6 +675,16 @@ add_cangjie_library(
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx
     DEPENDS ${STDX_DEPENDENCIES})
 
+if(NOT CMAKE_BUILD_STAGE STREQUAL "postBuild")
+    add_cangjie_macro_library_in_local(
+        cangjie${BACKEND_TYPE}ChirToStringMacro
+        NO_SUB_PKG
+        PACKAGE_NAME "chir.toStringMacro"
+        MODULE_NAME "stdx"
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/chir/toStringMacro
+        DEPENDS ${CHIR_TOSTRING_MACRO_DEPENDENCIES})
+endif()
+
 add_cangjie_library(
     cangjie${BACKEND_TYPE}Chir
     NO_SUB_PKG

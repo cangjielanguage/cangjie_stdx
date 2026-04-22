@@ -9,7 +9,7 @@
 package stdx.chir
 
 /**
- * One annotation occurrence in CHIR, corresponding to source like `@ClassName[k1=v1, k2=v2]`.
+ * One annotation occurrence in CHIR, corresponding to source like `@ClassName[v1, v2, ...]`.
  *
  * Stores the annotation class name as written in source and a map from parameter names to
  * string values. Callers may construct instances for tests or plugins; the compiler pipeline
@@ -17,23 +17,7 @@ package stdx.chir
  */
 public class Annotation <: ToString {
     internal let _classSrcCodeName: String
-
-    internal var _fields = HashMap<String, String>()
-
-    /**
-     * Renders this annotation as `@ClassName[k1=v1, k2=v2, ...]`.
-     * @return Text form suitable for debugging and dumps.
-     */
-    public func toString(): String {
-        let result = StringBuilder()
-        result.append("@")
-        result.append(_classSrcCodeName)
-        result.append("[")
-        result.append(String.join(
-            _fields.toArray().map<String>({ pair => pair[0] + "=" + pair[1] }), delimiter: ", "))
-        result.append("]")
-        return result.toString()
-    }
+    internal var _fields = ArrayList<String>()
 
     /**
      * Source-level name of the annotation class (e.g. `MyAnno`).
@@ -46,21 +30,16 @@ public class Annotation <: ToString {
     }
 
     /**
-     * Looks up the value for a named annotation parameter.
-     * @param fieldName Parameter name as in source (matches keys in `toString()` output).
-     * @return `Some(value)` if the parameter exists, otherwise `None`.
+     * Gets the `fields` property.
+     * @type { Array<String> }
      */
-    public func getFieldValue(fieldName: String): ?String {
-        return _fields.get(fieldName)
-    }
-
-    /**
-     * Sets or overwrites an annotation parameter value.
-     * @param fieldName Parameter name.
-     * @param value String form of the value (as stored for CHIR).
-     */
-    public func setFieldValue(fieldName: String, value: String): Unit {
-        _fields[fieldName] = value
+    public mut prop fields: Array<String> {
+        get() {
+            _fields.toArray()
+        }
+        set(v) {
+            _fields = ArrayList<String>.of(v)
+        }
     }
 
     /**
@@ -69,6 +48,20 @@ public class Annotation <: ToString {
      */
     public init(classSrcCodeName: String) {
         this._classSrcCodeName = classSrcCodeName
+    }
+
+    /**
+     * Renders this annotation as `@ClassName[v1, v2, ...]`.
+     * @return Text form suitable for debugging and dumps.
+     */
+    public func toString(): String {
+        let result = StringBuilder()
+        result.append("@")
+        result.append(_classSrcCodeName)
+        result.append("[")
+        result.append(String.join(_fields.toArray(), delimiter: ", "))
+        result.append("]")
+        return result.toString()
     }
 }
 
@@ -80,24 +73,12 @@ public class Annotation <: ToString {
  * internal compiler APIs inside `stdx.chir`.
  */
 internal class AnnoInfo <: ToString {
-    // annotation factory function mangled name
-    internal var _identifier: String = "none"
-
-    // @class1Name[field1=value1, field2=value2]
-    // @class2Name[field1=value1, field2=value2]
+    // @class1Name[v1, v2, ...]
+    // @class2Name[v1, v2, ...]
     // func foo() { ... }
     internal var _annoClasses = ArrayList<Annotation>()
-
-    /**
-     * Concatenates each annotation's `toString()` on its own line.
-     * @return Multi-line debug text; may end with a trailing newline when non-empty.
-     */
-    public func toString(): String {
-        let result = StringBuilder()
-        result.append(String.join(
-            _annoClasses.toArray().map<String>({ anno => anno.toString() }), delimiter: "\n"))
-        return result.toString()
-    }
+    // annotation factory function mangled name
+    internal var _identifier: String = "none"
 
     internal init() {
         this._identifier = "none"
@@ -112,5 +93,13 @@ internal class AnnoInfo <: ToString {
     internal init(identifier: String, annoClasses: Array<Annotation>) {
         this._identifier = identifier
         this._annoClasses = ArrayList<Annotation>.of(annoClasses)
+    }
+
+    /**
+     * Concatenates each annotation's `toString()` on its own line.
+     * @return Multi-line debug text; may end with a trailing newline when non-empty.
+     */
+    public func toString(): String {
+        return annoInfoToString(this, 0)
     }
 }

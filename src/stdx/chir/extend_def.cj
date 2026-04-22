@@ -16,7 +16,6 @@ package stdx.chir
  */
 public class ExtendDef <: CustomTypeDef {
     internal var _extendedType: Type
-
     internal var _genericTypeParams = ArrayList<GenericType>()
 
     /**
@@ -27,6 +26,21 @@ public class ExtendDef <: CustomTypeDef {
         get() {
             return _extendedType
         }
+    }
+
+    internal init(identifier: String, pkgName: String, extendedType: Type, genericTypeParams: ArrayList<GenericType>) {
+        super(CustomDefKind.Extend, identifier, String.empty, pkgName)
+        this._extendedType = extendedType
+        this._genericTypeParams = genericTypeParams
+        this._hashCode = calculateHashCode()
+    }
+
+    protected override func printComment(): String {
+        let extraStr = "id: " + identifier
+        if (let str <- super.printComment() && !str.isEmpty()) {
+            return str + ", " + extraStr
+        }
+        return "// " + extraStr
     }
 
     protected override func printTitle(): String {
@@ -44,20 +58,5 @@ public class ExtendDef <: CustomTypeDef {
             result += String.join(superTypeStr.toArray(), delimiter: " & ")
         }
         return result
-    }
-
-    protected override func printComment(): String {
-        let extraStr = "id: " + identifier
-        if (let str <- super.printComment() && !str.isEmpty()) {
-            return str + ", " + extraStr
-        }
-        return "// " + extraStr
-    }
-
-    internal init(identifier: String, pkgName: String, extendedType: Type, genericTypeParams: ArrayList<GenericType>) {
-        super(CustomDefKind.Extend, identifier, String.empty, pkgName)
-        this._extendedType = extendedType
-        this._genericTypeParams = genericTypeParams
-        this._hashCode = calculateHashCode()
     }
 }
