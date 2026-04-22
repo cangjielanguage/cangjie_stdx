@@ -158,6 +158,9 @@ __attribute__((visibility("hidden"))) char* GetCertSha256Hex(const X509* crt)
 {
     const size_t bufSize = 65; // 64 hex chars + null terminator
     char* buf = (char*)malloc(bufSize);
+    if (buf == NULL) {
+        return NULL;
+    }
 
     if (!CertIssuerSerialSha256Hex(crt, buf, bufSize)) {
         free(buf);
