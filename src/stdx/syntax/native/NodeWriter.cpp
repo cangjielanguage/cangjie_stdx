@@ -1222,10 +1222,10 @@ std::vector<flatbuffers::Offset<NodeFormat::Token>> NodeWriter::TokensVectorCrea
 flatbuffers::Offset<NodeFormat::MacroInvocation> NodeWriter::MacroInvocationCreateHelper(
     const MacroInvocation& macroInvocation)
 {
-    auto fullName = builder.CreateString(macroInvocation.fullName);
-    auto identifier = builder.CreateString(macroInvocation.identifier);
+    auto fullName = builder.CreateString(macroInvocation.macroCallDiagInfo.fullName);
+    auto identifier = builder.CreateString(macroInvocation.macroCallDiagInfo.identifier);
 
-    auto identifierPos = FlatPosCreateHelper(macroInvocation.identifierPos);
+    auto identifierPos = FlatPosCreateHelper(macroInvocation.macroCallDiagInfo.identifierPos);
     auto leftSquarePos = FlatPosCreateHelper(macroInvocation.leftSquarePos);
     auto rightSquarePos = FlatPosCreateHelper(macroInvocation.rightSquarePos);
     auto leftParenPos = FlatPosCreateHelper(macroInvocation.leftParenPos);
