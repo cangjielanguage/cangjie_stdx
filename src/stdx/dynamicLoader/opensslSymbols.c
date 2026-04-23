@@ -67,6 +67,8 @@ typedef struct OpenSslBackendCandidate {
 
 #define STDX_OPENSSL_CRYPTO_FILE_ENV "STDX_OPENSSL_CRYPTO_FILE"
 #define STDX_OPENSSL_SSL_FILE_ENV "STDX_OPENSSL_SSL_FILE"
+/* Keep configured library paths within a filesystem-sized bound before copying them. */
+#define STDX_OPENSSL_PATH_MAX_LEN 4096UL
 
 #ifndef CANGJIE_OPENSSL_RESOLVE_STRONG
 static char* g_configuredCryptoPath = NULL;
@@ -110,7 +112,11 @@ static char* DupCString(const char* src)
     if (src == NULL) {
         return NULL;
     }
-    size_t len = strlen(src) + 1;
+    size_t srcLen = strlen(src);
+    if (srcLen > STDX_OPENSSL_PATH_MAX_LEN) {
+        return NULL;
+    }
+    size_t len = srcLen + 1;
     char* copy = (char*)malloc(len);
     if (copy == NULL) {
         return NULL;
