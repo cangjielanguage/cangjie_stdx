@@ -152,7 +152,7 @@ void CollectAspects::CheckAndCollect(CHIR::Function& func)
             }
             /// ----------------------
 
-            auto packageName = annoPair.paramValues[0U];
+            auto annoPackageName = annoPair.paramValues[0U];
             auto className = annoPair.paramValues[1U];
             auto methodName = annoPair.paramValues[2U];
             auto isStatic = annoPair.paramValues[3U];
@@ -166,7 +166,7 @@ void CollectAspects::CheckAndCollect(CHIR::Function& func)
                         func.GetSrcCodeIdentifier().c_str());
                     return;
                 }
-                if (CHIR::GetTypeQualifiedName(*outerDef->GetType()) != (packageName + ":" + className)) {
+                if (CHIR::GetTypeQualifiedName(*outerDef->GetType()) != (annoPackageName + ":" + className)) {
                     myError.Emit(
                         "%s: Don't wave an instance method into another instance method with different `this` type.\n",
                         func.GetSrcCodeIdentifier().c_str());
@@ -175,7 +175,7 @@ void CollectAspects::CheckAndCollect(CHIR::Function& func)
             } else if (func.GetFuncType()->GetParamTypes().size() > (isFirstKind ? 0U : 1U) && !className.empty() &&
                 isStatic == "false") {
                 if (CHIR::GetTypeQualifiedName(*func.GetFuncType()->GetParamType(0U)) !=
-                    (packageName + ":" + className)) {
+                    (annoPackageName + ":" + className)) {
                     myError.Emit("%s: Don't wave a method into another instance method with different `this` type.\n",
                         func.GetSrcCodeIdentifier().c_str());
                     return;
@@ -241,10 +241,10 @@ void CollectAspects::CheckAndCollect(CHIR::Function& func)
                 // is a non-static method:
                 if (!className.empty() && isStatic == "false") {
                     auto funcType = static_cast<CHIR::FuncType*>(func.GetParam(func.GetNumOfParams() - 1U)->GetType());
-                    auto paramTys = funcType->GetParamTypes();
+                    auto tempParamTys = funcType->GetParamTypes();
                     // check the validation of `this` parameter
-                    if (paramTys.empty() ||
-                        CHIR::GetTypeQualifiedName(*paramTys[0]) != (packageName + ":" + className)) {
+                    if (tempParamTys.empty() ||
+                        CHIR::GetTypeQualifiedName(*tempParamTys[0]) != (annoPackageName + ":" + className)) {
                         myError.Emit("%s: For any function annotated with @ReplaceFuncBody, if it is intended to be "
                                      "woven into an instance member function, and its last parameter is of function "
                                      "type, the first parameter of this function type must be the same as the type "
@@ -253,16 +253,16 @@ void CollectAspects::CheckAndCollect(CHIR::Function& func)
                         return;
                     }
                     // skip `this` parameter
-                    paramTys = std::vector<CHIR::Type*>(paramTys.begin() + 1U, paramTys.end());
-                    funcType = builder.GetType<CHIR::FuncType>(paramTys, funcType->GetReturnType());
+                    tempParamTys = std::vector<CHIR::Type*>(tempParamTys.begin() + 1U, tempParamTys.end());
+                    funcType = builder.GetType<CHIR::FuncType>(tempParamTys, funcType->GetReturnType());
                     auto sig = CHIR::GetTypeQualifiedName(*funcType);
                     std::replace(sig.begin(), sig.end(), ':', '.');
-                    To to = {packageName, className, methodName, sig, isStatic, isRecursive};
+                    To to = {annoPackageName, className, methodName, sig, isStatic, isRecursive};
                     outputs.emplace_back(OutputInfo{annoPair.annoClassName, insert, to});
                 } else {
                     auto sig = CHIR::GetTypeQualifiedName(*func.GetParam(func.GetNumOfParams() - 1)->GetType());
                     std::replace(sig.begin(), sig.end(), ':', '.');
-                    To to = {packageName, className, methodName, sig, isStatic, isRecursive};
+                    To to = {annoPackageName, className, methodName, sig, isStatic, isRecursive};
                     outputs.emplace_back(OutputInfo{annoPair.annoClassName, insert, to});
                 }
             } else {
@@ -274,12 +274,12 @@ void CollectAspects::CheckAndCollect(CHIR::Function& func)
                 }
                 /// ----------------------
                 auto sig = annoPair.paramValues[4U];
-                To to = {packageName, className, methodName, sig, isStatic, isRecursive};
+                To to = {annoPackageName, className, methodName, sig, isStatic, isRecursive};
                 outputs.emplace_back(OutputInfo{annoPair.annoClassName, insert, to});
             }
 
             if (!hasCreateAnnoInfo) {
-                std::ofstream outFile(packageName + ".annoinfo");
+                std::ofstream outFile(annoPackageName + ".annoinfo");
                 if (!outFile) {
                     myError.Emit("Failed to create file.\n");
                     return;
@@ -288,7 +288,7 @@ void CollectAspects::CheckAndCollect(CHIR::Function& func)
                 hasCreateAnnoInfo = true;
                 outFile.close();
             }
-            std::ofstream outFile(packageName + ".annoinfo", std::ios_base::app);
+            std::ofstream outFile(annoPackageName + ".annoinfo", std::ios_base::app);
             if (!outFile) {
                 myError.Emit("Failed to access file.\n");
                 return;
