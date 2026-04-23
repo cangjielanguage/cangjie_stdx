@@ -27,7 +27,7 @@ set(LINK_FLAGS_BUILD_ID "-Wl,--build-id=none")
 
 set(EXTRA_C_FLAGS "-Wextra -Wno-implicit-function-declaration -Wno-unused-parameter -Wformat=2 -Wno-format-nonliteral -Wstrict-prototypes -Wframe-larger-than=100000 -Wvla -Wunused -Wnon-virtual-dtor -Wdelete-non-virtual-dtor -Woverloaded-virtual -Wconversion -Wno-shorten-64-to-32 -Wno-implicit-int-conversion -Wno-sign-conversion -Wno-string-conversion -Wfloat-equal")
 set(C_FLAGS "${WARNINGS_SETTINGS} ${C_OTHER_FLAGS} ${OTHER_FLAGS} ${EXTRA_C_FLAGS} -std=gnu11 -Wshadow")
-set(CPP_FLAGS "${WARNINGS_SETTINGS} ${CXX_OTHER_FLAGS} ${OTHER_FLAGS} ${EXTRA_C_FLAGS} -std=c++11 -Wswitch-default -Wcast-qual -Wcast-align")
+set(CPP_FLAGS "${WARNINGS_SETTINGS} ${CXX_OTHER_FLAGS} ${OTHER_FLAGS} ${EXTRA_C_FLAGS} -std=c++11 -Wswitch-default -Wcast-qual -Wcast-align -Wshadow")
 
 set(CMAKE_C_FLAGS "${C_FLAGS}")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -g")

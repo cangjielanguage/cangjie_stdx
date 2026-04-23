@@ -1112,7 +1112,7 @@ flatbuffers::Offset<NodeFormat::Annotation> NodeWriter::SerializeAnnotation(AstA
     auto overlowStrategy = builder.CreateString(OverflowStrategyName(annotation->overflowStrategy));
     std::vector<flatbuffers::Offset<NodeFormat::Token>> vecToken;
     for (auto& token : annotation->attrs) {
-        auto kind = static_cast<uint16_t>(token.kind);
+        auto tokenKind = static_cast<uint16_t>(token.kind);
         auto value = builder.CreateString(token.Value());
         auto pos = FlatPosCreateHelper(token.Begin());
         auto delimiterNum = token.delimiterNum;
@@ -1121,7 +1121,8 @@ flatbuffers::Offset<NodeFormat::Annotation> NodeWriter::SerializeAnnotation(AstA
         if (token.Begin() + token.Value().size() + 1 == token.End()) {
             hasEscape = true;
         }
-        vecToken.push_back(NodeFormat::CreateToken(builder, kind, value, &pos, delimiterNum, isSingleQuote, hasEscape));
+        vecToken.push_back(
+            NodeFormat::CreateToken(builder, tokenKind, value, &pos, delimiterNum, isSingleQuote, hasEscape));
     }
     auto attrsCommaPositions = CreatePositionVector(annotation->attrCommas);
     auto fbAttrs = builder.CreateVector(vecToken);
