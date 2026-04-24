@@ -167,7 +167,7 @@ python3 build.py install
     - `-t` or `--build-type`，specifies the type of build artifact, which can be either `release` or `debug`
     - `--target-lib` specifies the openssl lib directory
 
-3. `build.py install` ommand installs the build artifacts to the `output` directory.
+3. `build.py install` command installs the build artifacts to the `target` directory.
 
 If the compilation is successful, a product directory named target by default will be obtained in the project directory.
 
@@ -241,7 +241,7 @@ cjc -L $STATIC_OPENSSL_DIR --link-option "-force_load" --link-option "$STATIC_OP
 
 ### Installed Binary Layout
 
-In the installed Linux/CJNATIVE SDK output, the main `stdx` binary directories are:
+The following uses the installed `stdx` on Linux/CJNATIVE as an example to illustrate its binary layout.
 
 - `dynamic/stdx`: dynamic libraries and related runtime artifacts
 - `static/stdx`: default static libraries and FFI archives

@@ -162,9 +162,9 @@ python3 build.py install
 2. `build.py build` 命令开始执行编译：
    - `-t` 即 `--build-type`，指定编译产物类型，可以是 `release` 或 `debug`
    - `--target-lib` 指定 openssl lib 目录
-3. `build.py install` 命令将编译产物安装到 `target` 目录下。
+3. `build.py install` 命令默认将编译产物安装到仓库 `target` 目录下。
 
-编译成功会在工程目录中得到默认名称为 target 产物目录。
+编译成功后，会在工程目录中生成默认名称为 target 的产物目录。
 
 更多构建选项请参阅 [build.py](build.py) 或通过 `--help` 选项了解。
 
@@ -237,7 +237,7 @@ cjc -L $STATIC_OPENSSL_DIR --link-option "-force_load" --link-option "$STATIC_OP
 
 ### 已安装二进制目录
 
-在 Linux/CJNATIVE 的已安装 SDK 产物中，`stdx` 主要包含以下目录：
+以下以 Linux/CJNATIVE 平台下已安装的 `stdx` 为例，说明其产物目录结构。
 
 - `dynamic/stdx`：动态库及相关运行时产物
 - `static/stdx`：默认静态库和 FFI 归档
