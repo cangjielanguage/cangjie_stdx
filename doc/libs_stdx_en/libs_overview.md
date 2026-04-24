@@ -62,7 +62,7 @@ cjc -L $STATIC_OPENSSL_DIR --link-option "-force_load" --link-option "$STATIC_OP
 
 When importing the above packages in code and compiling with the `cjc` command, the linking order must strictly follow the package dependencies listed above. If using `cjpm`, this is not necessary.
 
-When using static libraries, importing `crypto` and `net` libraries requires additional system symbols. On `Windows` OS, add `-lcrypt32`, and on `Linux` OS, add `-ldl`.
+When using static libraries, importing `crypto` and `net` libraries requires additional system symbols. On `Windows` OS, add `-lcrypt32`, and on `Linux` OS, add `-ldl`. When using static libraries, importing `syntax` library requires additional system symbols. On `Windows` OS, add `-lc++ -lunwind`, on `macOS` OS, add `-lc++`, on `Linux` OS, add `-lstdc++ -lgcc_s`, on `Android` OS, add `-lc++ -lunwind`, and `iOS` OS, add `-lc++`. 
 
 ### cjc Command Example
 
