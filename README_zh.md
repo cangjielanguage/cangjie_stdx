@@ -162,7 +162,7 @@ python3 build.py install
 2. `build.py build` 命令开始执行编译：
    - `-t` 即 `--build-type`，指定编译产物类型，可以是 `release` 或 `debug`
    - `--target-lib` 指定 openssl lib 目录
-3. `build.py install` 命令默认将编译产物安装到仓库 `target/` 目录下。
+3. `build.py install` 命令默认将编译产物安装到仓库 `target` 目录下。
 
 编译成功后，会在工程目录中生成默认名称为 target 的产物目录。
 
