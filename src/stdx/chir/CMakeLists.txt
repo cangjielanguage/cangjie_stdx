@@ -7,4 +7,4 @@
 
 set(CHIR_SRCS "*.cj" CACHE INTERNAL "")
 
-add_subdirectory(toStringMacro)
+add_subdirectory(to_string_macro)
