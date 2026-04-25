@@ -156,11 +156,26 @@ def get_cwd_macos(pid):
 
 def get_cwd_windows(pid, debug=False):
     """
-    Returns the user's local application data directory on Windows.
-    This is typically C:\\Users\\<username>\\AppData\\Local
+    Get the current working directory of a process on Windows.
+    
+    Args:
+        pid (int): Process ID
+        debug (bool): Debug flag
+        
+    Returns:
+        str: Current working directory of the process or None if failed
     """
-    return os.path.join(os.getenv("LOCALAPPDATA"), "stdx")
-
+    # Try using psutil if available (most reliable)
+    try:
+        import psutil
+        process = psutil.Process(pid)
+        return process.cwd()
+    except ImportError:
+        return None
+    except (psutil.NoSuchProcess, psutil.AccessDenied):
+        if debug:
+            print(f"Failed to get cwd for pid {pid} using psutil")
+        return None
 
 def find_ancestor_and_cwd(target_name="cjpm"):
     global BUILD_TARGET
@@ -213,12 +228,17 @@ def find_ancestor_and_cwd(target_name="cjpm"):
                     ppid = int(info["ParentProcessId"])
                 if "Name" in info:
                     name = info["Name"]
-                if "ExecutablePath" in info and "build-script" in info["ExecutablePath"]:
+                # Try to get working directory using our new function
+                temp_cwd = get_cwd_windows(current_pid)
+                if temp_cwd:
+                    win_cwd = temp_cwd
+                # Fallback to the original logic if needed
+                elif "ExecutablePath" in info and "build-script" in info["ExecutablePath"]:
                     win_cwd = info["ExecutablePath"].split("build-script-cache")[0]
-                    print("ExecutablePath: " + win_cwd)
-                    if DEVECO_OH_NATIVE_HOME != "":
-                        DEVECO_CUR_DIR = win_cwd
-                        print("DEVECO_CUR_DIR:", DEVECO_CUR_DIR)
+                    print("Using fallback cwd from executable path: " + win_cwd)
+                if DEVECO_OH_NATIVE_HOME != "" and win_cwd:
+                    DEVECO_CUR_DIR = win_cwd
+                    print("DEVECO_CUR_DIR:", DEVECO_CUR_DIR)
 
         if not ppid or not name:
             break
