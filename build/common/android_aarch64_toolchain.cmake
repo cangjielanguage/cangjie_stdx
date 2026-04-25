@@ -22,5 +22,10 @@ if(CMAKE_ANDROID_API EQUAL 26)
 else()
     set(TARGET_TRIPLE_DIRECTORY_PREFIX linux_android${CMAKE_ANDROID_API}_aarch64)
 endif()
+
+# Add support for 16k page size (required for Android 13+)
+set(ANDROID_16K_LINKER_FLAGS "-Wl,-z,max-page-size=16384")
+set(LINK_FLAGS "${LINK_FLAGS} ${ANDROID_16K_LINKER_FLAGS}")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${ANDROID_16K_LINKER_FLAGS}")
  
 # Variable ANDROID will be set by CMake. Custom variables are not necessary here.
