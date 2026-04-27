@@ -39,9 +39,10 @@ set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE)
 option(CANGJIE_CODEGEN_CJNATIVE_BACKEND "Build a version for CJNATIVE backend" ON)
 option(CANGJIE_SKIP_FIND_OPENSSL "Do not look for OpenSSL package, OpenSSL library will be searched by linker" OFF)
 
-# Static stdx artifacts use the "auto" OpenSSL resolver (prefer direct link when symbols exist,
-# otherwise fallback to dlopen/dlsym at runtime).
+# Static stdx artifacts keep the legacy auto resolver by default.
 set(CANGJIE_OPENSSL_FFI_OBJECTS_TARGET "cangjie-dynamicLoader-opensslFFI-auto-objs")
+# Strong resolver objects are built in parallel for the opt-in OpenSSL-strong package variant.
+set(CANGJIE_OPENSSL_FFI_STRONG_OBJECTS_TARGET "cangjie-dynamicLoader-opensslFFI-strong-objs")
 
 message(STATUS "Build type for the current project: ${CMAKE_BUILD_TYPE}")
 

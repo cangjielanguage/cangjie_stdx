@@ -222,7 +222,8 @@ explain:
 > - On MacOS, using stdx may trigger a popup warning about unknown source or inability to detect malware. After extracting stdx, you can run `xattr -dr com.apple.quarantine <stdx extraction path> &> /dev/null || true` in the terminal to remove the quarantine attribute. For example: `xattr -dr com.apple.quarantine ~/Downloads/darwin_x86_64_cjnative/ &> /dev/null || true`
 > - If you import the static library of `stdx` and use the crypto and net packages, you need to add `-lcrypt32` to `compile-option` on `Windows`.
 > - When using dynamic `stdx` binaries (`.so`/`.dll`), OpenSSL is resolved at runtime via `dlopen/dlsym` (Unix-like) or `LoadLibrary/GetProcAddress` (Windows); linking OpenSSL statically (`.a`/`.lib`) into the application will not be used by this runtime resolver.
-> - On `Linux`, static `stdx` uses an OpenSSL resolver in `auto` mode: it prefers direct linking when OpenSSL symbols are available, and falls back to `dlopen/dlsym` only when needed (add `-ldl` if the fallback is used). When linking OpenSSL statically (`.a`), you may need `--whole-archive` to ensure the archive is actually pulled in; otherwise the fallback may try to load system `libssl/libcrypto`.
+> - On `Linux`, the default static `stdx` libraries use an OpenSSL resolver in `auto` mode: they prefer directly linked OpenSSL symbols, and fall back to `dlopen/dlsym` only when needed. If the fallback may be used, add `-ldl`.
+> - When linking OpenSSL statically for the default `auto` static libraries, you may need `--whole-archive` to ensure `libssl.a` and `libcrypto.a` are actually pulled in; otherwise the fallback path may still try to load system `libssl/libcrypto`.
 > - When linking OpenSSL statically, place `-lssl -lcrypto` after `stdx` libraries that reference them to avoid “undefined reference” due to static link order.
 > - In cross-compilation scenarios, if there is a need to develop custom macro packages and their business logic must rely on stdx for implementation, the stdx path for the local development platform must also be configured in addition to that for the target runtime platform.
 
@@ -235,6 +236,59 @@ cjc -L $STATIC_OPENSSL_DIR --link-option "-Bstatic" --link-option "--whole-archi
 # Apple ld64
 cjc -L $STATIC_OPENSSL_DIR --link-option "-force_load" --link-option "$STATIC_OPENSSL_DIR/libssl.a" --link-option "-force_load" --link-option "$STATIC_OPENSSL_DIR/libcrypto.a" main.cj
 ```
+
+### Installed Binary Layout
+
+In the installed Linux/CJNATIVE SDK output, the main `stdx` binary directories are:
+
+- `dynamic/stdx`: dynamic libraries and related runtime artifacts
+- `static/stdx`: default static libraries and FFI archives
+- `static-static-link-extern/stdx`: static libraries exposed for external static linking
+
+The installed package should be documented against these output directories instead of intermediate files under `build_temp`.
+
+### OpenSSL Static Linking Layout
+
+For Linux/CJNATIVE, the installed static package layout distinguishes two OpenSSL-linking behaviors by directory:
+
+- `static/stdx`: the default static-library directory
+- `static-static-link-extern/stdx`: the directory for external static linking
+
+Key differences:
+
+- Libraries from `static/stdx` may fall back to runtime OpenSSL loading when necessary.
+- Libraries from `static-static-link-extern/stdx` do not use `dlopen/dlsym` fallback and do not depend on system OpenSSL discovery at runtime.
+- When using `static-static-link-extern/stdx`, the final application link step must provide the required `libssl.a` and `libcrypto.a`.
+- If the linked OpenSSL archive is missing required symbols, the build fails at final link time instead of falling back at runtime.
+
+Version reminder:
+
+- `stdx` expects an OpenSSL 3.x dependency set. If the OpenSSL version is too low, required symbols may be missing and the build or runtime may fail.
+- Do not mix different OpenSSL major versions across compile, link, and runtime stages. For example, compiling against OpenSSL 3 headers but linking or loading OpenSSL 1.1 can lead to missing symbols, ABI mismatch, or undefined behavior.
+- When using `static-static-link-extern/stdx`, make sure `libssl.a` and `libcrypto.a` come from the same OpenSSL build and version.
+- When using `dynamic/stdx` or libraries from `static/stdx`, make sure the runtime-loaded `libssl` and `libcrypto` files are from the same OpenSSL version family.
+
+Suggested handling:
+
+- If the OpenSSL version is too low, upgrade to a complete OpenSSL 3.x release first, then rebuild or relink the application.
+- If compile-time headers, link-time archives, and runtime dynamic libraries are not from the same version family, replace them with artifacts from one consistent OpenSSL installation.
+- If you use `static-static-link-extern/stdx`, clean the old link inputs and relink with one matching pair of `libssl.a` and `libcrypto.a`.
+- When using `static-static-link-extern/stdx`, the final link step must provide the OpenSSL symbols required by the `stdx` static libraries that participate in linking.
+- If you use a trimmed OpenSSL archive with `static-static-link-extern/stdx` and the final link reports missing OpenSSL symbols, it means the current `stdx` link set still requires those symbols. Add back the corresponding real implementations in `libssl.a` or `libcrypto.a`.
+- Do not decide trimming only from the application's direct OpenSSL usage. Also check whether the linked `stdx` static libraries still reference additional OpenSSL symbols.
+- Do not use hand-written empty implementations to bypass these link errors. An empty implementation may satisfy the linker, but it does not provide correct runtime behavior and may cause leaks, state corruption, functional errors, or security problems.
+- If you use `dynamic/stdx` or `static/stdx`, remove conflicting old `libssl` and `libcrypto` files from the runtime search path and keep only the intended OpenSSL 3.x library set visible to the loader.
+- If you encounter missing-symbol errors, first verify the exact library files that are being linked or loaded, then check whether they all come from the same OpenSSL version and architecture.
+
+Typical OpenSSL-related libraries affected by this distinction include:
+
+- `libstdx.crypto.digest.a`
+- `libstdx.crypto.keys.a`
+- `libstdx.crypto.crypto.a`
+- `libstdx.crypto.x509.a`
+- `libstdx.net.tls.a`
+
+Use `static-static-link-extern/stdx` when you want an explicit static-link contract with OpenSSL and do not want runtime fallback behavior. In this mode, OpenSSL archive location is controlled by the application's existing link flags such as `-L` and `link-option`.
 
 **Configuration example**：Assuming the development environment is Windows x86_64 and importing the dynamic binary of `stdx`, the `cjpm.toml` configuration example is as follows:
 

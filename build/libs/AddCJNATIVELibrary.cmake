@@ -38,11 +38,25 @@ if(CMAKE_BUILD_STAGE STREQUAL "postBuild")
 else()
     set(stdxo_path ${output_cj_object_dir})
 endif()
+
+if(DARWIN)
+    set(openssl_flags -lcangjie-dynamicLoader-opensslFFI)
+    set(tlsFFI_flags -lstdx.net.tlsFFI)
+    set(keysFFI_flags -lstdx.crypto.keysFFI)
+    set(x509FFI_flags -lstdx.crypto.x509FFI)
+else()
+    set(openssl_flags -l:libcangjie-dynamicLoader-opensslFFI${CMAKE_SHARED_LIBRARY_SUFFIX})
+    set(tlsFFI_flags -l:libstdx.net.tlsFFI${CMAKE_SHARED_LIBRARY_SUFFIX})
+    set(keysFFI_flags -l:libstdx.crypto.keysFFI${CMAKE_SHARED_LIBRARY_SUFFIX})
+    set(x509FFI_flags -l:libstdx.crypto.x509FFI${CMAKE_SHARED_LIBRARY_SUFFIX})
+endif()
+
 make_cangjie_lib(
     cangjieStdx IS_SHARED
-    DEPENDS cangjie${BACKEND_TYPE}Stdx
-    CANGJIE_STD_LIB_LINK std-core
-    OBJECTS ${stdxo_path}/stdx.o)
+    DEPENDS cangjie${BACKEND_TYPE}Stdx cangjie-dynamicLoader-opensslFFI-shared
+    CANGJIE_STD_LIB_LINK std-core std-fs
+    OBJECTS ${stdxo_path}/stdx.o
+    FLAGS ${openssl_flags})
 
 add_library(stdx STATIC ${stdxo_path}/stdx.o)
 set_target_properties(stdx PROPERTIES LINKER_LANGUAGE C)
@@ -263,18 +277,6 @@ add_library(stdx.net STATIC ${output_cj_object_dir}/stdx/net.o)
 set_target_properties(stdx.net PROPERTIES LINKER_LANGUAGE C)
 install(TARGETS stdx.net DESTINATION ${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx)
 
-if(DARWIN)
-    set(openssl_flags -lcangjie-dynamicLoader-opensslFFI)
-    set(tlsFFI_flags -lstdx.net.tlsFFI)
-    set(keysFFI_flags -lstdx.crypto.keysFFI)
-    set(x509FFI_flags -lstdx.crypto.x509FFI)
-else()
-    set(openssl_flags -l:libcangjie-dynamicLoader-opensslFFI${CMAKE_SHARED_LIBRARY_SUFFIX})
-    set(tlsFFI_flags -l:libstdx.net.tlsFFI${CMAKE_SHARED_LIBRARY_SUFFIX})
-    set(keysFFI_flags -l:libstdx.crypto.keysFFI${CMAKE_SHARED_LIBRARY_SUFFIX})
-    set(x509FFI_flags -l:libstdx.crypto.x509FFI${CMAKE_SHARED_LIBRARY_SUFFIX})
-endif()
-
 make_cangjie_lib(
     net.tls IS_SHARED
     DEPENDS cangjie${BACKEND_TYPE}Tls stdx.net.tlsFFI-shared  cangjie-dynamicLoader-opensslFFI-shared
@@ -317,6 +319,20 @@ add_and_combine_static_lib(
         $<TARGET_OBJECTS:${CANGJIE_OPENSSL_FFI_OBJECTS_TARGET}>
     DEPENDS
         ${tls_depends})
+if(CMAKE_BUILD_STAGE STREQUAL "postBuild")
+    set(tls_strong_depends stdx.net.tlsFFI-strong ${CANGJIE_OPENSSL_FFI_STRONG_OBJECTS_TARGET})
+else()
+    set(tls_strong_depends cangjie${BACKEND_TYPE}Tls stdx.net.tlsFFI-strong ${CANGJIE_OPENSSL_FFI_STRONG_OBJECTS_TARGET})
+endif()
+add_and_combine_static_lib(
+    TARGET stdx-net-tls-strong
+    OUTPUT_NAME libstdx.net.tls-strong.a
+    LIBRARIES
+        $<TARGET_OBJECTS:stdx.net.tlsFFI-objs>
+        ${output_cj_object_dir}/stdx/net.tls.o
+        $<TARGET_OBJECTS:${CANGJIE_OPENSSL_FFI_STRONG_OBJECTS_TARGET}>
+    DEPENDS
+        ${tls_strong_depends})
 install(FILES ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/libstdx.net.tls.a
         DESTINATION ${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx)
 
@@ -369,7 +385,8 @@ make_cangjie_lib(
     ${openssl_flags}
     $<$<BOOL:${MINGW}>:-lws2_32>
     $<$<NOT:$<BOOL:${WIN32}>>:-ldl>)
-add_library(stdx.net.http STATIC ${output_cj_object_dir}/stdx/net.http.o)
+get_target_property(HTTPOPENSSLFFI_OBJS cangjie-dynamicLoader-opensslFFI SOURCES)
+add_library(stdx.net.http STATIC ${HTTPOPENSSLFFI_OBJS} ${output_cj_object_dir}/stdx/net.http.o)
 set_target_properties(stdx.net.http PROPERTIES LINKER_LANGUAGE C)
 install(TARGETS stdx.net.http DESTINATION ${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx)
 
@@ -397,8 +414,12 @@ make_cangjie_lib(
 
 get_target_property(DIGESTFFI_OBJS cangjie-dynamicLoader-opensslFFI SOURCES)
 add_library(stdx.crypto.digest STATIC ${DIGESTFFI_OBJS} ${output_cj_object_dir}/stdx/crypto.digest.o)
+add_library(stdx.crypto.digest-strong STATIC
+    $<TARGET_OBJECTS:${CANGJIE_OPENSSL_FFI_STRONG_OBJECTS_TARGET}>
+    ${output_cj_object_dir}/stdx/crypto.digest.o)
 
 set_target_properties(stdx.crypto.digest PROPERTIES LINKER_LANGUAGE C)
+set_target_properties(stdx.crypto.digest-strong PROPERTIES LINKER_LANGUAGE C OUTPUT_NAME stdx.crypto.digest-strong)
 install(TARGETS stdx.crypto.digest DESTINATION ${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx)
 
 make_cangjie_lib(
@@ -423,7 +444,12 @@ make_cangjie_lib(
 get_target_property(KEYSFFI_OBJS stdx.crypto.keysFFI SOURCES)
 get_target_property(OPENSSLFFI_OBJS cangjie-dynamicLoader-opensslFFI SOURCES)
 add_library(stdx.crypto.keys  STATIC ${KEYSFFI_OBJS} ${OPENSSLFFI_OBJS} ${output_cj_object_dir}/stdx/crypto.keys.o)
+add_library(stdx.crypto.keys-strong STATIC
+    $<TARGET_OBJECTS:stdx.crypto.keysFFI-objs>
+    $<TARGET_OBJECTS:${CANGJIE_OPENSSL_FFI_STRONG_OBJECTS_TARGET}>
+    ${output_cj_object_dir}/stdx/crypto.keys.o)
 set_target_properties(stdx.crypto.keys PROPERTIES LINKER_LANGUAGE C)
+set_target_properties(stdx.crypto.keys-strong PROPERTIES LINKER_LANGUAGE C OUTPUT_NAME stdx.crypto.keys-strong)
 install(TARGETS stdx.crypto.keys DESTINATION ${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx)
 
 make_cangjie_lib(
@@ -436,7 +462,11 @@ make_cangjie_lib(
     $<$<NOT:$<BOOL:${WIN32}>>:-ldl>)
 get_target_property(CRYPTOCRYPTOFFI_OBJS cangjie-dynamicLoader-opensslFFI SOURCES)
 add_library(stdx.crypto.crypto STATIC ${CRYPTOCRYPTOFFI_OBJS} ${output_cj_object_dir}/stdx/crypto.crypto.o)
+add_library(stdx.crypto.crypto-strong STATIC
+    $<TARGET_OBJECTS:${CANGJIE_OPENSSL_FFI_STRONG_OBJECTS_TARGET}>
+    ${output_cj_object_dir}/stdx/crypto.crypto.o)
 set_target_properties(stdx.crypto.crypto PROPERTIES LINKER_LANGUAGE C)
+set_target_properties(stdx.crypto.crypto-strong PROPERTIES LINKER_LANGUAGE C OUTPUT_NAME stdx.crypto.crypto-strong)
 install(TARGETS stdx.crypto.crypto DESTINATION ${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx)
 
 make_cangjie_lib(
@@ -557,6 +587,20 @@ add_and_combine_static_lib(
         $<TARGET_OBJECTS:${CANGJIE_OPENSSL_FFI_OBJECTS_TARGET}>
     DEPENDS
         ${x509_depends})
+if(CMAKE_BUILD_STAGE STREQUAL "postBuild")
+    set(x509_strong_depends stdx.crypto.x509FFI-strong ${CANGJIE_OPENSSL_FFI_STRONG_OBJECTS_TARGET})
+else()
+    set(x509_strong_depends cangjie${BACKEND_TYPE}X509 stdx.crypto.x509FFI-strong ${CANGJIE_OPENSSL_FFI_STRONG_OBJECTS_TARGET})
+endif()
+add_and_combine_static_lib(
+    OUTPUT_NAME libstdx.crypto.x509-strong.a
+    TARGET stdx.crypto.x509-strong
+    LIBRARIES
+        $<TARGET_OBJECTS:stdx.crypto.x509FFI-objs>
+        ${output_cj_object_dir}/stdx/crypto.x509.o
+        $<TARGET_OBJECTS:${CANGJIE_OPENSSL_FFI_STRONG_OBJECTS_TARGET}>
+    DEPENDS
+        ${x509_strong_depends})
 install(FILES ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/libstdx.crypto.x509.a
         DESTINATION ${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx)
 
@@ -1014,3 +1058,26 @@ add_cangjie_library(
     MODULE_NAME "stdx"
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/actors/macros
     DEPENDS ${ACTORS_MACROS_DEPENDENCIES})
+
+set(OPENSSL_STRONG_STATIC_VARIANT_DIR
+    "${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static-static-link-extern/stdx")
+set(OPENSSL_STRONG_PACKAGE_ARCHIVE_DIR
+    "${CMAKE_BINARY_DIR}/lib/${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}")
+set(OPENSSL_STRONG_FFI_ARCHIVE_DIR
+    "${CMAKE_BINARY_DIR}/lib")
+install(CODE "
+    set(default_dir \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx\")
+    set(variant_dir \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${OPENSSL_STRONG_STATIC_VARIANT_DIR}\")
+    file(REMOVE_RECURSE \"\${variant_dir}\")
+    file(MAKE_DIRECTORY \"\${variant_dir}\")
+    file(COPY \"\${default_dir}/\" DESTINATION \"\${variant_dir}\")
+    execute_process(COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different \"${OPENSSL_STRONG_FFI_ARCHIVE_DIR}/libcangjie-dynamicLoader-opensslFFI-strong.a\" \"\${variant_dir}/libcangjie-dynamicLoader-opensslFFI.a\")
+    execute_process(COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different \"${OPENSSL_STRONG_FFI_ARCHIVE_DIR}/libstdx.net.tlsFFI-strong.a\" \"\${variant_dir}/libstdx.net.tlsFFI.a\")
+    execute_process(COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different \"${OPENSSL_STRONG_FFI_ARCHIVE_DIR}/libstdx.crypto.keysFFI-strong.a\" \"\${variant_dir}/libstdx.crypto.keysFFI.a\")
+    execute_process(COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different \"${OPENSSL_STRONG_FFI_ARCHIVE_DIR}/libstdx.crypto.x509FFI-strong.a\" \"\${variant_dir}/libstdx.crypto.x509FFI.a\")
+    execute_process(COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different \"${OPENSSL_STRONG_PACKAGE_ARCHIVE_DIR}/libstdx.net.tls-strong.a\" \"\${variant_dir}/libstdx.net.tls.a\")
+    execute_process(COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different \"${OPENSSL_STRONG_PACKAGE_ARCHIVE_DIR}/libstdx.crypto.digest-strong.a\" \"\${variant_dir}/libstdx.crypto.digest.a\")
+    execute_process(COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different \"${OPENSSL_STRONG_PACKAGE_ARCHIVE_DIR}/libstdx.crypto.keys-strong.a\" \"\${variant_dir}/libstdx.crypto.keys.a\")
+    execute_process(COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different \"${OPENSSL_STRONG_PACKAGE_ARCHIVE_DIR}/libstdx.crypto.crypto-strong.a\" \"\${variant_dir}/libstdx.crypto.crypto.a\")
+    execute_process(COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different \"${OPENSSL_STRONG_PACKAGE_ARCHIVE_DIR}/libstdx.crypto.x509-strong.a\" \"\${variant_dir}/libstdx.crypto.x509.a\")
+")

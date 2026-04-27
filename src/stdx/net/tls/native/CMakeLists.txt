@@ -41,6 +41,13 @@ if(CANGJIE_CODEGEN_CJNATIVE_BACKEND)
             $<TARGET_OBJECTS:${libname}-objs>
             $<TARGET_OBJECTS:${CANGJIE_OPENSSL_FFI_OBJECTS_TARGET}>
         DEPENDS ${libname}-objs ${CANGJIE_OPENSSL_FFI_OBJECTS_TARGET})
+    add_and_combine_static_lib(
+        TARGET ${libname}-strong
+        OUTPUT_NAME lib${libname}-strong.a
+        LIBRARIES
+            $<TARGET_OBJECTS:${libname}-objs>
+            $<TARGET_OBJECTS:${CANGJIE_OPENSSL_FFI_STRONG_OBJECTS_TARGET}>
+        DEPENDS ${libname}-objs ${CANGJIE_OPENSSL_FFI_STRONG_OBJECTS_TARGET})
     string(TOLOWER ${TARGET_TRIPLE_DIRECTORY_PREFIX} output_lib_dir)
     set(CJNATIVE_BACKEND "cjnative")
     if(DEFINED CANGJIE_CJPM_BUILD_SELF)
