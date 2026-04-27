@@ -9,7 +9,7 @@
 package stdx.chir
 
 import std.deriving.*
-import stdx.chir.toStringMacro.*
+import stdx.chir.to_string_macro.*
 
 @Derive[Equatable]
 @CHIREnumToString

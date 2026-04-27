@@ -679,9 +679,9 @@ if(NOT CMAKE_BUILD_STAGE STREQUAL "postBuild")
     add_cangjie_macro_library_in_local(
         cangjie${BACKEND_TYPE}ChirToStringMacro
         NO_SUB_PKG
-        PACKAGE_NAME "chir.toStringMacro"
+        PACKAGE_NAME "chir.to_string_macro"
         MODULE_NAME "stdx"
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/chir/toStringMacro
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/chir/to_string_macro
         DEPENDS ${CHIR_TOSTRING_MACRO_DEPENDENCIES})
 endif()
 

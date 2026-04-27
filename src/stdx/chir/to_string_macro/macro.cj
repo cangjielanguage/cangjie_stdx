@@ -6,7 +6,7 @@
  * See https://cangjie-lang.cn/pages/LICENSE for license information.
  */
 
-protected macro package stdx.chir.toStringMacro
+protected macro package stdx.chir.to_string_macro
 
 import std.ast.*
 

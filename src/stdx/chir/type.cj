@@ -10,7 +10,7 @@ package stdx.chir
 
 import std.collection.*
 import std.deriving.*
-import stdx.chir.toStringMacro.*
+import stdx.chir.to_string_macro.*
 
 /**
  * Enumeration of all type kinds in the type system.
