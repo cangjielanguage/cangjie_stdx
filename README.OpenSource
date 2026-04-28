@@ -3,7 +3,7 @@
     "Name": "cangjie_stdx",
     "License": "Apache-2.0 with Runtime Library Exceptions",
     "License File": "LICENSE",
-    "Version Number": "1.2.0-alpha.07",
+    "Version Number": "1.2.0-alpha.08",
     "Owner": "yujiahao8@huawei.com",
     "Upstream URL": "https://cangjie-lang.cn/",
     "Description": "Cangjie programming language provides `stdx` module, which provides common capabilities in the fields of network, security, etc."
