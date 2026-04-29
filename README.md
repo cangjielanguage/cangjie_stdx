@@ -93,16 +93,16 @@ The following platform and architecture combinations are currently supported:
 ```text
 /stdx
 ├─ build                        # Directory of Engineering Construction
-├─ doc                          # Directory of STDX library document
+├─ doc                          # Directory of stdx library document
 ├─ figures                      # architecture pictures
-├─ src                          # Directory of STDX package codes                     
+├─ src                          # Directory of stdx package codes
 │   └─ stdx
 │       ├── actors              # Provides Actors
 │       ├── aspectCJ            # Provides AOP
 │       ├── compress            # Provides compression and decompression
 │       ├── crypto              # Provide security related capabilities
 │       ├── effect              # Provides user-level APIs for handling the Effect Handler feature. This is an experimental feature and requires the use of a Cangjie compiler that supports this mechanism.
-│       ├── dynamicLoader       # Openssl dynamic loading module
+│       ├── dynamicLoader       # OpenSSL dynamic loading module
 │       ├── encoding            # Provide JSON and string encoding related capabilities
 │       ├── fuzz                # Provides the Cangjie fuzz engine based on coverage feedback
 │       ├── log                 # Provides logging related
@@ -119,7 +119,7 @@ The following platform and architecture combinations are currently supported:
 
 ## Constraints
 
-Support for building `stdx` in Ubuntu/MacOS (x86_64, aarch64), Cangjie SDK 1.0.0 and above versions, please refer to the [Build Dependency Tools](https://gitcode.com/Cangjie/cangjie_build/blob/dev/docs/env_zh.md).
+Support for building `stdx` in Ubuntu/macOS (x86_64, aarch64), Cangjie SDK 1.0.0 and above versions, please refer to the [Build Dependency Tools](https://gitcode.com/Cangjie/cangjie_build/blob/dev/docs/env_zh.md).
 
 Note: Future versions of this extension library may contain incompatible changes, and cross-version backward compatibility is not guaranteed. Please fully assess the version adaptation risks before use.
 
@@ -220,28 +220,50 @@ explain:
 > **illustrate:**
 >
 > - `cjpm.toml` is the configuration file of the Cangjie package management tool CJPM. For details, please refer to the Cangjie Programming Language Tool User Guide.
-> - The configuration method is the same for Windows, Linux, and MacOS.
-> - On MacOS, using stdx may trigger a popup warning about unknown source or inability to detect malware. After extracting stdx, you can run `xattr -dr com.apple.quarantine <stdx extraction path> &> /dev/null || true` in the terminal to remove the quarantine attribute. For example: `xattr -dr com.apple.quarantine ~/Downloads/darwin_x86_64_cjnative/ &> /dev/null || true`
+> - The configuration method is the same for Windows, Linux, and macOS.
+> - On macOS, using stdx may trigger a popup warning about unknown source or inability to detect malware. After extracting stdx, you can run `xattr -dr com.apple.quarantine <stdx extraction path> &> /dev/null || true` in the terminal to remove the quarantine attribute. For example: `xattr -dr com.apple.quarantine ~/Downloads/darwin_x86_64_cjnative/ &> /dev/null || true`
 > - If you import the static library of `stdx` and use the crypto and net packages, you need to add `-lcrypt32` to `compile-option` on `Windows`.
 > - When using dynamic `stdx` binaries (`.so`/`.dll`), OpenSSL is resolved at runtime via `dlopen/dlsym` (Unix-like) or `LoadLibrary/GetProcAddress` (Windows); linking OpenSSL statically (`.a`/`.lib`) into the application will not be used by this runtime resolver.
 > - On `Linux`, the default static `stdx` libraries use an OpenSSL resolver in `auto` mode: they prefer directly linked OpenSSL symbols, and fall back to `dlopen/dlsym` only when needed. If the fallback may be used, add `-ldl`.
-> - When linking OpenSSL statically for the default `auto` static libraries, you may need `--whole-archive` to ensure `libssl.a` and `libcrypto.a` are actually pulled in; otherwise the fallback path may still try to load system `libssl/libcrypto`.
-> - When linking OpenSSL statically, place `-lssl -lcrypto` after `stdx` libraries that reference them to avoid “undefined reference” due to static link order.
+> - When linking OpenSSL statically for the default `auto` static libraries, `--whole-archive` is only needed if you want to force `libssl.a` and `libcrypto.a` into the final executable; otherwise the fallback path may still try to load system `libssl/libcrypto`.
+> - For `static-static-link-extern/stdx`, do not use `--whole-archive` or `-force_load` as the default. Place the OpenSSL archive inputs (`libssl.a` and `libcrypto.a`) after `stdx` libraries that reference them so the linker pulls only the required objects.
 > - In cross-compilation scenarios, if there is a need to develop custom macro packages and their business logic must rely on stdx for implementation, the stdx path for the local development platform must also be configured in addition to that for the target runtime platform.
 
-**Static OpenSSL linking example**: Assuming the directory that stores OpenSSL static libraries is `STATIC_OPENSSL_DIR`, the command is as follows.
+**Default `static/stdx` auto resolver example**: after configuring the `stdx` static library path through `cjpm.toml` or your existing build command, set `STATIC_OPENSSL_DIR` to the directory that stores OpenSSL static libraries. The following command shows only the OpenSSL archive link options and forces the OpenSSL archives into the final executable.
 
 ```bash
+export STATIC_OPENSSL_DIR=/path/to/openssl/lib
+
 # GNU ld
-cjc -L $STATIC_OPENSSL_DIR --link-option "-Bstatic" --link-option "--whole-archive" -lssl -lcrypto --link-option "--no-whole-archive" --link-option "-Bdynamic" main.cj
+cjc main.cj \
+    --link-option "-Bstatic" \
+    --link-option "--whole-archive" \
+    --link-option "${STATIC_OPENSSL_DIR}/libssl.a" \
+    --link-option "${STATIC_OPENSSL_DIR}/libcrypto.a" \
+    --link-option "--no-whole-archive" \
+    --link-option "-Bdynamic"
 
 # Apple ld64
-cjc -L $STATIC_OPENSSL_DIR --link-option "-force_load" --link-option "$STATIC_OPENSSL_DIR/libssl.a" --link-option "-force_load" --link-option "$STATIC_OPENSSL_DIR/libcrypto.a" main.cj
+cjc main.cj \
+    --link-option "-force_load" \
+    --link-option "${STATIC_OPENSSL_DIR}/libssl.a" \
+    --link-option "-force_load" \
+    --link-option "${STATIC_OPENSSL_DIR}/libcrypto.a"
+```
+
+For `static-static-link-extern/stdx`, after configuring the `stdx` static library path through `cjpm.toml` or your existing build command, provide the OpenSSL archives normally. The following command shows only the OpenSSL archive link options:
+
+```bash
+export STATIC_OPENSSL_DIR=/path/to/openssl/lib
+
+cjc main.cj \
+    --link-option "${STATIC_OPENSSL_DIR}/libssl.a" \
+    --link-option "${STATIC_OPENSSL_DIR}/libcrypto.a"
 ```
 
 ### Installed Binary Layout
 
-The following uses the installed `stdx` on Linux/CJNATIVE as an example to illustrate its binary layout.
+The following uses the installed `stdx` on Linux/cjnative as an example to illustrate its binary layout.
 
 - `dynamic/stdx`: dynamic libraries and related runtime artifacts
 - `static/stdx`: default static libraries and FFI archives
@@ -251,7 +273,7 @@ The installed package should be documented against these output directories inst
 
 ### OpenSSL Static Linking Layout
 
-For Linux/CJNATIVE, the installed static package layout distinguishes two OpenSSL-linking behaviors by directory:
+For Linux/cjnative, the installed static package layout distinguishes two OpenSSL-linking behaviors by directory:
 
 - `static/stdx`: the default static-library directory
 - `static-static-link-extern/stdx`: the directory for external static linking
