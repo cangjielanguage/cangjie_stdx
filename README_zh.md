@@ -92,16 +92,16 @@ irm https://raw.gitcode.com/Cangjie/cangjie_stdx/raw/dev/downloader.ps1 -OutFile
 ```text
 /stdx
 ├─ build                        # 工程构建目录，编译构建工具、脚本等
-├─ doc                          # STDX 库资料目录
+├─ doc                          # stdx 库资料目录
 ├─ figures                      # 存放readme中的架构图
-├─ src                          # STDX 各个包代码目录                        
+├─ src                          # stdx 各个包代码目录
 │   └─ stdx
 │       ├── actors              # 提供 Actors 功能                     
 │       ├── aspectCJ            # 提供 AOP 功能
 │       ├── compress            # 提供压缩和解压缩功能
 │       ├── crypto              # 提供安全相关能力
 │       ├── effect              # 提供用于处理 Effect Handler 特性的用户级 API。这是一个实验性功能，需要使用支持该机制的 Cangjie 编译器。
-│       ├── dynamicLoader       # Openssl 动态加载模块
+│       ├── dynamicLoader       # OpenSSL 动态加载模块
 │       ├── encoding            # 提供 JSON 和字符串编码相关能力。
 │       ├── fuzz                # 提供基于覆盖率反馈的仓颉 fuzz 引擎及对应的接口
 │       ├── log                 # 提供了日志记录相关的能力
@@ -118,7 +118,7 @@ irm https://raw.gitcode.com/Cangjie/cangjie_stdx/raw/dev/downloader.ps1 -OutFile
 
 ## 约束
 
-支持在 Ubuntu/MacOS(x86_64, aarch64)、Cangjie SDK 1.0.0 及以上版本中对 `stdx` 构建。更详细的环境及工具依赖请参阅 [构建依赖工具](https://gitcode.com/Cangjie/cangjie_build/blob/dev/docs/env_zh.md)。
+支持在 Ubuntu/macOS(x86_64, aarch64)、Cangjie SDK 1.0.0 及以上版本中对 `stdx` 构建。更详细的环境及工具依赖请参阅 [构建依赖工具](https://gitcode.com/Cangjie/cangjie_build/blob/dev/docs/env_zh.md)。
 
 注意：本拓展库后续版本可能存在不兼容变更，不承诺跨版本 API/ABI 兼容性，使用前请充分评估版本适配风险。
 
@@ -216,28 +216,50 @@ cjpm 的详细使用可以参考 [cjpm 文档](https://gitcode.com/Cangjie/cangj
 > **说明：**
 >
 > - `cjpm.toml` 是仓颉包管理工具 CJPM 的配置文件，详情请参见《仓颉编程语言工具使用指南》。
-> - Windows、Linux、MacOS 的配置方式相同。
-> - MacOS 使用 stdx 可能弹出未知来源或者无法检测是否包含恶意软件等弹框，可以在解压 stdx 后，终端执行 `xattr -dr com.apple.quarantine <stdx 解压路径> &> /dev/null || true` 来移除隔离属性。例如：`xattr -dr com.apple.quarantine ~/Downloads/darwin_x86_64_cjnative/ &> /dev/null || true`
+> - Windows、Linux、macOS 的配置方式相同。
+> - macOS 使用 stdx 可能弹出未知来源或者无法检测是否包含恶意软件等弹框，可以在解压 stdx 后，终端执行 `xattr -dr com.apple.quarantine <stdx 解压路径> &> /dev/null || true` 来移除隔离属性。例如：`xattr -dr com.apple.quarantine ~/Downloads/darwin_x86_64_cjnative/ &> /dev/null || true`
 > - 如果导入 `stdx` 的静态库并使用 crypto、net 包：`Windows` 需要在 `compile-option` 里额外添加 `-lcrypt32`。
 > - 使用 `stdx` 动态二进制（`.so`/`.dll`）时，OpenSSL 会通过运行时加载方式解析：类 Unix 使用 `dlopen/dlsym`，Windows 使用 `LoadLibrary/GetProcAddress`；此时即使应用侧以静态方式链接 OpenSSL（`.a`/`.lib`），也不会被该运行时解析路径直接使用。
 > - `Linux` 下默认静态 `stdx` 使用 OpenSSL 解析 `auto` 模式：优先直连 OpenSSL 符号，必要时才回退到 `dlopen/dlsym`；如果可能走回退路径，需要额外添加 `-ldl`。
-> - 对默认 `auto` 静态库以静态方式链接 OpenSSL（`.a`）时，可能需要使用 `--whole-archive` 确保 `libssl.a` 和 `libcrypto.a` 被真正拉入产物；否则回退路径仍可能尝试加载系统的 `libssl/libcrypto`。
-> - 以静态方式链接 OpenSSL 时，请将 `-lssl -lcrypto` 放在引用它们的 `stdx` 静态库之后，避免因静态链接顺序导致 “undefined reference”。
+> - 对默认 `auto` 静态库以静态方式链接 OpenSSL（`.a`）时，只有在需要强制把 `libssl.a` 和 `libcrypto.a` 拉入最终可执行文件时才需要使用 `--whole-archive`；否则回退路径仍可能尝试加载系统的 `libssl/libcrypto`。
+> - 对 `static-static-link-extern/stdx`，不应默认使用 `--whole-archive` 或 `-force_load`。请将 OpenSSL 静态归档输入（`libssl.a` 和 `libcrypto.a`）放在引用它们的 `stdx` 静态库之后，由链接器按需拉入对象。
 > - 在交叉编译的场景下，如果有自行开发宏包的需求，且需要依赖 stdx 实现宏包中的业务逻辑，那么除了目标运行平台以外，还需要配置本地开发平台的 stdx 路径。
 
-**静态 Openssl 链接命令行示例**: 假设存放 Openssl 静态库的目录为 `STATIC_OPENSSL_DIR`，则命令如下。
+**默认 `static/stdx` auto 解析示例**: 通过 `cjpm.toml` 或实际构建命令配置好 `stdx` 静态库路径后，将 `STATIC_OPENSSL_DIR` 设置为 OpenSSL 静态库所在目录。以下命令只展示 OpenSSL 静态归档链接参数，并会强制将 OpenSSL 静态归档拉入最终可执行文件。
 
 ```bash
-# GNU ld64
-cjc -L $STATIC_OPENSSL_DIR --link-option "-Bstatic" --link-option "--whole-archive" -lssl -lcrypto --link-option "--no-whole-archive" --link-option "-Bdynamic" main.cj
+export STATIC_OPENSSL_DIR=/path/to/openssl/lib
+
+# GNU ld
+cjc main.cj \
+    --link-option "-Bstatic" \
+    --link-option "--whole-archive" \
+    --link-option "${STATIC_OPENSSL_DIR}/libssl.a" \
+    --link-option "${STATIC_OPENSSL_DIR}/libcrypto.a" \
+    --link-option "--no-whole-archive" \
+    --link-option "-Bdynamic"
 
 # Apple ld64
-cjc -L $STATIC_OPENSSL_DIR --link-option "-force_load" --link-option "$STATIC_OPENSSL_DIR/libssl.a" --link-option "-force_load" --link-option "$STATIC_OPENSSL_DIR/libcrypto.a" main.cj
+cjc main.cj \
+    --link-option "-force_load" \
+    --link-option "${STATIC_OPENSSL_DIR}/libssl.a" \
+    --link-option "-force_load" \
+    --link-option "${STATIC_OPENSSL_DIR}/libcrypto.a"
+```
+
+对 `static-static-link-extern/stdx`，通过 `cjpm.toml` 或实际构建命令配置好 `stdx` 静态库路径后，正常提供 OpenSSL 静态归档即可。以下命令只展示 OpenSSL 静态归档链接参数：
+
+```bash
+export STATIC_OPENSSL_DIR=/path/to/openssl/lib
+
+cjc main.cj \
+    --link-option "${STATIC_OPENSSL_DIR}/libssl.a" \
+    --link-option "${STATIC_OPENSSL_DIR}/libcrypto.a"
 ```
 
 ### 已安装二进制目录
 
-以下以 Linux/CJNATIVE 平台下已安装的 `stdx` 为例，说明其产物目录结构。
+以下以 Linux/cjnative 平台下已安装的 `stdx` 为例，说明其产物目录结构。
 
 - `dynamic/stdx`：动态库及相关运行时产物
 - `static/stdx`：默认静态库和 FFI 归档
