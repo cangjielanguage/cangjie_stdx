@@ -18,16 +18,16 @@
 using namespace Cangjie;
 
 // Used to collect @InsertAtEntry, @InsertAtExit, @ReplaceFuncBody information.
-struct CollectAspects : public MetaTransform<CHIR::Func> {
+struct CollectAspects : public MetaTransform<CHIR::Function> {
     friend class MyError;
     CollectAspects(CHIR::CHIRBuilder& builder) : builder(builder), packageName(builder.GetCurPackage()->GetName())
     {
     }
-    void Run(CHIR::Func& func);
+    void Run(CHIR::Function& func);
 
 private:
     bool GlobalVarsArePrimitiveLiterals();
-    void CheckAndCollect(CHIR::Func& func);
+    void CheckAndCollect(CHIR::Function& func);
 
     struct To {
         std::string packageName;
@@ -61,7 +61,7 @@ private:
 bool CollectAspects::GlobalVarsArePrimitiveLiterals()
 {
     const CHIR::Package* package = builder.GetCurPackage();
-    for (auto gv : package->GetGlobalVars()) {
+    for (auto gv : package->GetGlobalVarsWithInit()) {
         if (gv->TestAttr(Cangjie::CHIR::Attribute::IMPORTED) || gv->TestAttr(Cangjie::CHIR::Attribute::COMPILER_ADD)) {
             continue;
         }
@@ -99,10 +99,10 @@ private:
     CollectAspects& plugin;
 };
 
-void CollectAspects::CheckAndCollect(CHIR::Func& func)
+void CollectAspects::CheckAndCollect(CHIR::Function& func)
 {
     auto annoInfo = func.GetAnnoInfo();
-    if (annoInfo.annoPairs.empty()) {
+    if (annoInfo.GetCustomAnnoInstances().empty()) {
         return;
     }
 
@@ -113,9 +113,9 @@ void CollectAspects::CheckAndCollect(CHIR::Func& func)
 
     bool inWhiteList1 = false;
     bool inWhiteList2 = false;
-    for (auto& annoPair : annoInfo.annoPairs) {
-        bool isFirstKind = whiteList1.find(annoPair.annoClassName) != whiteList1.end();
-        bool isSecondKind = whiteList2.find(annoPair.annoClassName) != whiteList2.end();
+    for (auto& annoPair : annoInfo.GetCustomAnnoInstances()) {
+        bool isFirstKind = whiteList1.find(annoPair.GetAnnoClassName()) != whiteList1.end();
+        bool isSecondKind = whiteList2.find(annoPair.GetAnnoClassName()) != whiteList2.end();
 
         inWhiteList1 |= isFirstKind;
         inWhiteList2 |= isSecondKind;
@@ -152,11 +152,11 @@ void CollectAspects::CheckAndCollect(CHIR::Func& func)
             }
             /// ----------------------
 
-            auto packageName = annoPair.paramValues[0U];
-            auto className = annoPair.paramValues[1U];
-            auto methodName = annoPair.paramValues[2U];
-            auto isStatic = annoPair.paramValues[3U];
-            auto isRecursive = annoPair.paramValues[isSecondKind ? 4U : 5U];
+            auto annoPackageName = annoPair.GetArgValues()[0U];
+            auto className = annoPair.GetArgValues()[1U];
+            auto methodName = annoPair.GetArgValues()[2U];
+            auto isStatic = annoPair.GetArgValues()[3U];
+            auto isRecursive = annoPair.GetArgValues()[isSecondKind ? 4U : 5U];
             bool isInsMethod = outerDef && !func.TestAttr(Cangjie::CHIR::Attribute::STATIC);
             /// ----- Validation -----
             if (outerDef && !func.TestAttr(Cangjie::CHIR::Attribute::STATIC)) {
@@ -185,7 +185,7 @@ void CollectAspects::CheckAndCollect(CHIR::Func& func)
             std::string aspectFuncTypeStr = "";
             auto paramTys = func.GetFuncType()->GetParamTypes();
             if (isFirstKind && func.GetFuncType()->GetParamTypes().size() > (isInsMethod ? 1U : 0U)) {
-                wovenFuncTypeStr = annoPair.paramValues[4U];
+                wovenFuncTypeStr = annoPair.GetArgValues()[4U];
                 if (isInsMethod || (!className.empty() && isStatic == "false")) {
                     paramTys = std::vector<CHIR::Type*>(paramTys.begin() + 1, paramTys.end());
                 }
@@ -213,7 +213,7 @@ void CollectAspects::CheckAndCollect(CHIR::Func& func)
                 return;
             }
             Insert insert = {func.GetIdentifierWithoutPrefix(),
-                func.GetNumOfParams() - (annoPair.annoClassName == "ReplaceFuncBody" ? 1U : 0U),
+                func.GetNumOfParams() - (annoPair.GetAnnoClassName() == "ReplaceFuncBody" ? 1U : 0U),
                 func.GetParentCustomTypeDef() != nullptr, func.TestAttr(Cangjie::CHIR::Attribute::STATIC)};
             if (isSecondKind) {
                 /// ----- Validation -----
@@ -257,25 +257,25 @@ void CollectAspects::CheckAndCollect(CHIR::Func& func)
                     funcType = builder.GetType<CHIR::FuncType>(paramTys, funcType->GetReturnType());
                     auto sig = CHIR::GetTypeQualifiedName(*funcType);
                     std::replace(sig.begin(), sig.end(), ':', '.');
-                    To to = {packageName, className, methodName, sig, isStatic, isRecursive};
-                    outputs.emplace_back(OutputInfo{annoPair.annoClassName, insert, to});
+                    To to = {annoPackageName, className, methodName, sig, isStatic, isRecursive};
+                    outputs.emplace_back(OutputInfo{annoPair.GetAnnoClassName(), insert, to});
                 } else {
                     auto sig = CHIR::GetTypeQualifiedName(*func.GetParam(func.GetNumOfParams() - 1)->GetType());
                     std::replace(sig.begin(), sig.end(), ':', '.');
-                    To to = {packageName, className, methodName, sig, isStatic, isRecursive};
-                    outputs.emplace_back(OutputInfo{annoPair.annoClassName, insert, to});
+                    To to = {annoPackageName, className, methodName, sig, isStatic, isRecursive};
+                    outputs.emplace_back(OutputInfo{annoPair.GetAnnoClassName(), insert, to});
                 }
             } else {
                 /// ----- Validation -----
                 if (!func.GetReturnType()->IsUnit()) {
                     myError.Emit("%s: Return type of function annotated with @%s must be Unit.\n",
-                        func.GetSrcCodeIdentifier().c_str(), annoPair.annoClassName.c_str());
+                        func.GetSrcCodeIdentifier().c_str(), annoPair.GetAnnoClassName().c_str());
                     return;
                 }
                 /// ----------------------
-                auto sig = annoPair.paramValues[4U];
-                To to = {packageName, className, methodName, sig, isStatic, isRecursive};
-                outputs.emplace_back(OutputInfo{annoPair.annoClassName, insert, to});
+                auto sig = annoPair.GetArgValues()[4U];
+                To to = {annoPackageName, className, methodName, sig, isStatic, isRecursive};
+                outputs.emplace_back(OutputInfo{annoPair.GetAnnoClassName(), insert, to});
             }
 
             if (!hasCreateAnnoInfo) {
@@ -311,7 +311,7 @@ void CollectAspects::CheckAndCollect(CHIR::Func& func)
 }
 
 // 实现 plugin
-void CollectAspects::Run(CHIR::Func& func)
+void CollectAspects::Run(CHIR::Function& func)
 {
     if (hasError) {
         return;

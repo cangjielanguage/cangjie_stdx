@@ -43,20 +43,20 @@ struct ProcessInfo {
 };
 
 // Used to collect @InsertAtEntry, @InsertAtExit, @ReplaceFuncBody information.
-struct WaveAspects : public MetaTransform<CHIR::Func> {
+struct WaveAspects : public MetaTransform<CHIR::Function> {
     friend class MyError;
     WaveAspects(CHIR::CHIRBuilder& builder) : builder(builder)
     {
     }
-    void Run(CHIR::Func& func);
+    void Run(CHIR::Function& func);
     CHIR::CHIRBuilder& builder;
 
 private:
     void ReadInfo();
     void ReadInfo(const std::string& annoInfoPath);
-    CHIR::FuncBase* GetCalleeByProcessInfo(
-        const ProcessInfo& pi, const CHIR::FuncBase& func, const std::vector<CHIR::Value*>& args) const;
-    std::vector<CHIR::Value*> PrepareArguments(const CHIR::Func& caller, const ProcessInfo& pi);
+    CHIR::Function* GetCalleeByProcessInfo(
+        const ProcessInfo& pi, const CHIR::Function& func, const std::vector<CHIR::Value*>& args) const;
+    std::vector<CHIR::Value*> PrepareArguments(const CHIR::Function& caller, const ProcessInfo& pi);
 
     bool hasInitedProcessInfos = false;
     std::vector<ProcessInfo> processInfos;
@@ -85,7 +85,7 @@ private:
     WaveAspects& plugin;
 };
 
-bool OuterTypeNameMeets(const CHIR::Func& func, const ProcessInfo& pi, CHIR::CHIRBuilder& builder)
+bool OuterTypeNameMeets(const CHIR::Function& func, const ProcessInfo& pi, CHIR::CHIRBuilder& builder)
 {
     auto outer = func.GetParentCustomTypeDef();
     // If the `recursive` field in APILevel is `true`, it means, the override method in deriving class should also be
@@ -106,7 +106,7 @@ bool OuterTypeNameMeets(const CHIR::Func& func, const ProcessInfo& pi, CHIR::CHI
     }
 }
 
-bool Meets(const CHIR::Func& func, const ProcessInfo& pi, CHIR::CHIRBuilder& builder)
+bool Meets(const CHIR::Function& func, const ProcessInfo& pi, CHIR::CHIRBuilder& builder)
 {
     if (pi.to.packageName == func.GetPackageName()) {
         auto outer = func.GetParentCustomTypeDef();
@@ -134,7 +134,7 @@ bool Meets(const CHIR::Func& func, const ProcessInfo& pi, CHIR::CHIRBuilder& bui
     return false;
 }
 
-std::vector<CHIR::Value*> WaveAspects::PrepareArguments(const CHIR::Func& caller, const ProcessInfo& pi)
+std::vector<CHIR::Value*> WaveAspects::PrepareArguments(const CHIR::Function& caller, const ProcessInfo& pi)
 {
     MyError myError(*this);
 
@@ -165,7 +165,7 @@ std::vector<CHIR::Value*> WaveAspects::PrepareArguments(const CHIR::Func& caller
 }
 
 namespace {
-CHIR::Type* ComputeThisTypeOfCallee(const CHIR::FuncBase& callee, const std::vector<CHIR::Value*>& args)
+CHIR::Type* ComputeThisTypeOfCallee(const CHIR::Function& callee, const std::vector<CHIR::Value*>& args)
 {
     CHIR::Type* thisType = nullptr;
     if (callee.IsMemberFunc()) {
@@ -179,19 +179,15 @@ CHIR::Type* ComputeThisTypeOfCallee(const CHIR::FuncBase& callee, const std::vec
     return thisType;
 }
 
-CHIR::FuncBase* GetFuncByMangledName(CHIR::CHIRBuilder& builder, const std::string& funcMangledName)
+CHIR::Function* GetFuncByMangledName(CHIR::CHIRBuilder& builder, const std::string& funcMangledName)
 {
     auto curPackage = builder.GetChirContext().GetCurPackage();
-    for (auto iv : curPackage->GetImportedVarAndFuncs()) {
-        if (!iv->IsFunc()) {
-            continue;
-        }
-        auto func = dynamic_cast<CHIR::FuncBase*>(static_cast<CHIR::ImportedFunc*>(iv));
+    for (auto func : curPackage->GetGlobalFuncsWithoutBody()) {
         if (func->GetIdentifierWithoutPrefix() == funcMangledName) {
             return func;
         }
     }
-    for (auto func : curPackage->GetGlobalFuncs()) {
+    for (auto func : curPackage->GetGlobalFuncsWithBody()) {
         if (func->GetIdentifierWithoutPrefix() == funcMangledName) {
             return func;
         }
@@ -200,7 +196,7 @@ CHIR::FuncBase* GetFuncByMangledName(CHIR::CHIRBuilder& builder, const std::stri
 }
 
 CHIR::Apply* CreateApplyAtFuncBeginning(
-    CHIR::CHIRBuilder& builder, const CHIR::Func& caller, CHIR::FuncBase& callee, const std::vector<CHIR::Value*>& args)
+    CHIR::CHIRBuilder& builder, const CHIR::Function& caller, CHIR::Function& callee, const std::vector<CHIR::Value*>& args)
 {
     auto resultTy = callee.GetFuncType()->GetReturnType();
     auto entry = caller.GetEntryBlock();
@@ -215,15 +211,16 @@ CHIR::Apply* CreateApplyAtFuncBeginning(
 }
 } // namespace
 
-CHIR::FuncBase* WaveAspects::GetCalleeByProcessInfo(
-    const ProcessInfo& pi, const CHIR::FuncBase& func, const std::vector<CHIR::Value*>& args) const
+CHIR::Function* WaveAspects::GetCalleeByProcessInfo(
+    const ProcessInfo& pi, const CHIR::Function& func, const std::vector<CHIR::Value*>& args) const
 {
-    CHIR::FuncBase* callee = GetFuncByMangledName(builder, pi.insert.methodMangledName);
+    CHIR::Function* callee = GetFuncByMangledName(builder, pi.insert.methodMangledName);
     if (!callee) {
         if (pi.insert.paramsNum == 0) {
-            callee = builder.CreateImportedVarOrFunc<CHIR::ImportedFunc>(
+            callee = builder.CreateFunction(
                 builder.GetType<CHIR::FuncType>(std::vector<CHIR::Type*>{}, builder.GetUnitTy()),
                 pi.insert.methodMangledName, "", "", "");
+            callee->EnableAttr(Cangjie::CHIR::Attribute::IMPORTED);
         } else {
             std::vector<CHIR::Type*> paramTypes;
             CHIR::Type* retType = builder.GetUnitTy();
@@ -234,9 +231,10 @@ CHIR::FuncBase* WaveAspects::GetCalleeByProcessInfo(
                 retType = func.GetReturnType();
                 paramTypes.emplace_back(builder.GetType<CHIR::FuncType>(paramTypes, retType));
             }
-            callee = builder.CreateImportedVarOrFunc<CHIR::ImportedFunc>(
+            callee = builder.CreateFunction(
                 builder.GetType<CHIR::FuncType>(paramTypes, builder.GetUnitTy()), pi.insert.methodMangledName, "", "",
                 "");
+            callee->EnableAttr(Cangjie::CHIR::Attribute::IMPORTED);
         }
     }
     return callee;
@@ -245,17 +243,31 @@ CHIR::FuncBase* WaveAspects::GetCalleeByProcessInfo(
 namespace {
 bool HasFunction(const CHIR::Package& package, std::string funcName)
 {
-    for (auto func : package.GetGlobalFuncs()) {
+    for (auto func : package.GetGlobalFuncsWithBody()) {
         if (func->GetIdentifierWithoutPrefix() == funcName) {
             return true;
         }
     }
-    for (auto imported : package.GetImportedVarAndFuncs()) {
-        if (imported->IsFunc() && imported->GetIdentifierWithoutPrefix() == funcName) {
+    for (auto func : package.GetGlobalFuncsWithoutBody()) {
+        if (func->GetIdentifierWithoutPrefix() == funcName) {
             return true;
         }
     }
     return false;
+}
+
+CHIR::Block* GetEntryBlock(const CHIR::BlockGroup& oldBG, std::vector<CHIR::Block*>& blocks)
+{
+    auto oldBlocks = oldBG.GetBlocks();
+    CJC_ASSERT(oldBlocks.size() == blocks.size());
+    CJC_ASSERT(!blocks.empty());
+    for (size_t i = 0; i < oldBlocks.size(); ++i) {
+        if (oldBlocks[i] == oldBG.GetEntryBlock()) {
+            return blocks[i];
+        }
+    }
+    CJC_ABORT();
+    return blocks.front();
 }
 } // namespace
 
@@ -281,9 +293,10 @@ void WaveAspects::ReadInfo()
                 auto pkgInit = builder.GetCurPackage()->GetPackageInitFunc();
                 auto bb = pkgInit->GetEntryBlock();
                 bb = bb->GetTerminator()->GetSuccessor(1);
-                auto initF = builder.CreateImportedVarOrFunc<CHIR::ImportedFunc>(
+                auto initF = builder.CreateFunction(
                     builder.GetType<CHIR::FuncType>(std::vector<CHIR::Type*>{}, builder.GetVoidTy()),
                     packageInitFuncName, "", "", "");
+                initF->EnableAttr(Cangjie::CHIR::Attribute::IMPORTED);
                 std::vector<CHIR::Value*> args;
                 auto funcCallCxt = CHIR::FuncCallContext {
                     .args = args,
@@ -299,7 +312,7 @@ void WaveAspects::ReadInfo()
 }
 
 // 实现 plugin
-void WaveAspects::Run(CHIR::Func& func)
+void WaveAspects::Run(CHIR::Function& func)
 {
     if (hasError) {
         return;
@@ -348,15 +361,19 @@ void WaveAspects::Run(CHIR::Func& func)
                     ++suffix;
                     originalFuncName = funcName + ".original" + std::to_string(suffix);
                 }
-                auto newFunc = builder.CreateFunc(func.GetDebugLocation(), func.GetFuncType(), originalFuncName,
+                auto newFunc = builder.CreateFunction(func.GetFuncType(), originalFuncName,
                     func.GetSrcCodeIdentifier(), "", func.GetPackageName());
+                newFunc->SetDebugLocation(func.GetDebugLocation());
                 // create parameters
                 for (auto paramTy : func.GetFuncType()->GetParamTypes()) {
                     builder.CreateParameter(paramTy, CHIR::INVALID_LOCATION, *newFunc);
                 }
                 CHIR::BlockGroupCopyHelper helper(builder);
-                auto [clonedBlockGroup, newBlockGroupRetValue] = helper.CloneBlockGroup(*func.GetBody(), *newFunc);
-                newFunc->InitBody(*clonedBlockGroup);
+                auto newBody = builder.CreateBlockGroup(*newFunc);
+                newFunc->InitBody(*newBody);
+                auto [newBlocks, newBlockGroupRetValue] = helper.CloneBlockGroup(*func.GetBody(), *newBody);
+                newBody->SetEntryBlock(GetEntryBlock(*func.GetBody(), newBlocks));
+                newFunc->SetReturnValue(*newBlockGroupRetValue);
                 size_t retValueExprIdx = 0U;
                 for (auto expr : func.GetBody()->GetEntryBlock()->GetExpressions()) {
                     if (expr->GetExprKind() == Cangjie::CHIR::ExprKind::DEBUGEXPR) {
@@ -368,9 +385,9 @@ void WaveAspects::Run(CHIR::Func& func)
                     ++retValueExprIdx;
                 }
                 newFunc->SetReturnValue(
-                    *clonedBlockGroup->GetEntryBlock()->GetExpressionByIdx(retValueExprIdx)->GetResult());
+                    *newBody->GetEntryBlock()->GetExpressionByIdx(retValueExprIdx)->GetResult());
                 for (size_t i = 0; i < func.GetParams().size(); ++i) {
-                    func.GetParams()[i]->ReplaceWith(*newFunc->GetParams()[i], clonedBlockGroup);
+                    func.GetParams()[i]->ReplaceWith(*newFunc->GetParams()[i], newBody);
                 }
 
                 CHIR::BlockGroup* body = builder.CreateBlockGroup(func);
