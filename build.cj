@@ -43,8 +43,62 @@ func getPythonCommandFromEnv(): ?String {
     return None
 }
 
+func ensurePsutilInstalled(pyCommand: String): Unit {
+    try {
+        if (execute(pyCommand, "-c", "import psutil") != 0) {
+            println("psutil library not found, installing...")
+            execute(pyCommand, "-m", "pip", "install", "psutil")
+            println("psutil installed successfully")
+        }
+    } catch (e: Exception) {}
+}
+
+func checkBuildTools(): Unit {
+    // Check CMake
+    var found = false
+    try {
+        if (execute("cmake", "--version") == 0) {
+            found = true
+        }
+    } catch (_: Exception) {}
+    if (!found) {
+        throw Exception("Could not find 'cmake' in your system's PATH. Please ensure CMake is installed and added to your environment variables!")
+    }
+    found = false
+    // Check Ninja
+    try {
+        if (execute("ninja", "--version") == 0) {
+            found = true
+        }
+    } catch (_: Exception) {}
+    if (!found) {
+        throw Exception("Could not find 'ninja' in your system's PATH. Please ensure Ninja is installed and added to your environment variables!")
+    }
+    found = false
+    
+    // Check C/C++ compiler
+    let ccCommands = ["gcc", "clang", "cc"]
+    for (command in ccCommands) {
+        try {
+            if (execute(command, "--version") == 0) {
+                found = true
+                break
+            }
+        } catch (_: Exception) {
+            continue
+        }
+    }
+    if (!found) {
+        throw Exception("Could not find C compiler (gcc/clang/cc) in your system's PATH. Please ensure a C compiler is installed!")
+    }
+}
+
 main(): Int64 {
+    // Check all required build tools first
+    checkBuildTools()
+    
     let pyCommand: String = getPythonCommand()
+    ensurePsutilInstalled(pyCommand)
     match (getCommandLine()[1]) {
         case "pre-build" => stagePreBuild(pyCommand)              
         case "post-build" => stagePostBuild(pyCommand)
