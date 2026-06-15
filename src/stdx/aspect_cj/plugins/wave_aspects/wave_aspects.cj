@@ -34,40 +34,44 @@ public class WaveAspects {
                 if (!meets(f, pi)) {
                     continue
                 }
-                let (args, success) = prepareArguments(f, pi)
-                if (!success) {
-                    continue
-                }
-                let callee = getCallee(pkg, pi, f, args)
-                let funcCallCxt = FuncCallContext(args, Array<Type>(), computeThisTypeOfCallee(callee, args))
-                if (pi.annoClassName == "InsertAtEntry") {
-                    let builder = CHIRBuilder(InsertPosition.AtStart(f.body.getOrThrow().entryBlock))
-                    builder.createApply(callee, funcCallCxt)
-                } else if (pi.annoClassName == "InsertAtExit") {
-                    let visitor = InsertAtExitVisitor(callee, funcCallCxt)
-                    visitor.walk(f.body.getOrThrow())
-                } else if (pi.annoClassName == "ReplaceFuncBody") {
-                    let wrapperFunc = pkg.addFunction(f.funcType, f.identifierWithoutPrefix, f.srcCodeName, f.packageName)
-                    f.replaceWith(wrapperFunc)
-                    wrapperFunc.initBody()
-                    let builder = CHIRBuilder(wrapperFunc.body.getOrThrow().entryBlock)
-                    let allocate = builder.createAllocate(f.funcType.returnType)
-                    wrapperFunc.returnValue = allocate.result
-                    if (args.size != 1) {
-                        for (i in 0..wrapperFunc.parameters.size) {
-                            funcCallCxt.setArg(i, wrapperFunc.parameters[i])
-                        }
-                    }
-                    let apply = builder.createApply(callee, funcCallCxt)
-                    builder.createStore(apply.result, allocate.result)
-                    builder.createExit()
-                    f.identifier = wrapperFunc.identifier + ".original"
-                } else {
-                    printError("Unknown annotation class name: ${pi.annoClassName}")
-                }
+                weaveFuncBody(pkg, f, pi)
             }
         }
         return true
+    }
+
+    private func weaveFuncBody(pkg: Package, f: Function, pi: OutputInfo): Unit {
+        let (args, success) = prepareArguments(f, pi)
+        if (!success) {
+            return
+        }
+        let callee = getCallee(pkg, pi, f, args)
+        let funcCallCxt = FuncCallContext(args, Array<Type>(), computeThisTypeOfCallee(callee, args))
+        if (pi.annoClassName == "InsertAtEntry") {
+            let builder = CHIRBuilder(InsertPosition.AtStart(f.body.getOrThrow().entryBlock))
+            builder.createApply(callee, funcCallCxt)
+        } else if (pi.annoClassName == "InsertAtExit") {
+            let visitor = InsertAtExitVisitor(callee, funcCallCxt)
+            visitor.walk(f.body.getOrThrow())
+        } else if (pi.annoClassName == "ReplaceFuncBody") {
+            let wrapperFunc = pkg.addFunction(f.funcType, f.identifierWithoutPrefix, f.srcCodeName, f.packageName)
+            f.replaceWith(wrapperFunc)
+            wrapperFunc.initBody()
+            let builder = CHIRBuilder(wrapperFunc.body.getOrThrow().entryBlock)
+            let allocate = builder.createAllocate(f.funcType.returnType)
+            wrapperFunc.returnValue = allocate.result
+            if (args.size != 1) {
+                for (i in 0..wrapperFunc.parameters.size) {
+                    funcCallCxt.setArg(i, wrapperFunc.parameters[i])
+                }
+            }
+            let apply = builder.createApply(callee, funcCallCxt)
+            builder.createStore(apply.result, allocate.result)
+            builder.createExit()
+            f.identifier = wrapperFunc.identifier + ".original"
+        } else {
+            printError("Unknown annotation class name: ${pi.annoClassName}")
+        }
     }
 
     private func computeThisTypeOfCallee(callee: Function, args: Array<Value>): ?Type {

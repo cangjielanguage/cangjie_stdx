@@ -35,7 +35,7 @@ class CollectAspects {
         println(msg)
     }
 
-    private func GlobalVarsArePrimitiveLiterals(pkg: Package): Bool {
+    private func globalVarsArePrimitiveLiterals(pkg: Package): Bool {
         if (isGlobalVarsChecked) {
             return true
         }
@@ -76,7 +76,7 @@ class CollectAspects {
             if (!isInsertAnno && !isReplaceBodyAnno) {
                 continue
             }
-            if (!GlobalVarsArePrimitiveLiterals(pkg)) {
+            if (!globalVarsArePrimitiveLiterals(pkg)) {
                 printError("In `${pkg.name}` package where AOP annotations are used, all global variables must be initialized with literals of primitive types only.")
                 return false
             }
@@ -207,34 +207,34 @@ class CollectAspects {
             printError("${f.srcCodeName}: Return type of the function annotated with @InsertAtEntry must be Unit.")
             return false
         }
-        if (funcExplicitParamSize(f) > 0) {
-            var rightParenthesisIndex = wovenFuncTypeStr.lastIndexOf(")").getOrThrow()
-            let funcType1 = wovenFuncTypeStr[0..rightParenthesisIndex + 1]  // remove return type
-
-            var paramTypes = f.funcType.paramTypes
-            if (f.isInstanceMemberMethod()) {
-                (_, paramTypes) = paramTypes.splitAt(1)
-            } else if (!className.isEmpty() && !isStatic) {
-                let (thisParamTypes, explicitParamTypes) = paramTypes.splitAt(1)
-                let thisParamType = thisParamTypes[0]
-                if (let Some(c) <- (thisParamType as CustomType)) {
-                    if (c.def.srcCodeName != className) {
-                        printError("${f.srcCodeName}: The first parameter of the function annotated with @InsertAtEntry/@InsertAtExit must be the same as the type indicated by packageName and className.")
-                        return false
-                    }
-                } else {
+        if (funcExplicitParamSize(f) == 0) {
+            return true
+        }
+        var rightParenthesisIndex = wovenFuncTypeStr.lastIndexOf(")").getOrThrow()
+        let funcType1 = wovenFuncTypeStr[0..rightParenthesisIndex + 1]  // remove return type
+        var paramTypes = f.funcType.paramTypes
+        if (f.isInstanceMemberMethod()) {
+            (_, paramTypes) = paramTypes.splitAt(1)
+        } else if (!className.isEmpty() && !isStatic) {
+            let (thisParamTypes, explicitParamTypes) = paramTypes.splitAt(1)
+            let thisParamType = thisParamTypes[0]
+            if (let Some(c) <- (thisParamType as CustomType)) {
+                if (c.def.srcCodeName != className) {
                     printError("${f.srcCodeName}: The first parameter of the function annotated with @InsertAtEntry/@InsertAtExit must be the same as the type indicated by packageName and className.")
                     return false
                 }
-                paramTypes = explicitParamTypes
-            }
-            let aspectFuncTypeStr = FuncType.get(paramTypes, UnitType.get()).qualifiedName
-            rightParenthesisIndex = aspectFuncTypeStr.lastIndexOf(")").getOrThrow()
-            let funcType2 = aspectFuncTypeStr[0..rightParenthesisIndex + 1]  // remove return type
-            if (funcType1 != funcType2) {
-                printError("The aspect function ${f.srcCodeName} has different FuncType with the waved.")
+            } else {
+                printError("${f.srcCodeName}: The first parameter of the function annotated with @InsertAtEntry/@InsertAtExit must be the same as the type indicated by packageName and className.")
                 return false
             }
+            paramTypes = explicitParamTypes
+        }
+        let aspectFuncTypeStr = FuncType.get(paramTypes, UnitType.get()).qualifiedName
+        rightParenthesisIndex = aspectFuncTypeStr.lastIndexOf(")").getOrThrow()
+        let funcType2 = aspectFuncTypeStr[0..rightParenthesisIndex + 1]  // remove return type
+        if (funcType1 != funcType2) {
+            printError("The aspect function ${f.srcCodeName} has different FuncType with the waved.")
+            return false
         }
         return true
     }
