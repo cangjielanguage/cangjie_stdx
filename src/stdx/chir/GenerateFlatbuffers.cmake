@@ -41,16 +41,7 @@ endfunction()
 # sed outputs go directly into the chir package directory (distinct from syntax under src/stdx/syntax).
 _chir_sed_replace("${_fb_cj}/flatbuffer_object.cj" "${CHIR_SOURCE_DIR}/flatbuffer_object.cj")
 _chir_sed_replace("${_fb_cj}/decode.cj" "${CHIR_SOURCE_DIR}/decode.cj")
-
-execute_process(
-    COMMAND ${CMAKE_COMMAND} -E copy "${CHIR_SOURCE_DIR}/patch_table.py" "${CHIR_BUILD_DIR}/patch_table.py")
-execute_process(
-    COMMAND python3 "${CHIR_BUILD_DIR}/patch_table.py" "${_fb_cj}/table.cj" "${CHIR_SOURCE_DIR}/table.cj"
-    RESULT_VARIABLE _patch_result)
-if(NOT _patch_result EQUAL 0)
-    message(FATAL_ERROR "patch_table.py failed with code ${_patch_result}")
-endif()
-
+_chir_sed_replace("${_fb_cj}/table.cj" "${CHIR_SOURCE_DIR}/table.cj")
 _chir_sed_replace("${_fb_cj}/builder.cj" "${CHIR_SOURCE_DIR}/builder.cj")
 _chir_sed_replace("${_fb_cj}/constants.cj" "${CHIR_SOURCE_DIR}/constants.cj")
 _chir_sed_replace("${_fb_cj}/exception.cj" "${CHIR_SOURCE_DIR}/exception.cj")
