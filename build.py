@@ -127,7 +127,9 @@ def generate_cmake_defs(args):
         "-DCANGJIE_TARGET_SYSROOT=" + (args.target_sysroot if args.target_sysroot else ""),
         "-DCANGJIE_BUILD_WITHOUT_EFFECT_HANDLERS=" + bool_to_opt(args.without_effect_handlers),
         "-DCANGJIE_BUILD_STDLIB_WITH_COVERAGE=" + bool_to_opt(args.stdlib_coverage),
-        "-DCANGJIE_BUILD_ARGS=" + (";".join(args.build_args) if args.build_args else "")]
+        "-DCANGJIE_BUILD_ARGS=" + (";".join(args.build_args) if args.build_args else ""),
+        "-DBUILD_GCC_TOOLCHAIN=" + (args.gcc_toolchain if args.gcc_toolchain and args.target is None else ""),
+    ]
     if args.target and "aarch64-linux-android" in args.target:
         android_api_level = re.match(r'aarch64-linux-android(\d{2})?', args.target).group(1)
         result.append("-DCMAKE_ANDROID_NDK=" + os.path.join(args.target_toolchain, "../../../../.."))
@@ -147,6 +149,10 @@ def build(args):
         args.target = TARGET_DICTIONARY[args.target]
 
     check_compiler(args)
+
+    if args.gcc_toolchain and args.target:
+        LOG.warning("--gcc-toolchain won't take effect when --target is specified, "
+                     "because HOST and TARGET need different toolchains in cross compilation")
 
     """build cangjie compiler"""
     LOG.info("begin build...")
@@ -390,6 +396,9 @@ def main():
     )
     parser_build.add_argument(
         "--without-effect-handlers", dest="without_effect_handlers", action="store_true", help="build a version without effect handlers"
+    )
+    parser_build.add_argument(
+        "--gcc-toolchain", dest="gcc_toolchain", help="Specify GCC toolchain for Clang to use"
     )
     parser_build.set_defaults(func=build)
 
