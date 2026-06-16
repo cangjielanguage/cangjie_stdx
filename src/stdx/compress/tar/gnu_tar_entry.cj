@@ -33,9 +33,9 @@ private class GnuExtensionTarEntry {
         (data.size + 1).encodeOcatalTo(header[FieldLocation.SIZE])
         "00000000000".encodeTo(header[FieldLocation.M_TIME])
         header[FieldLocation.TYPE_FLAG][0] = if (isLinkName) {
-            TarEntryType.GnuName
-        } else {
             TarEntryType.GnuLongLink
+        } else {
+            TarEntryType.GnuLongName
         }.flag
         GNU_MAGIC.encodeTo(header[FieldLocation.MAGIC])
         GNU_VERSION.encodeTo(header[FieldLocation.VERSION])
