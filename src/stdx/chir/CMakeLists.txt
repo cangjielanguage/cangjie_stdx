@@ -49,7 +49,6 @@ if(NOT CANGJIE_CJPM_BUILD_TYPE)
         OUTPUT ${CHIR_FLATC_SOURCE_FILES}
         COMMAND ${CMAKE_COMMAND} ${CHIR_FB_GEN_ARGS} -P ${CHIR_FB_GEN_SCRIPT}
         DEPENDS flatbuffers ${CHIR_SCHEMA_SRC} ${CHIR_FB_GEN_SCRIPT}
-            ${CMAKE_CURRENT_SOURCE_DIR}/patch_table.py
         COMMENT "generate cangjie flatbuffers files for chir"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
