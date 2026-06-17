@@ -674,7 +674,7 @@ add_cangjie_library(
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx
     DEPENDS ${STDX_DEPENDENCIES})
 
-if(NOT CANGJIE_CJPM_BUILD_TYPE)
+if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CANGJIE_BUILD_WITHOUT_CHIR)
     add_cangjie_macro_library_in_local(
         cangjie${BACKEND_TYPE}ChirToStringMacro
         NO_SUB_PKG
@@ -712,7 +712,8 @@ endif()
 
 # plugin / CHIR compiler plugins are host tools (cjc --plugin). Do not build them when
 # cross-compiling target libs: host cjc cannot link target-arch libstdx.plugin.manager.so.
-if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CMAKE_CROSSCOMPILING)
+if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CMAKE_CROSSCOMPILING AND NOT CANGJIE_BUILD_WITHOUT_CHIR
+    AND NOT CANGJIE_BUILD_WITHOUT_PLUGIN)
     add_cangjie_library(
         cangjie${BACKEND_TYPE}PluginManager
         NO_SUB_PKG
@@ -800,7 +801,7 @@ add_cangjie_library(
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/logger
     DEPENDS ${LOGGER_DEPENDENCIES})
 
-if(NOT CANGJIE_CJPM_BUILD_TYPE)
+if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CANGJIE_BUILD_WITHOUT_CHIR AND NOT CANGJIE_BUILD_WITHOUT_ASPECT_CJ)
     add_cangjie_library(
         cangjie${BACKEND_TYPE}AspectCj
         NO_SUB_PKG
@@ -824,7 +825,8 @@ if(NOT CANGJIE_CJPM_BUILD_TYPE)
     set_target_properties(stdx.aspect_cj PROPERTIES LINKER_LANGUAGE C)
     install(TARGETS stdx.aspect_cj DESTINATION ${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx)
 
-    if(NOT CMAKE_BUILD_STAGE STREQUAL "postBuild" AND NOT CMAKE_CROSSCOMPILING)
+    if(NOT CMAKE_BUILD_STAGE STREQUAL "postBuild" AND NOT CMAKE_CROSSCOMPILING
+        AND NOT CANGJIE_BUILD_WITHOUT_PLUGIN)
         if(DARWIN)
             set(_plugin_macro_compile_link -l-macro_stdx.plugin)
         else()
