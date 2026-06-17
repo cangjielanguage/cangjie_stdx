@@ -3,7 +3,7 @@
 ## struct Position
 
 ```cangjie
-public struct Position <: ToString
+public struct Position <: ToString {}
 ```
 
 功能：表示源码中的**一个点**（行号与列号），在 [DebugLocation](chir_package_classes.md#class-debuglocation) 的 `start` / `end` 中使用。行、列在有效时为 **1 起计**；`isValid()` 要求二者均大于 0。

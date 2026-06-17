@@ -3,7 +3,10 @@
 ## class CustomAnnoInstance
 
 ```cangjie
-public class CustomAnnoInstance <: ToString
+public class CustomAnnoInstance <: ToString {
+    public init(classSrcCodeName: String)
+    public init(classSrcCodeName: String, loc: DebugLocation)
+}
 ```
 
 Function: Represents **one** annotation instance in CHIR, corresponding to the source form `@ClassName[v1, v2, ...]`: stores the annotation class name and a list of argument values.
@@ -193,7 +196,7 @@ Output:
 ## class BoolType
 
 ```cangjie
-public class BoolType <: BuiltinType & Equatable<BoolType>
+public class BoolType <: BuiltinType & Equatable<BoolType> {}
 ```
 
 Function: Represents the boolean type in the type system. This is a singleton type representing the Bool type.
@@ -213,7 +216,7 @@ Function: Gets the singleton instance of BoolType.
 
 Return Value:
 
-- BoolType - BoolType instance.
+- [BoolType](#class-booltype) - BoolType instance.
 
 Example:
 
@@ -271,7 +274,7 @@ Two BoolType instances are equal: true
 ## class BoxType
 
 ```cangjie
-public class BoxType <: Type & Equatable<BoxType>
+public class BoxType <: Type & Equatable<BoxType> {}
 ```
 
 Function: Represents the **boxed type** `Box<T>`, wrapping values in a box. The cache ensures a unique instance per `baseType`.
@@ -315,6 +318,10 @@ public static func get(baseType: Type): BoxType
 
 Function: Gets or creates the `BoxType` for the given base type.
 
+Return Value:
+
+- [BoxType](#class-boxtype) - The BoxType instance for the given base type.
+
 Example:
 
 <!-- verify -->
@@ -340,6 +347,10 @@ public func toString(): String
 ```
 
 Function: String form, typically in the `Box<...>` style.
+
+Return Value:
+
+- String - A string representation of the box type (Box<baseType>).
 
 Example:
 
@@ -367,6 +378,10 @@ public operator func ==(other: BoxType): Bool
 
 Function: Compares whether two `BoxType` instances are the same.
 
+Return Value:
+
+- Bool - true if the types are equal, false otherwise.
+
 Example:
 
 <!-- verify -->
@@ -390,7 +405,7 @@ op_eq_BoxType: true
 ## class BuiltinType
 
 ```cangjie
-sealed abstract class BuiltinType <: Type & Equatable<BuiltinType>
+sealed abstract class BuiltinType <: Type & Equatable<BuiltinType> {}
 ```
 
 Function: Common base class for built-in types (numeric, Bool, Unit, pointer, array, etc.); can attach `ExtendDef` (`addExtend`) and collect interface parent types implemented via `extend` through `getSuperTypesRecusively`.
@@ -448,7 +463,7 @@ Parameters:
 
 Return Value:
 
-- Array\<ClassLikeType> - Collected sequence of types.
+- Array\<[ClassLikeType](#class-classliketype)> - Collected sequence of types.
 
 Example:
 
@@ -509,7 +524,7 @@ op_eq_BuiltinType int32vsInt64: false
 ## class CPointerType
 
 ```cangjie
-public class CPointerType <: BuiltinType & Equatable<CPointerType>
+public class CPointerType <: BuiltinType & Equatable<CPointerType> {}
 ```
 
 Function: Represents a C pointer type in the type system. This type denotes a pointer to a C type for C interoperability. The class caches all C pointer types to ensure uniqueness.
@@ -529,7 +544,7 @@ Function: Gets the element type that this C pointer type points to.
 
 Return Value:
 
-- Type - Element type.
+- [Type](#class-type) - Element type.
 
 Example:
 
@@ -566,7 +581,7 @@ Parameters:
 
 Return Value:
 
-- CPointerType - The CPointerType instance for the given element type.
+- [CPointerType](#class-cpointertype) - The CPointerType instance for the given element type.
 
 Example:
 
@@ -657,7 +672,7 @@ op_eq_CPointerType: true
 ## class CStringType
 
 ```cangjie
-public class CStringType <: BuiltinType & Equatable<CStringType>
+public class CStringType <: BuiltinType & Equatable<CStringType> {}
 ```
 
 Function: Represents the C string type in the type system. This type denotes a C-style null-terminated string for C interoperability. It is a singleton type for the built-in C string type.
@@ -677,7 +692,7 @@ Function: Gets the singleton instance of CStringType.
 
 Return Value:
 
-- CStringType - CStringType instance.
+- [CStringType](#class-cstringtype) - CStringType instance.
 
 Example:
 
@@ -735,7 +750,7 @@ op_eq_CStringType: true
 ## class ClassLikeDef
 
 ```cangjie
-public class ClassLikeDef <: CustomTypeDef & Equatable<ClassLikeDef>
+public class ClassLikeDef <: CustomTypeDef & Equatable<ClassLikeDef> {}
 ```
 
 Function: Definition of a **class or interface**.
@@ -954,7 +969,7 @@ op_eq_ClassLikeDef: true
 ## class ClassLikeType
 
 ```cangjie
-public class ClassLikeType <: CustomType & Equatable<ClassLikeType>
+public class ClassLikeType <: CustomType & Equatable<ClassLikeType> {}
 ```
 
 Function: **Instantiated** type of a class or interface; `get(def, genericTypeParams)` caches a unique instance.
@@ -1009,7 +1024,7 @@ Parameters:
 
 Return Value:
 
-- ClassLikeType - Instantiated type.
+- [ClassLikeType](#class-classliketype) - Instantiated type.
 
 Example:
 
@@ -1071,7 +1086,7 @@ op_eq_ClassLikeType: true
 ## class CustomType
 
 ```cangjie
-sealed abstract class CustomType <: Type & Equatable<CustomType>
+sealed abstract class CustomType <: Type & Equatable<CustomType> {}
 ```
 
 Function: Common base class for instantiated user-defined types (class/interface/struct/enum), holding `CustomTypeDef` and generic arguments.
@@ -1182,6 +1197,10 @@ public func getExtendDefs(visited!: ArrayList<(Type, Type)> = ArrayList<(Type, T
 
 Function: Returns extend definitions in `def.extends` whose `extendedType` matches the current type.
 
+Return Value:
+
+- Array<[ExtendDef](#class-extenddef)> - Applicable ExtendDef nodes from the owning CustomTypeDef.
+
 Example:
 
 <!-- verify -->
@@ -1210,6 +1229,10 @@ public func getExtendImplementedInterfaceTypes(visited!: ArrayList<(Type, Type)>
 
 Function: Collects interfaces implemented by `extend` blocks applicable to this instance (with generics substituted).
 
+Return Value:
+
+- Array<[ClassLikeType](#class-classliketype)> - Instantiated interface ClassLikeType nodes from matching extends.
+
 Example:
 
 <!-- verify -->
@@ -1237,6 +1260,10 @@ public func getImplementedInterfaceTypes(visited!: ArrayList<(Type, Type)> = Arr
 ```
 
 Function: Union of interfaces implemented via `extend` and `implementedInterfaceTypes` on the definition (instantiated).
+
+Return Value:
+
+- Array<[ClassLikeType](#class-classliketype)> - Combined list of instantiated ClassLikeType interfaces.
 
 Example:
 
@@ -1268,7 +1295,7 @@ Function: Member types aligned with `allMemberVarNames`, substituted with curren
 
 Return Value:
 
-- Array\<Type> - Sequence of instantiated member types.
+- Array\<[Type](#class-type)> - Sequence of instantiated member types.
 
 Example:
 
@@ -1305,7 +1332,7 @@ Parameters:
 
 Return Value:
 
-- Type - Member type.
+- [Type](#class-type) - Member type.
 
 Exception:
 
@@ -1339,6 +1366,10 @@ public func getSuperTypesRecusively(visited!: ArrayList<(Type, Type)> = ArrayLis
 ```
 
 Function: Recursively collects superclass and interface parent types (instantiated).
+
+Return Value:
+
+- Array<[ClassLikeType](#class-classliketype)> - Every ClassLikeType ancestor or interface parent.
 
 Example:
 
@@ -1431,7 +1462,7 @@ op_eq_CustomType: true
 ## class CustomTypeDef
 
 ```cangjie
-sealed abstract class CustomTypeDef <: Base & Equatable<CustomTypeDef> & Hashable
+sealed abstract class CustomTypeDef <: Base & Equatable<CustomTypeDef> & Hashable {}
 ```
 
 Function: Common base class for **definitions** of class/interface/struct/enum/extension (combined with `Base`; includes attributes, CHIR annotations, debug locations, etc.).
@@ -1933,6 +1964,10 @@ public func isImported(): Bool
 
 Function: Whether this definition is imported from another package.
 
+Return Value:
+
+- Bool - true if the Imported attribute is set, false otherwise.
+
 Example:
 
 <!-- verify -->
@@ -1959,6 +1994,10 @@ public func isPublic(): Bool
 ```
 
 Function: Whether it has the `public` attribute.
+
+Return Value:
+
+- Bool - true if the Public attribute is set, false otherwise.
 
 Example:
 
@@ -1987,6 +2026,10 @@ public func isPrivate(): Bool
 
 Function: Whether it has the `private` attribute.
 
+Return Value:
+
+- Bool - true if the Private attribute is set, false otherwise.
+
 Example:
 
 <!-- verify -->
@@ -2013,6 +2056,10 @@ public func isInternal(): Bool
 ```
 
 Function: Whether it has the `internal` attribute.
+
+Return Value:
+
+- Bool - true if the Internal attribute is set, false otherwise.
 
 Example:
 
@@ -2041,6 +2088,10 @@ public func isProtected(): Bool
 
 Function: Whether it has the `protected` attribute.
 
+Return Value:
+
+- Bool - true if the Protected attribute is set, false otherwise.
+
 Example:
 
 <!-- verify -->
@@ -2067,6 +2118,10 @@ public func isAbstract(): Bool
 ```
 
 Function: Whether it is `abstract`.
+
+Return Value:
+
+- Bool - true if the Abstract attribute is set, false otherwise.
 
 Example:
 
@@ -2095,6 +2150,10 @@ public func isOpen(): Bool
 
 Function: Whether it can be inherited/implemented (`virtual` or `abstract`).
 
+Return Value:
+
+- Bool - true if the Virtual or Abstract attribute is set, false otherwise.
+
 Example:
 
 <!-- verify -->
@@ -2121,6 +2180,10 @@ public func isSealed(): Bool
 ```
 
 Function: Whether it is `sealed`.
+
+Return Value:
+
+- Bool - true if the Sealed attribute is set, false otherwise.
 
 Example:
 
@@ -2149,6 +2212,10 @@ public func isGeneric(): Bool
 
 Function: Whether it is a generic definition.
 
+Return Value:
+
+- Bool - true if the Generic attribute is set, false otherwise.
+
 Example:
 
 <!-- verify -->
@@ -2175,6 +2242,10 @@ public func isClassLike(): Bool
 ```
 
 Function: Whether the kind is class/interface.
+
+Return Value:
+
+- Bool - true if the kind is ClassLike, false otherwise.
 
 Example:
 
@@ -2203,6 +2274,10 @@ public func isClass(): Bool
 
 Function: Whether it is a class (not an interface).
 
+Return Value:
+
+- Bool - true if this is a class, false otherwise.
+
 Example:
 
 <!-- verify -->
@@ -2229,6 +2304,10 @@ public func isInterface(): Bool
 ```
 
 Function: Whether it is an interface.
+
+Return Value:
+
+- Bool - true if this is an interface, false otherwise.
 
 Example:
 
@@ -2257,6 +2336,10 @@ public func isEnum(): Bool
 
 Function: Whether it is an enum definition.
 
+Return Value:
+
+- Bool - true if the kind is Enum, false otherwise.
+
 Example:
 
 <!-- verify -->
@@ -2284,6 +2367,10 @@ public func isExtend(): Bool
 
 Function: Whether it is an extend definition.
 
+Return Value:
+
+- Bool - true if the kind is Extend, false otherwise.
+
 Example:
 
 <!-- verify -->
@@ -2310,6 +2397,10 @@ public func isStruct(): Bool
 ```
 
 Function: Whether it is a struct definition.
+
+Return Value:
+
+- Bool - true if the kind is Struct, false otherwise.
 
 Example:
 
@@ -2368,6 +2459,10 @@ public operator func ==(other: CustomTypeDef): Bool
 ```
 
 Function: Compares by kind, identifier, source name, and package name.
+
+Return Value:
+
+- Bool - true if the definitions are equal, false otherwise.
 
 Example:
 
@@ -2489,7 +2584,7 @@ Function: Recursively collects all superclasses of this definition, including in
 
 Return Value:
 
-- Array\<ClassLikeType> - Collected parent types; **order is not guaranteed**.
+- Array\<[ClassLikeType](#class-classliketype)> - Collected parent types; **order is not guaranteed**.
 
 Example:
 
@@ -2513,7 +2608,7 @@ Output:
 ## class DebugLocation
 
 ```cangjie
-public class DebugLocation <: ToString
+public class DebugLocation <: ToString {}
 ```
 
 Function: **Source range** (start/end `Position` and file path) for debugging and printing.
@@ -2679,7 +2774,7 @@ Output:
 ## class EnumCtorInfo
 
 ```cangjie
-public class EnumCtorInfo <: ToString
+public class EnumCtorInfo <: ToString {}
 ```
 
 Function: One **constructor/variant** of an enum (name, internal id, function type, annotations).
@@ -2845,7 +2940,7 @@ A
 ## class EnumDef
 
 ```cangjie
-public class EnumDef <: CustomTypeDef & Equatable<EnumDef>
+public class EnumDef <: CustomTypeDef & Equatable<EnumDef> {}
 ```
 
 Function: **Enum** definition; includes exhaustive flag, constructor list, etc.
@@ -3019,7 +3114,7 @@ op_eq_EnumDef: true
 ## class EnumType
 
 ```cangjie
-public class EnumType <: CustomType & Equatable<EnumType>
+public class EnumType <: CustomType & Equatable<EnumType> {}
 ```
 
 Function: Instantiated type of the enum; `get(def, genericTypeParams)` caches a unique instance.
@@ -3074,7 +3169,7 @@ Parameters:
 
 Return Value:
 
-- EnumType - Instantiated enum type.
+- [EnumType](#class-enumtype) - Instantiated enum type.
 
 Example:
 
@@ -3136,7 +3231,7 @@ op_eq_EnumType: true
 ## class ExtendDef
 
 ```cangjie
-public class ExtendDef <: CustomTypeDef
+public class ExtendDef <: CustomTypeDef {}
 ```
 
 Function: **Extension (extend)** definition: adds implementation for a type, with `extendedType` and generic parameters.
@@ -3177,7 +3272,7 @@ Int32
 ## class FloatType
 
 ```cangjie
-public class FloatType <: NumericType & Equatable<FloatType>
+public class FloatType <: NumericType & Equatable<FloatType> {}
 ```
 
 Function: Represents a floating-point type in the type system. This class represents Float16, Float32, and Float64.
@@ -3197,7 +3292,7 @@ Function: Gets the Float16 type instance.
 
 Return Value:
 
-- FloatType - Float16 type.
+- [FloatType](#class-floattype) - Float16 type.
 
 Example:
 
@@ -3227,7 +3322,7 @@ Function: Gets the Float32 type instance.
 
 Return Value:
 
-- FloatType - Float32 type.
+- [FloatType](#class-floattype) - Float32 type.
 
 Example:
 
@@ -3257,7 +3352,7 @@ Function: Gets the Float64 type instance.
 
 Return Value:
 
-- FloatType - Float64 type.
+- [FloatType](#class-floattype) - Float64 type.
 
 Example:
 
@@ -3318,7 +3413,7 @@ Float32 and Float64 are equal: false
 ## class FuncType
 
 ```cangjie
-public class FuncType <: Type & Equatable<FuncType>
+public class FuncType <: Type & Equatable<FuncType> {}
 ```
 
 Function: Function type (parameter type list + return type), optional varargs and C function flag; cached by signature.
@@ -3461,7 +3556,7 @@ Parameters:
 
 Return Value:
 
-- FuncType - Function type instance.
+- [FuncType](#class-functype) - Function type instance.
 
 Example:
 
@@ -3552,7 +3647,7 @@ op_eq_FuncType: true
 ## class GenericType
 
 ```cangjie
-public class GenericType <: Type & Equatable<GenericType>
+public class GenericType <: Type & Equatable<GenericType> {}
 ```
 
 Function: Generic **type parameter** (e.g. `T`), optional `upperBounds`; cached by internal `identifier`.
@@ -3633,7 +3728,7 @@ Parameters:
 
 Return Value:
 
-- GenericType - Generic parameter type.
+- [GenericType](#class-generictype) - Generic parameter type.
 
 Example:
 
@@ -3721,7 +3816,7 @@ op_eq_GenericType: true
 ## class IntType
 
 ```cangjie
-public class IntType <: NumericType & Equatable<IntType>
+public class IntType <: NumericType & Equatable<IntType> {}
 ```
 
 Function: Represents an integer type in the type system. This class represents signed and unsigned integer types of various sizes.
@@ -3741,7 +3836,7 @@ Function: Gets the Int16 type instance.
 
 Return Value:
 
-- IntType - Int16 type.
+- [IntType](#class-inttype) - Int16 type.
 
 Example:
 
@@ -3771,7 +3866,7 @@ Function: Gets the Int32 type instance.
 
 Return Value:
 
-- IntType - Int32 type.
+- [IntType](#class-inttype) - Int32 type.
 
 Example:
 
@@ -3801,7 +3896,7 @@ Function: Gets the Int64 type instance.
 
 Return Value:
 
-- IntType - Int64 type.
+- [IntType](#class-inttype) - Int64 type.
 
 Example:
 
@@ -3831,7 +3926,7 @@ Function: Gets the Int8 type instance.
 
 Return Value:
 
-- IntType - Int8 type.
+- [IntType](#class-inttype) - Int8 type.
 
 Example:
 
@@ -3861,7 +3956,7 @@ Function: Gets the IntNative type instance.
 
 Return Value:
 
-- IntType - IntNative type.
+- [IntType](#class-inttype) - IntNative type.
 
 Example:
 
@@ -3891,7 +3986,7 @@ Function: Gets the UInt16 type instance.
 
 Return Value:
 
-- IntType - UInt16 type.
+- [IntType](#class-inttype) - UInt16 type.
 
 Example:
 
@@ -3921,7 +4016,7 @@ Function: Gets the UInt32 type instance.
 
 Return Value:
 
-- IntType - UInt32 type.
+- [IntType](#class-inttype) - UInt32 type.
 
 Example:
 
@@ -3951,7 +4046,7 @@ Function: Gets the UInt64 type instance.
 
 Return Value:
 
-- IntType - UInt64 type.
+- [IntType](#class-inttype) - UInt64 type.
 
 Example:
 
@@ -3981,7 +4076,7 @@ Function: Gets the UInt8 type instance.
 
 Return Value:
 
-- IntType - UInt8 type.
+- [IntType](#class-inttype) - UInt8 type.
 
 Example:
 
@@ -4011,7 +4106,7 @@ Function: Gets the UIntNative type instance.
 
 Return Value:
 
-- IntType - UIntNative type.
+- [IntType](#class-inttype) - UIntNative type.
 
 Example:
 
@@ -4105,7 +4200,7 @@ UInt32 is signed: false
 ## class MemberVar
 
 ```cangjie
-public class MemberVar <: ToString
+public class MemberVar <: ToString {}
 ```
 
 Function: Describes an **instance member variable** on a custom type (name, type, debug location, annotations, access modifiers, etc.).
@@ -4417,6 +4512,10 @@ public func isReadOnly(): Bool
 
 Function: Whether this is a read-only member.
 
+Return Value:
+
+- Bool - true if the READONLY attribute is set, false otherwise.
+
 Example:
 
 <!-- verify -->
@@ -4444,6 +4543,10 @@ public func isInternal(): Bool
 ```
 
 Function: Whether this is `internal`.
+
+Return Value:
+
+- Bool - true if the INTERNAL attribute is set, false otherwise.
 
 Example:
 
@@ -4473,6 +4576,10 @@ public func isPublic(): Bool
 
 Function: Whether this is `public`.
 
+Return Value:
+
+- Bool - true if the PUBLIC attribute is set, false otherwise.
+
 Example:
 
 <!-- verify -->
@@ -4501,6 +4608,10 @@ public func isPrivate(): Bool
 
 Function: Whether this is `private`.
 
+Return Value:
+
+- Bool - true if the PRIVATE attribute is set, false otherwise.
+
 Example:
 
 <!-- verify -->
@@ -4528,6 +4639,10 @@ public func isProtected(): Bool
 ```
 
 Function: Whether this is `protected`.
+
+Return Value:
+
+- Bool - true if the PROTECTED attribute is set, false otherwise.
 
 Example:
 
@@ -4612,7 +4727,7 @@ Output:
 ## class NothingType
 
 ```cangjie
-public class NothingType <: BuiltinType & Equatable<NothingType>
+public class NothingType <: BuiltinType & Equatable<NothingType> {}
 ```
 
 Function: Represents the Nothing type (bottom type) in the type system. Used for expressions that never return.
@@ -4632,7 +4747,7 @@ Function: Gets the singleton instance of NothingType.
 
 Return Value:
 
-- NothingType - NothingType instance.
+- [NothingType](#class-nothingtype) - NothingType instance.
 
 Example:
 
@@ -4690,7 +4805,7 @@ Two NothingType instances are equal: true
 ## class NumericType
 
 ```cangjie
-sealed abstract class NumericType <: BuiltinType & Equatable<NumericType>
+sealed abstract class NumericType <: BuiltinType & Equatable<NumericType> {}
 ```
 
 Function: Abstract base class for numeric types. Represents numeric types, including integer and floating-point types.
@@ -4741,7 +4856,9 @@ Int32 and Float32 are equal: false
 ## class Package
 
 ```cangjie
-public class Package <: ToString
+public class Package <: ToString {
+    public init(name: String, accessLevel: AccessLevel)
+}
 ```
 
 Function: Represents a **CHIR package**: name, access level, imports, and type definitions declared in this package.
@@ -5329,7 +5446,7 @@ Function: Looks up a class/interface definition by declared package name + sourc
 
 Return Value:
 
-- ?ClassLikeDef - `Some` if found, otherwise `None`.
+- ?[ClassLikeDef](#class-classlikedef) - `Some` if found, otherwise `None`.
 
 Example:
 
@@ -5361,7 +5478,7 @@ Function: Same as above, for struct definitions.
 
 Return Value:
 
-- ?StructDef - Optional result.
+- ?[StructDef](#class-structdef) - Optional result.
 
 Example:
 
@@ -5393,7 +5510,7 @@ Function: Same as above, for enum definitions.
 
 Return Value:
 
-- ?EnumDef - Optional result.
+- ?[EnumDef](#class-enumdef) - Optional result.
 
 Example:
 
@@ -5516,7 +5633,7 @@ packageAccessLevel: public
 ## class RawArrayType
 
 ```cangjie
-public class RawArrayType <: BuiltinType & Equatable<RawArrayType>
+public class RawArrayType <: BuiltinType & Equatable<RawArrayType> {}
 ```
 
 Function: **Raw array** type with element type and dimension count `dims`. Cached uniquely by `(elementType, dims)`.
@@ -5589,6 +5706,10 @@ public static func get(elementType: Type, dims: UInt32): RawArrayType
 ```
 
 Function: Gets or creates a raw array type.
+
+Return Value:
+
+- [RawArrayType](#class-rawarraytype) - The RawArrayType instance.
 
 Example:
 
@@ -5676,7 +5797,7 @@ op_eq_RawArrayType: true
 ## class RefType
 
 ```cangjie
-public class RefType <: Type & Equatable<RefType>
+public class RefType <: Type & Equatable<RefType> {}
 ```
 
 Function: Represents a reference type in the type system. Wraps another type to denote a reference to it. The class caches all reference types to ensure uniqueness.
@@ -5696,7 +5817,7 @@ Function: Gets the base type that this reference type refers to.
 
 Return Value:
 
-- Type - Base type.
+- [Type](#class-type) - Base type.
 
 Example:
 
@@ -5733,7 +5854,7 @@ Parameters:
 
 Return Value:
 
-- RefType - RefType instance for the given base type.
+- [RefType](#class-reftype) - RefType instance for the given base type.
 
 Example:
 
@@ -5823,7 +5944,7 @@ op_eq_RefType: true
 ## class RuneType
 
 ```cangjie
-public class RuneType <: BuiltinType & Equatable<RuneType>
+public class RuneType <: BuiltinType & Equatable<RuneType> {}
 ```
 
 Function: Represents the Rune type in the type system. This type represents a character type.
@@ -5843,7 +5964,7 @@ Function: Gets the singleton instance of RuneType.
 
 Return Value:
 
-- RuneType - RuneType instance.
+- [RuneType](#class-runetype) - RuneType instance.
 
 Example:
 
@@ -5901,7 +6022,7 @@ Two RuneType instances are equal: true
 ## class StructDef
 
 ```cangjie
-public class StructDef <: CustomTypeDef & Equatable<StructDef>
+public class StructDef <: CustomTypeDef & Equatable<StructDef> {}
 ```
 
 Function: **Struct** definition; `isCStruct` marks C-interop structs.
@@ -6008,7 +6129,7 @@ op_eq_StructDef: true
 ## class StructType
 
 ```cangjie
-public class StructType <: CustomType & Equatable<StructType>
+public class StructType <: CustomType & Equatable<StructType> {}
 ```
 
 Function: Instantiated type of the struct; `get(def, genericTypeParams)` caches a unique instance.
@@ -6063,7 +6184,7 @@ Parameters:
 
 Return Value:
 
-- StructType - Instantiated struct type.
+- [StructType](#class-structtype) - Instantiated struct type.
 
 Example:
 
@@ -6125,7 +6246,7 @@ op_eq_StructType: true
 ## class ThisType
 
 ```cangjie
-public class ThisType <: Type & Equatable<ThisType>
+public class ThisType <: Type & Equatable<ThisType> {}
 ```
 
 Function: The **`This`** type inside a class/struct body; singleton.
@@ -6145,7 +6266,7 @@ Function: Returns the unique singleton of `This` type.
 
 Return Value:
 
-- ThisType - Singleton.
+- [ThisType](#class-thistype) - Singleton.
 
 Example:
 
@@ -6202,7 +6323,7 @@ op_eq_ThisType: true
 ## class TupleType
 
 ```cangjie
-public class TupleType <: Type & Equatable<TupleType>
+public class TupleType <: Type & Equatable<TupleType> {}
 ```
 
 Function: Tuple type; cached uniquely by element type sequence signature.
@@ -6255,7 +6376,7 @@ Parameters:
 
 Return Value:
 
-- TupleType - Tuple type instance.
+- [TupleType](#class-tupletype) - Tuple type instance.
 
 Example:
 
@@ -6344,7 +6465,7 @@ op_eq_TupleType: true
 ## class Type
 
 ```cangjie
-sealed abstract class Type <: ToString & Hashable & Equatable<Type>
+sealed abstract class Type <: ToString & Hashable & Equatable<Type> {}
 ```
 
 Function: Abstract base class of all types in the type system. Provides equality, hashing, and string conversion.
@@ -6375,7 +6496,7 @@ Function: Type parameter / subtype argument list for this type (depends on `Type
 
 Return Value:
 
-- Array\<Type> - Type parameter array.
+- Array\<[Type](#class-type)> - Type parameter array.
 
 Example:
 
@@ -6833,6 +6954,10 @@ public func isAnyTypeInStd(): Bool
 
 Function: Whether this is the Any type in the std package.
 
+Return Value:
+
+- Bool - true if the type is Any in std, false otherwise.
+
 ### func isBoxType()
 
 ```cangjie
@@ -6840,6 +6965,10 @@ public func isBoxType(): Bool
 ```
 
 Function: Whether this is a BoxType.
+
+Return Value:
+
+- Bool - true if the type is a box type, false otherwise.
 
 ### func isBoxRefTypeOf(Type)
 
@@ -6853,6 +6982,10 @@ Parameters:
 
 - other: Type - The type to compare with.
 
+Return Value:
+
+- Bool - true if this type is a Box reference type of the other type, false otherwise.
+
 ### func isCFuncType()
 
 ```cangjie
@@ -6860,6 +6993,10 @@ public func isCFuncType(): Bool
 ```
 
 Function: Whether this is a C function type.
+
+Return Value:
+
+- Bool - true if the type is a C function type, false otherwise.
 
 ### func isCPointerType()
 
@@ -6869,6 +7006,10 @@ public func isCPointerType(): Bool
 
 Function: Whether this is a CPointer type.
 
+Return Value:
+
+- Bool - true if the type is a C pointer type, false otherwise.
+
 ### func isCStringType()
 
 ```cangjie
@@ -6876,6 +7017,10 @@ public func isCStringType(): Bool
 ```
 
 Function: Whether this is a CString type.
+
+Return Value:
+
+- Bool - true if the type is a C string type, false otherwise.
 
 ### func isCTypeInStd()
 
@@ -6885,6 +7030,10 @@ public func isCTypeInStd(): Bool
 
 Function: Whether this is a C type in the std package.
 
+Return Value:
+
+- Bool - true if the type is a C type in std, false otherwise.
+
 ### func isClassLikeType()
 
 ```cangjie
@@ -6892,6 +7041,10 @@ public func isClassLikeType(): Bool
 ```
 
 Function: Whether this is a ClassLikeType.
+
+Return Value:
+
+- Bool - true if the type is a class-like type, false otherwise.
 
 ### func isClosureType()
 
@@ -6901,6 +7054,10 @@ public func isClosureType(): Bool
 
 Function: Whether this is a closure type.
 
+Return Value:
+
+- Bool - true if the type is a closure type, false otherwise.
+
 ### func isClosureBaseType()
 
 ```cangjie
@@ -6908,6 +7065,10 @@ public func isClosureBaseType(): Bool
 ```
 
 Function: Whether this is a closure base type.
+
+Return Value:
+
+- Bool - true if the type is a closure base type, false otherwise.
 
 ### func isClosureGenericBaseType()
 
@@ -6917,6 +7078,10 @@ public func isClosureGenericBaseType(): Bool
 
 Function: Whether this is a closure generic base type.
 
+Return Value:
+
+- Bool - true if the type is a closure generic base type, false otherwise.
+
 ### func isClosureInstBaseType()
 
 ```cangjie
@@ -6924,6 +7089,10 @@ public func isClosureInstBaseType(): Bool
 ```
 
 Function: Whether this is a closure instantiated base type.
+
+Return Value:
+
+- Bool - true if the type is a closure instantiated base type, false otherwise.
 
 ### func isCustomType()
 
@@ -6933,6 +7102,10 @@ public func isCustomType(): Bool
 
 Function: Whether this is a CustomType.
 
+Return Value:
+
+- Bool - true if the type is a custom type (class, enum, or struct), false otherwise.
+
 ### func isEnumType()
 
 ```cangjie
@@ -6940,6 +7113,10 @@ public func isEnumType(): Bool
 ```
 
 Function: Whether this is an EnumType.
+
+Return Value:
+
+- Bool - true if the type is an enum type, false otherwise.
 
 ### func isFuncType()
 
@@ -6949,6 +7126,10 @@ public func isFuncType(): Bool
 
 Function: Whether this is a FuncType.
 
+Return Value:
+
+- Bool - true if the type is a function type, false otherwise.
+
 ### func isGenericType()
 
 ```cangjie
@@ -6956,6 +7137,10 @@ public func isGenericType(): Bool
 ```
 
 Function: Whether this is a GenericType.
+
+Return Value:
+
+- Bool - true if the type is a generic type, false otherwise.
 
 ### func isGenericRelated()
 
@@ -6965,6 +7150,10 @@ public func isGenericRelated(): Bool
 
 Function: Whether this is related to generics.
 
+Return Value:
+
+- Bool - true if the type or any of its type arguments is related to generics, false otherwise.
+
 ### func isReferenceType()
 
 ```cangjie
@@ -6972,6 +7161,10 @@ public func isReferenceType(): Bool
 ```
 
 Function: Whether this is a reference type (ClassLikeType, RawArrayType, BoxType, or ThisType).
+
+Return Value:
+
+- Bool - true if the type is a reference type, false otherwise.
 
 ### func isRawArrayType()
 
@@ -6981,6 +7174,10 @@ public func isRawArrayType(): Bool
 
 Function: Whether this is a RawArray type.
 
+Return Value:
+
+- Bool - true if the type is a raw array type, false otherwise.
+
 ### func isStructType()
 
 ```cangjie
@@ -6988,6 +7185,10 @@ public func isStructType(): Bool
 ```
 
 Function: Whether this is a StructType.
+
+Return Value:
+
+- Bool - true if the type is a struct type, false otherwise.
 
 ### func isThisType()
 
@@ -6997,6 +7198,10 @@ public func isThisType(): Bool
 
 Function: Whether this is a ThisType.
 
+Return Value:
+
+- Bool - true if the type is a This type, false otherwise.
+
 ### func isTupleType()
 
 ```cangjie
@@ -7004,6 +7209,10 @@ public func isTupleType(): Bool
 ```
 
 Function: Whether this is a TupleType.
+
+Return Value:
+
+- Bool - true if the type is a tuple type, false otherwise.
 
 ### func isValueType()
 
@@ -7013,6 +7222,10 @@ public func isValueType(): Bool
 
 Function: Whether this is a value type.
 
+Return Value:
+
+- Bool - true if the type is a value type, false otherwise.
+
 ### func isVArrayType()
 
 ```cangjie
@@ -7021,6 +7234,10 @@ public func isVArrayType(): Bool
 
 Function: Whether this is a VArrayType.
 
+Return Value:
+
+- Bool - true if the type is a VArray type, false otherwise.
+
 ### func satisfyCType()
 
 ```cangjie
@@ -7028,6 +7245,10 @@ public func satisfyCType(): Bool
 ```
 
 Function: Whether this satisfies the C type constraint.
+
+Return Value:
+
+- Bool - true if the type satisfies the C type constraint, false otherwise.
 
 ### func isEqualOrSubTypeOf(Type, ArrayList<(Type, Type)>)
 
@@ -7042,6 +7263,10 @@ Parameters:
 - parent: Type - The parent type to compare with.
 - visited!: ArrayList<(Type, Type)> - Visitation table for cycle detection; usually pass the default empty table.
 
+Return Value:
+
+- Bool - true if this type is an equal or subtype of parent, false otherwise.
+
 ### func isEqualOrInstantiatedTypeOf(Type, ArrayList<(Type, Type)>)
 
 ```cangjie
@@ -7054,6 +7279,10 @@ Parameters:
 
 - genericRelatedType: Type - The generic-related type to compare with.
 - visited!: ArrayList<(Type, Type)> - Visitation table for cycle detection; usually pass the default empty table.
+
+Return Value:
+
+- Bool - true if this type is an equal or instantiated type of genericRelatedType, false otherwise.
 
 ### func satisfyGenericConstraints(GenericType, HashMap<GenericType, Type>, ArrayList<(Type, Type)>)
 
@@ -7068,6 +7297,10 @@ Parameters:
 - gType: GenericType - The generic type.
 - instMap: HashMap<GenericType, Type> - The generic instantiation mapping.
 - visited!: ArrayList<(Type, Type)> - Visitation table for cycle detection; usually pass the default empty table.
+
+Return Value:
+
+- Bool - true if this type satisfies the generic constraints, false otherwise.
 
 ### operator func ==(Type)
 
@@ -7119,7 +7352,7 @@ Recursively removes all `Ref` wrappers until a non-reference type is reached.
 
 Return Value:
 
-- Type - Base type after stripping all reference wrappers.
+- [Type](#class-type) - Base type after stripping all reference wrappers.
 
 Example:
 
@@ -7176,7 +7409,7 @@ Type: Int32
 ## class UnitType
 
 ```cangjie
-public class UnitType <: BuiltinType & Equatable<UnitType>
+public class UnitType <: BuiltinType & Equatable<UnitType> {}
 ```
 
 Function: Represents the Unit type in the type system. Denotes no meaningful value, similar to `void` in C.
@@ -7196,7 +7429,7 @@ Function: Gets the singleton instance of UnitType.
 
 Return Value:
 
-- UnitType - UnitType instance.
+- [UnitType](#class-unittype) - UnitType instance.
 
 Example:
 
@@ -7254,7 +7487,7 @@ Two UnitType instances are equal: true
 ## class VArrayType
 
 ```cangjie
-public class VArrayType <: BuiltinType & Equatable<VArrayType>
+public class VArrayType <: BuiltinType & Equatable<VArrayType> {}
 ```
 
 Function: **Fixed-length VArray** type `VArray<T, $n>` with compile-time fixed length. Cached uniquely by `(elementType, size)`.
@@ -7327,6 +7560,10 @@ public static func get(elementType: Type, size: Int64): VArrayType
 ```
 
 Function: Gets or creates a VArray type.
+
+Return Value:
+
+- [VArrayType](#class-varraytype) - The VArrayType instance.
 
 Example:
 
@@ -7414,7 +7651,10 @@ op_eq_VArrayType: true
 ## class CHIRException
 
 ```cangjie
-public class CHIRException <: Exception
+public class CHIRException <: Exception {
+    public init()
+    public init(message: String)
+}
 ```
 
 Function: Checked exception thrown when CHIR construction or IR state is inconsistent.
@@ -7482,7 +7722,10 @@ init_with_msg: true
 ## class FuncSigInfo
 
 ```cangjie
-public class FuncSigInfo
+public class FuncSigInfo {
+    public init(name: String, ty: FuncType)
+    public init(name: String, ty: FuncType, genericTypeParams: Array<GenericType>)
+}
 ```
 
 Function: Lightweight signature package for function symbols (name, function type, generic type parameters), used to describe the target signature information of a function call.
@@ -7709,7 +7952,7 @@ h<Generic-pkg:T>(Int32) -> Unit
 ## class CHIRVisitor
 
 ```cangjie
-public abstract class CHIRVisitor
+public abstract class CHIRVisitor {}
 ```
 
 Function: **Abstract visitor** for CHIR functions, block groups, basic blocks, and nested expressions. Subclasses can override [`action`](#func-actionexpression) to observe each expression node; `walk` methods recursively traverse until `IRActionMode.Stop` is returned.
@@ -7866,7 +8109,9 @@ visitor_done
 ## class FuncCallContext
 
 ```cangjie
-public class FuncCallContext
+public class FuncCallContext {
+    public init(args: Array<Value>, instTypeArgs: Array<Type>, objType: ?Type)
+}
 ```
 
 Function: Function call context, encapsulating the argument value list, instantiation type arguments, and optional calling object type.
@@ -8016,7 +8261,9 @@ Parameters:
 ## class InvokeCallContext
 
 ```cangjie
-public class InvokeCallContext
+public class InvokeCallContext {
+    public init(caller: Value, virMethodCtx: FuncSigInfo, funcCallCtx: FuncCallContext)
+}
 ```
 
 Function: Virtual method call context, encapsulating the caller value, virtual method signature information, and function call context.
@@ -8152,7 +8399,7 @@ prop_funcCallCtx: 0
 ## class Block
 
 ```cangjie
-public class Block <: Value & Equatable<Block>
+public class Block <: Value & Equatable<Block> {}
 ```
 
 Function: Represents a **basic block** in CHIR, the fundamental unit of control flow within a function body. Each basic block contains a sequence of expressions and can form a control flow graph with predecessor basic blocks; setting `exceptions` marks it as an exception-handling landing pad block.
@@ -8528,7 +8775,7 @@ op_eq_Block: true
 ## class BlockGroup
 
 ```cangjie
-public class BlockGroup <: Value & Equatable<BlockGroup>
+public class BlockGroup <: Value & Equatable<BlockGroup> {}
 ```
 
 Function: Represents a **basic block group** in CHIR, the control flow graph container for a function body or lambda body, containing several basic blocks and maintaining an entry block pointer.
@@ -8672,7 +8919,7 @@ Function: Appends and returns a new empty basic block.
 
 Return Value:
 
-- Block - The newly created basic block.
+- [Block](#class-block) - The newly created basic block.
 
 Example:
 
@@ -8832,7 +9079,7 @@ op_eq_BlockGroup: true
 ## class BoolLiteral
 
 ```cangjie
-public class BoolLiteral <: LiteralValue & Equatable<BoolLiteral>
+public class BoolLiteral <: LiteralValue & Equatable<BoolLiteral> {}
 ```
 
 Function: Represents a boolean literal (`true` or `false`), cached by value to ensure the same boolean value corresponds to a unique instance.
@@ -8884,7 +9131,7 @@ Parameters:
 
 Return Value:
 
-- BoolLiteral - The corresponding boolean literal.
+- [BoolLiteral](#class-boolliteral) - The corresponding boolean literal.
 
 Example:
 
@@ -8972,7 +9219,7 @@ op_eq_BoolLiteral: true
 ## class FloatLiteral
 
 ```cangjie
-public class FloatLiteral <: LiteralValue & Equatable<FloatLiteral>
+public class FloatLiteral <: LiteralValue & Equatable<FloatLiteral> {}
 ```
 
 Function: Represents a floating-point literal, cached by `(FloatType, Float64)` to ensure the same type and value correspond to a unique instance.
@@ -9025,7 +9272,7 @@ Parameters:
 
 Return Value:
 
-- FloatLiteral - The corresponding floating-point literal.
+- [FloatLiteral](#class-floatliteral) - The corresponding floating-point literal.
 
 Example:
 
@@ -9113,7 +9360,7 @@ op_eq_FloatLiteral: true
 ## class Function
 
 ```cangjie
-public class Function <: GlobalValue & Equatable<Function>
+public class Function <: GlobalValue & Equatable<Function> {}
 ```
 
 Function: Represents a **function definition** in CHIR, containing function type, parameters, body (BlockGroup), generic type parameters, and abstract/open attribute markers.
@@ -9773,7 +10020,7 @@ op_eq_Function: true
 ## class GlobalVar
 
 ```cangjie
-public class GlobalVar <: GlobalValue & Equatable<GlobalVar>
+public class GlobalVar <: GlobalValue & Equatable<GlobalVar> {}
 ```
 
 Function: Represents a **global variable definition** in CHIR, containing type, initializer value, and read-only marker.
@@ -10007,7 +10254,7 @@ op_eq_GlobalVar: true
 ## class IntLiteral
 
 ```cangjie
-public class IntLiteral <: LiteralValue & Equatable<IntLiteral>
+public class IntLiteral <: LiteralValue & Equatable<IntLiteral> {}
 ```
 
 Function: Represents an integer literal, cached by `(IntType, UInt64)` to ensure the same type and value correspond to a unique instance.
@@ -10088,7 +10335,7 @@ Parameters:
 
 Return Value:
 
-- IntLiteral - The corresponding integer literal.
+- [IntLiteral](#class-intliteral) - The corresponding integer literal.
 
 Example:
 
@@ -10206,7 +10453,7 @@ op_eq_IntLiteral: true
 ## class LocalVar
 
 ```cangjie
-public class LocalVar <: Value & Equatable<LocalVar>
+public class LocalVar <: Value & Equatable<LocalVar> {}
 ```
 
 Function: Represents a **local variable** in CHIR, produced by expression results, and can also serve as a function return value.
@@ -10396,7 +10643,7 @@ op_eq_LocalVar: true
 ## class NullLiteral
 
 ```cangjie
-public class NullLiteral <: LiteralValue & Equatable<NullLiteral>
+public class NullLiteral <: LiteralValue & Equatable<NullLiteral> {}
 ```
 
 Function: Represents a Null literal, cached by type to ensure the same type corresponds to a unique instance.
@@ -10420,7 +10667,7 @@ Parameters:
 
 Return Value:
 
-- NullLiteral - Null literal instance.
+- [NullLiteral](#class-nullliteral) - Null literal instance.
 
 Example:
 
@@ -10508,7 +10755,7 @@ op_eq_NullLiteral: true
 ## class Parameter
 
 ```cangjie
-public class Parameter <: Value & Equatable<Parameter>
+public class Parameter <: Value & Equatable<Parameter> {}
 ```
 
 Function: Represents a **function parameter** in CHIR, containing type, source code name, annotations, and other information.
@@ -10680,7 +10927,7 @@ op_eq_Parameter: true
 ## class RuneLiteral
 
 ```cangjie
-public class RuneLiteral <: LiteralValue & Equatable<RuneLiteral>
+public class RuneLiteral <: LiteralValue & Equatable<RuneLiteral> {}
 ```
 
 Function: Represents a Rune (character) literal, cached by value to ensure the same Rune value corresponds to a unique instance.
@@ -10732,7 +10979,7 @@ Parameters:
 
 Return Value:
 
-- RuneLiteral - The corresponding Rune literal.
+- [RuneLiteral](#class-runeliteral) - The corresponding Rune literal.
 
 Example:
 
@@ -10820,7 +11067,7 @@ op_eq_RuneLiteral: true
 ## class StringLiteral
 
 ```cangjie
-public class StringLiteral <: LiteralValue & Equatable<StringLiteral>
+public class StringLiteral <: LiteralValue & Equatable<StringLiteral> {}
 ```
 
 Function: Represents a string literal, cached by value to ensure the same string value corresponds to a unique instance.
@@ -10873,7 +11120,7 @@ Parameters:
 
 Return Value:
 
-- StringLiteral - The corresponding string literal.
+- [StringLiteral](#class-stringliteral) - The corresponding string literal.
 
 Example:
 
@@ -10961,7 +11208,7 @@ op_eq_StringLiteral: true
 ## class UnitLiteral
 
 ```cangjie
-public class UnitLiteral <: LiteralValue & Equatable<UnitLiteral>
+public class UnitLiteral <: LiteralValue & Equatable<UnitLiteral> {}
 ```
 
 Function: Represents a Unit literal (singleton, denoting no return value).
@@ -10981,7 +11228,7 @@ Function: Gets the singleton instance of the Unit literal.
 
 Return Value:
 
-- UnitLiteral - Unit literal instance.
+- [UnitLiteral](#class-unitliteral) - Unit literal instance.
 
 Example:
 
@@ -11071,7 +11318,7 @@ op_eq_UnitLiteral: true
 ## class Allocate
 
 ```cangjie
-public class Allocate <: AllocateBase & Equatable<Allocate>
+public class Allocate <: AllocateBase & Equatable<Allocate> {}
 ```
 
 Function: Memory allocation expression, allocating space for the specified type without exception handling.
@@ -11095,7 +11342,7 @@ Parameters:
 
 Return Value:
 
-- Allocate - The created memory allocation expression.
+- [Allocate](#class-allocate) - The created memory allocation expression.
 
 Example:
 
@@ -11162,7 +11409,7 @@ op_eq_Allocate: true
 ## class TryAllocate
 
 ```cangjie
-public class TryAllocate <: AllocateBase & Equatable<TryAllocate>
+public class TryAllocate <: AllocateBase & Equatable<TryAllocate> {}
 ```
 
 Function: Memory allocation expression with exception handling; jumps to the normal branch on success and to the error branch on failure.
@@ -11260,7 +11507,7 @@ Parameters:
 
 Return Value:
 
-- TryAllocate - The created memory allocation expression with exception handling.
+- [TryAllocate](#class-tryallocate) - The created memory allocation expression with exception handling.
 
 Example:
 
@@ -11333,7 +11580,7 @@ op_eq_TryAllocate: true
 ## class BinaryExpression
 
 ```cangjie
-public class BinaryExpression <: BinaryExpressionBase & Equatable<BinaryExpression>
+public class BinaryExpression <: BinaryExpressionBase & Equatable<BinaryExpression> {}
 ```
 
 Function: Binary operation expression (without exception handling), supporting arithmetic, bitwise, comparison, and logical operations.
@@ -11359,7 +11606,7 @@ Parameters:
 
 Return Value:
 
-- BinaryExpression - The created binary operation expression.
+- [BinaryExpression](#class-binaryexpression) - The created binary operation expression.
 
 Example:
 
@@ -11430,7 +11677,7 @@ op_eq_BinaryExpression: true
 ## class TryBinaryExpression
 
 ```cangjie
-public class TryBinaryExpression <: BinaryExpressionBase & Equatable<TryBinaryExpression>
+public class TryBinaryExpression <: BinaryExpressionBase & Equatable<TryBinaryExpression> {}
 ```
 
 Function: Binary operation expression with exception handling; jumps to the normal branch on success and to the error branch on overflow or error.
@@ -11534,7 +11781,7 @@ Parameters:
 
 Return Value:
 
-- TryBinaryExpression - The created binary operation expression with exception handling.
+- [TryBinaryExpression](#class-trybinaryexpression) - The created binary operation expression with exception handling.
 
 Example:
 
@@ -11611,7 +11858,7 @@ op_eq_TryBinaryExpression: true
 ## class Branch
 
 ```cangjie
-public class Branch <: Expression & Equatable<Branch>
+public class Branch <: Expression & Equatable<Branch> {}
 ```
 
 Function: Conditional branch (if-else) terminator expression, jumping to the true or false target block based on the condition value.
@@ -11751,7 +11998,7 @@ Parameters:
 
 Return Value:
 
-- Branch - The created conditional branch expression.
+- [Branch](#class-branch) - The created conditional branch expression.
 
 Example:
 
@@ -11828,7 +12075,7 @@ op_eq_Branch: true
 ## class Constant
 
 ```cangjie
-public class Constant <: Expression & Equatable<Constant>
+public class Constant <: Expression & Equatable<Constant> {}
 ```
 
 Function: Literal constant expression, representing a compile-time determined constant value.
@@ -11852,7 +12099,7 @@ Parameters:
 
 Return Value:
 
-- Constant - The created constant expression.
+- [Constant](#class-constant) - The created constant expression.
 
 Example:
 
@@ -11919,7 +12166,7 @@ op_eq_Constant: true
 ## class Debug
 
 ```cangjie
-public class Debug <: Expression & Equatable<Debug>
+public class Debug <: Expression & Equatable<Debug> {}
 ```
 
 Function: Debug marker expression, storing source code position mapping information, used to associate values in the IR with variable names in the source code.
@@ -11979,7 +12226,7 @@ Parameters:
 
 Return Value:
 
-- Debug - The created debug marker expression.
+- [Debug](#class-debug) - The created debug marker expression.
 
 Example:
 
@@ -12050,7 +12297,7 @@ op_eq_Debug: true
 ## class Exit
 
 ```cangjie
-public class Exit <: Expression & Equatable<Exit>
+public class Exit <: Expression & Equatable<Exit> {}
 ```
 
 Function: Function exit terminator expression, indicating normal function execution completion.
@@ -12070,7 +12317,7 @@ Function: Creates a function exit terminator expression.
 
 Return Value:
 
-- Exit - The created exit expression.
+- [Exit](#class-exit) - The created exit expression.
 
 Example:
 
@@ -12137,7 +12384,7 @@ op_eq_Exit: true
 ## class Field
 
 ```cangjie
-public class Field <: Expression & Equatable<Field>
+public class Field <: Expression & Equatable<Field> {}
 ```
 
 Function: Field access expression by numeric index path, locating a sub-field within an aggregate through a sequence of numeric indices.
@@ -12200,7 +12447,7 @@ Parameters:
 
 Return Value:
 
-- Field - The created field access expression.
+- [Field](#class-field) - The created field access expression.
 
 Example:
 
@@ -12277,7 +12524,7 @@ op_eq_Field: true
 ## class FieldByName
 
 ```cangjie
-public class FieldByName <: Expression & Equatable<FieldByName>
+public class FieldByName <: Expression & Equatable<FieldByName> {}
 ```
 
 Function: Field access expression by field name path, locating a sub-field within an aggregate through a sequence of string field names.
@@ -12340,7 +12587,7 @@ Parameters:
 
 Return Value:
 
-- FieldByName - The created field name access expression.
+- [FieldByName](#class-fieldbyname) - The created field name access expression.
 
 Example:
 
@@ -12417,7 +12664,7 @@ op_eq_FieldByName: true
 ## class Apply
 
 ```cangjie
-public class Apply <: ApplyBase & Equatable<Apply>
+public class Apply <: ApplyBase & Equatable<Apply> {}
 ```
 
 Function: Function call (Apply) expression, representing a direct call to a function.
@@ -12442,7 +12689,7 @@ Parameters:
 
 Return Value:
 
-- Apply - The created function call expression.
+- [Apply](#class-apply) - The created function call expression.
 
 Example:
 
@@ -12525,7 +12772,7 @@ op_eq_Apply: true
 ## class TryApply
 
 ```cangjie
-public class TryApply <: ApplyBase & Equatable<TryApply>
+public class TryApply <: ApplyBase & Equatable<TryApply> {}
 ```
 
 Function: Function call expression with exception handling; jumps to the normal branch on success and to the error branch when an exception is thrown.
@@ -12628,7 +12875,7 @@ Parameters:
 
 Return Value:
 
-- TryApply - The created function call expression with exception handling.
+- [TryApply](#class-tryapply) - The created function call expression with exception handling.
 
 Example:
 
@@ -12717,7 +12964,7 @@ op_eq_TryApply: true
 ## class Intrinsic
 
 ```cangjie
-public class Intrinsic <: IntrinsicBase & Equatable<Intrinsic>
+public class Intrinsic <: IntrinsicBase & Equatable<Intrinsic> {}
 ```
 
 Function: Intrinsic function call expression (without exception handling), representing a call to a compiler intrinsic function (such as `sizeof`, `alignof`, etc.). Intrinsic instances are created by the compiler's internal process and can be accessed by traversing a Block's `exprs` list to find existing Intrinsic expressions.
@@ -12758,7 +13005,7 @@ Return Value:
 ## class TryIntrinsic
 
 ```cangjie
-public class TryIntrinsic <: IntrinsicBase & Equatable<TryIntrinsic>
+public class TryIntrinsic <: IntrinsicBase & Equatable<TryIntrinsic> {}
 ```
 
 Function: Intrinsic function call expression with exception handling. TryIntrinsic instances are created by the compiler's internal process and can be accessed by traversing a Block's `exprs` list to find existing TryIntrinsic expressions.
@@ -12819,7 +13066,7 @@ Return Value:
 ## class Invoke
 
 ```cangjie
-public class Invoke <: InvokeBase & Equatable<Invoke>
+public class Invoke <: InvokeBase & Equatable<Invoke> {}
 ```
 
 Function: Virtual method call (Invoke) expression, representing a virtual call to an instance method.
@@ -12844,7 +13091,7 @@ Parameters:
 
 Return Value:
 
-- Invoke - The created virtual method call expression.
+- [Invoke](#class-invoke) - The created virtual method call expression.
 
 Example:
 
@@ -12931,7 +13178,7 @@ op_eq_Invoke: true
 ## class TryInvoke
 
 ```cangjie
-public class TryInvoke <: InvokeBase & Equatable<TryInvoke>
+public class TryInvoke <: InvokeBase & Equatable<TryInvoke> {}
 ```
 
 Function: Virtual method call expression with exception handling; jumps to the normal branch on success and to the error branch when an exception is thrown.
@@ -13038,7 +13285,7 @@ Parameters:
 
 Return Value:
 
-- TryInvoke - The created virtual method call expression with exception handling.
+- [TryInvoke](#class-tryinvoke) - The created virtual method call expression with exception handling.
 
 Example:
 
@@ -13131,7 +13378,7 @@ op_eq_TryInvoke: true
 ## class GetElementByName
 
 ```cangjie
-public class GetElementByName <: Expression & Equatable<GetElementByName>
+public class GetElementByName <: Expression & Equatable<GetElementByName> {}
 ```
 
 Function: Expression that reads an aggregate element by field name, returning a reference to the element.
@@ -13194,7 +13441,7 @@ Parameters:
 
 Return Value:
 
-- GetElementByName - The created element read expression.
+- [GetElementByName](#class-getelementbyname) - The created element read expression.
 
 Example:
 
@@ -13271,7 +13518,7 @@ op_eq_GetElementByName: true
 ## class GetElementRef
 
 ```cangjie
-public class GetElementRef <: Expression & Equatable<GetElementRef>
+public class GetElementRef <: Expression & Equatable<GetElementRef> {}
 ```
 
 Function: Expression that reads an aggregate element reference by numeric index, returning a reference to the element.
@@ -13334,7 +13581,7 @@ Parameters:
 
 Return Value:
 
-- GetElementRef - The created element reference read expression.
+- [GetElementRef](#class-getelementref) - The created element reference read expression.
 
 Example:
 
@@ -13411,7 +13658,7 @@ op_eq_GetElementRef: true
 ## class GetException
 
 ```cangjie
-public class GetException <: Expression & Equatable<GetException>
+public class GetException <: Expression & Equatable<GetException> {}
 ```
 
 Function: Expression that gets the exception value, used in exception handling landing pad blocks to read the captured exception object.
@@ -13435,7 +13682,7 @@ Parameters:
 
 Return Value:
 
-- GetException - The created exception value expression.
+- [GetException](#class-getexception) - The created exception value expression.
 
 Example:
 
@@ -13502,7 +13749,7 @@ op_eq_GetException: true
 ## class GetInstantiateValue
 
 ```cangjie
-public class GetInstantiateValue <: Expression & Equatable<GetInstantiateValue>
+public class GetInstantiateValue <: Expression & Equatable<GetInstantiateValue> {}
 ```
 
 Function: Expression that gets the generic function instantiation value, representing a monomorphized instance of a generic function.
@@ -13562,7 +13809,7 @@ Parameters:
 
 Return Value:
 
-- GetInstantiateValue - The created instantiation value expression.
+- [GetInstantiateValue](#class-getinstantiatevalue) - The created instantiation value expression.
 
 Example:
 
@@ -13633,7 +13880,7 @@ op_eq_GetInstantiateValue: true
 ## class GetRTTI
 
 ```cangjie
-public class GetRTTI <: Expression & Equatable<GetRTTI>
+public class GetRTTI <: Expression & Equatable<GetRTTI> {}
 ```
 
 Function: Expression that gets runtime type information, extracting RTTI data from a value.
@@ -13657,7 +13904,7 @@ Parameters:
 
 Return Value:
 
-- GetRTTI - The created RTTI expression.
+- [GetRTTI](#class-getrtti) - The created RTTI expression.
 
 Example:
 
@@ -13726,7 +13973,7 @@ op_eq_GetRTTI: true
 ## class GetRTTIStatic
 
 ```cangjie
-public class GetRTTIStatic <: Expression & Equatable<GetRTTIStatic>
+public class GetRTTIStatic <: Expression & Equatable<GetRTTIStatic> {}
 ```
 
 Function: Expression that statically gets runtime type information, extracting RTTI data directly from a type (not dependent on a value instance).
@@ -13783,7 +14030,7 @@ Parameters:
 
 Return Value:
 
-- GetRTTIStatic - The created static RTTI expression.
+- [GetRTTIStatic](#class-getrttistatic) - The created static RTTI expression.
 
 Example:
 
@@ -13850,7 +14097,7 @@ op_eq_GetRTTIStatic: true
 ## class GoTo
 
 ```cangjie
-public class GoTo <: Expression & Equatable<GoTo>
+public class GoTo <: Expression & Equatable<GoTo> {}
 ```
 
 Function: Unconditional jump terminator expression, jumping directly to the target basic block.
@@ -13874,7 +14121,7 @@ Parameters:
 
 Return Value:
 
-- GoTo - The created unconditional jump expression.
+- [GoTo](#class-goto) - The created unconditional jump expression.
 
 Example:
 
@@ -13945,7 +14192,7 @@ op_eq_GoTo: true
 ## class InstanceOf
 
 ```cangjie
-public class InstanceOf <: Expression & Equatable<InstanceOf>
+public class InstanceOf <: Expression & Equatable<InstanceOf> {}
 ```
 
 Function: Type check expression, determining whether a source value belongs to the target type, returning a boolean result.
@@ -14004,7 +14251,7 @@ Parameters:
 
 Return Value:
 
-- InstanceOf - The created type check expression.
+- [InstanceOf](#class-instanceof) - The created type check expression.
 
 Example:
 
@@ -14073,7 +14320,7 @@ op_eq_InstanceOf: true
 ## class Lambda
 
 ```cangjie
-public class Lambda <: Expression & Equatable<Lambda>
+public class Lambda <: Expression & Equatable<Lambda> {}
 ```
 
 Function: Lambda / local function expression, representing a nested anonymous function or local function definition.
@@ -14342,7 +14589,7 @@ Parameters:
 
 Return Value:
 
-- Lambda - The created Lambda expression.
+- [Lambda](#class-lambda) - The created Lambda expression.
 
 Example:
 
@@ -14519,7 +14766,7 @@ op_eq_Lambda: true
 ## class Load
 
 ```cangjie
-public class Load <: Expression & Equatable<Load>
+public class Load <: Expression & Equatable<Load> {}
 ```
 
 Function: Memory load expression.
@@ -14575,7 +14822,7 @@ Parameters:
 
 Return Value:
 
-- Load - Memory load expression instance.
+- [Load](#class-load) - Memory load expression instance.
 
 Example:
 
@@ -14640,7 +14887,7 @@ op_eq_Load: true
 ## class MultiBranch
 
 ```cangjie
-public class MultiBranch <: Expression & Equatable<MultiBranch>
+public class MultiBranch <: Expression & Equatable<MultiBranch> {}
 ```
 
 Function: Multi-branch (switch-case) terminator expression.
@@ -14827,7 +15074,7 @@ Parameters:
 
 Return Value:
 
-- MultiBranch - Multi-branch terminator expression instance.
+- [MultiBranch](#class-multibranch) - Multi-branch terminator expression instance.
 
 Example:
 
@@ -14906,7 +15153,7 @@ op_eq_MultiBranch: true
 ## class NumericCast
 
 ```cangjie
-public class NumericCast <: NumericCastBase & Equatable<NumericCast>
+public class NumericCast <: NumericCastBase & Equatable<NumericCast> {}
 ```
 
 Function: Numeric type cast expression.
@@ -14932,7 +15179,7 @@ Parameters:
 
 Return Value:
 
-- NumericCast - Numeric type cast expression instance.
+- [NumericCast](#class-numericcast) - Numeric type cast expression instance.
 
 Example:
 
@@ -14997,7 +15244,7 @@ op_eq_NumericCast: true
 ## class TryNumericCast
 
 ```cangjie
-public class TryNumericCast <: NumericCastBase & Equatable<TryNumericCast>
+public class TryNumericCast <: NumericCastBase & Equatable<TryNumericCast> {}
 ```
 
 Function: Numeric type cast expression with exception handling.
@@ -15092,7 +15339,7 @@ Parameters:
 
 Return Value:
 
-- TryNumericCast - Numeric type cast expression instance with exception handling.
+- [TryNumericCast](#class-trynumericcast) - Numeric type cast expression instance with exception handling.
 
 Example:
 
@@ -15161,7 +15408,7 @@ op_eq_TryNumericCast: true
 ## class RaiseException
 
 ```cangjie
-public class RaiseException <: Expression & Equatable<RaiseException>
+public class RaiseException <: Expression & Equatable<RaiseException> {}
 ```
 
 Function: Raise exception terminator expression.
@@ -15185,7 +15432,7 @@ Parameters:
 
 Return Value:
 
-- RaiseException - Raise exception terminator expression instance.
+- [RaiseException](#class-raiseexception) - Raise exception terminator expression instance.
 
 Example:
 
@@ -15227,7 +15474,7 @@ Parameters:
 
 Return Value:
 
-- RaiseException - Raise exception terminator expression instance.
+- [RaiseException](#class-raiseexception) - Raise exception terminator expression instance.
 
 Example:
 
@@ -15300,7 +15547,7 @@ op_eq_RaiseException: true
 ## class RawArrayAllocate
 
 ```cangjie
-public class RawArrayAllocate <: RawArrayAllocateBase & Equatable<RawArrayAllocate>
+public class RawArrayAllocate <: RawArrayAllocateBase & Equatable<RawArrayAllocate> {}
 ```
 
 Function: Raw array allocation expression.
@@ -15325,7 +15572,7 @@ Parameters:
 
 Return Value:
 
-- RawArrayAllocate - Raw array allocation expression instance.
+- [RawArrayAllocate](#class-rawarrayallocate) - Raw array allocation expression instance.
 
 Example:
 
@@ -15390,7 +15637,7 @@ op_eq_RawArrayAllocate: true
 ## class TryRawArrayAllocate
 
 ```cangjie
-public class TryRawArrayAllocate <: RawArrayAllocateBase & Equatable<TryRawArrayAllocate>
+public class TryRawArrayAllocate <: RawArrayAllocateBase & Equatable<TryRawArrayAllocate> {}
 ```
 
 Function: Raw array allocation expression with exception handling.
@@ -15485,7 +15732,7 @@ Parameters:
 
 Return Value:
 
-- TryRawArrayAllocate - Raw array allocation expression with exception handling instance.
+- [TryRawArrayAllocate](#class-tryrawarrayallocate) - Raw array allocation expression with exception handling instance.
 
 Example:
 
@@ -15554,7 +15801,7 @@ op_eq_TryRawArrayAllocate: true
 ## class RawArrayInitByValue
 
 ```cangjie
-public class RawArrayInitByValue <: Expression & Equatable<RawArrayInitByValue>
+public class RawArrayInitByValue <: Expression & Equatable<RawArrayInitByValue> {}
 ```
 
 Function: Initialize raw array by value expression.
@@ -15580,7 +15827,7 @@ Parameters:
 
 Return Value:
 
-- RawArrayInitByValue - Initialize raw array by value expression instance.
+- [RawArrayInitByValue](#class-rawarrayinitbyvalue) - Initialize raw array by value expression instance.
 
 Example:
 
@@ -15649,7 +15896,7 @@ op_eq_RawArrayInitByValue: true
 ## class RawArrayLiteralInit
 
 ```cangjie
-public class RawArrayLiteralInit <: Expression & Equatable<RawArrayLiteralInit>
+public class RawArrayLiteralInit <: Expression & Equatable<RawArrayLiteralInit> {}
 ```
 
 Function: Initialize raw array by literal expression.
@@ -15674,7 +15921,7 @@ Parameters:
 
 Return Value:
 
-- RawArrayLiteralInit - Initialize raw array by literal expression instance.
+- [RawArrayLiteralInit](#class-rawarrayliteralinit) - Initialize raw array by literal expression instance.
 
 Example:
 
@@ -15751,7 +15998,7 @@ op_eq_RawArrayLiteralInit: true
 ## class Spawn
 
 ```cangjie
-public class Spawn <: SpawnBase & Equatable<Spawn>
+public class Spawn <: SpawnBase & Equatable<Spawn> {}
 ```
 
 Function: Concurrent Spawn expression (without exception handling).
@@ -15776,7 +16023,7 @@ Parameters:
 
 Return Value:
 
-- Spawn - Spawn expression instance.
+- [Spawn](#class-spawn) - Spawn expression instance.
 
 Example:
 
@@ -15816,7 +16063,7 @@ Parameters:
 
 Return Value:
 
-- Spawn - Spawn expression instance.
+- [Spawn](#class-spawn) - Spawn expression instance.
 
 Example:
 
@@ -15882,7 +16129,7 @@ op_eq_Spawn: true
 ## class TrySpawn
 
 ```cangjie
-public class TrySpawn <: SpawnBase & Equatable<TrySpawn>
+public class TrySpawn <: SpawnBase & Equatable<TrySpawn> {}
 ```
 
 Function: Concurrent Spawn expression with exception handling.
@@ -15977,7 +16224,7 @@ Parameters:
 
 Return Value:
 
-- TrySpawn - Spawn expression with exception handling instance.
+- [TrySpawn](#class-tryspawn) - Spawn expression with exception handling instance.
 
 Example:
 
@@ -16021,7 +16268,7 @@ Parameters:
 
 Return Value:
 
-- TrySpawn - Spawn expression with exception handling instance.
+- [TrySpawn](#class-tryspawn) - Spawn expression with exception handling instance.
 
 Example:
 
@@ -16091,7 +16338,7 @@ op_eq_TrySpawn: true
 ## class Store
 
 ```cangjie
-public class Store <: Expression & Equatable<Store>
+public class Store <: Expression & Equatable<Store> {}
 ```
 
 Function: Memory store expression.
@@ -16182,7 +16429,7 @@ Parameters:
 
 Return Value:
 
-- Store - Memory store expression instance.
+- [Store](#class-store) - Memory store expression instance.
 
 Example:
 
@@ -16249,7 +16496,7 @@ op_eq_Store: true
 ## class StoreElementByName
 
 ```cangjie
-public class StoreElementByName <: Expression & Equatable<StoreElementByName>
+public class StoreElementByName <: Expression & Equatable<StoreElementByName> {}
 ```
 
 Function: Expression that stores an aggregate element by field name.
@@ -16311,7 +16558,7 @@ Parameters:
 
 Return Value:
 
-- StoreElementByName - Store aggregate element by field name expression instance.
+- [StoreElementByName](#class-storeelementbyname) - Store aggregate element by field name expression instance.
 
 Example:
 
@@ -16384,7 +16631,7 @@ op_eq_StoreElementByName: true
 ## class StoreElementRef
 
 ```cangjie
-public class StoreElementRef <: Expression & Equatable<StoreElementRef>
+public class StoreElementRef <: Expression & Equatable<StoreElementRef> {}
 ```
 
 Function: Expression that stores an aggregate element by numeric index.
@@ -16446,7 +16693,7 @@ Parameters:
 
 Return Value:
 
-- StoreElementRef - Store aggregate element by numeric index expression instance.
+- [StoreElementRef](#class-storeelementref) - Store aggregate element by numeric index expression instance.
 
 Example:
 
@@ -16519,7 +16766,7 @@ op_eq_StoreElementRef: true
 ## class Tuple
 
 ```cangjie
-public class Tuple <: Expression & Equatable<Tuple>
+public class Tuple <: Expression & Equatable<Tuple> {}
 ```
 
 Function: Tuple construction expression.
@@ -16580,7 +16827,7 @@ Parameters:
 
 Return Value:
 
-- Tuple - Tuple construction expression instance.
+- [Tuple](#class-tuple) - Tuple construction expression instance.
 
 Example:
 
@@ -16655,7 +16902,7 @@ op_eq_Tuple: true
 ## class Box
 
 ```cangjie
-public class Box <: TypeCast & Equatable<Box>
+public class Box <: TypeCast & Equatable<Box> {}
 ```
 
 Function: Boxing type cast expression.
@@ -16680,7 +16927,7 @@ Parameters:
 
 Return Value:
 
-- Box - Boxing type cast expression instance.
+- [Box](#class-box) - Boxing type cast expression instance.
 
 Example:
 
@@ -16747,7 +16994,7 @@ op_eq_Box: true
 ## class StaticCast
 
 ```cangjie
-public class StaticCast <: TypeCast & Equatable<StaticCast>
+public class StaticCast <: TypeCast & Equatable<StaticCast> {}
 ```
 
 Function: Static type cast expression.
@@ -16772,7 +17019,7 @@ Parameters:
 
 Return Value:
 
-- StaticCast - Static type cast expression instance.
+- [StaticCast](#class-staticcast) - Static type cast expression instance.
 
 Example:
 
@@ -16837,7 +17084,7 @@ op_eq_StaticCast: true
 ## class CastToConcrete
 
 ```cangjie
-public class CastToConcrete <: TypeCast & Equatable<CastToConcrete>
+public class CastToConcrete <: TypeCast & Equatable<CastToConcrete> {}
 ```
 
 Function: Cast to concrete type expression.
@@ -16862,7 +17109,7 @@ Parameters:
 
 Return Value:
 
-- CastToConcrete - Cast to concrete type expression instance.
+- [CastToConcrete](#class-casttoconcrete) - Cast to concrete type expression instance.
 
 Example:
 
@@ -16927,7 +17174,7 @@ op_eq_CastToConcrete: true
 ## class CastToGeneric
 
 ```cangjie
-public class CastToGeneric <: TypeCast & Equatable<CastToGeneric>
+public class CastToGeneric <: TypeCast & Equatable<CastToGeneric> {}
 ```
 
 Function: Cast to generic type expression.
@@ -16952,7 +17199,7 @@ Parameters:
 
 Return Value:
 
-- CastToGeneric - Cast to generic type expression instance.
+- [CastToGeneric](#class-casttogeneric) - Cast to generic type expression instance.
 
 Example:
 
@@ -17019,7 +17266,7 @@ op_eq_CastToGeneric: true
 ## class UnboxToRef
 
 ```cangjie
-public class UnboxToRef <: TypeCast & Equatable<UnboxToRef>
+public class UnboxToRef <: TypeCast & Equatable<UnboxToRef> {}
 ```
 
 Function: Unbox to reference type cast expression.
@@ -17044,7 +17291,7 @@ Parameters:
 
 Return Value:
 
-- UnboxToRef - Unbox to reference type cast expression instance.
+- [UnboxToRef](#class-unboxtoref) - Unbox to reference type cast expression instance.
 
 Example:
 
@@ -17134,7 +17381,7 @@ Parameters:
 
 Return Value:
 
-- UnboxToValue - Unbox to value type cast expression instance.
+- [UnboxToValue](#class-unboxtovalue) - Unbox to value type cast expression instance.
 
 Example:
 
@@ -17224,7 +17471,7 @@ Parameters:
 
 Return Value:
 
-- UnaryExpression - Unary operation expression instance.
+- [UnaryExpression](#class-unaryexpression) - Unary operation expression instance.
 
 Example:
 
@@ -17383,7 +17630,7 @@ Parameters:
 
 Return Value:
 
-- TryUnaryExpression - Unary operation expression with exception handling instance.
+- [TryUnaryExpression](#class-tryunaryexpression) - Unary operation expression with exception handling instance.
 
 Example:
 
@@ -17479,7 +17726,7 @@ Parameters:
 
 Return Value:
 
-- VArrayBuilder - VArray builder expression instance.
+- [VArrayBuilder](#class-varraybuilder) - VArray builder expression instance.
 
 Example:
 
@@ -17572,7 +17819,7 @@ Parameters:
 
 Return Value:
 
-- VArrayExpr - VArray literal expression instance.
+- [VArrayExpr](#class-varrayexpr) - VArray literal expression instance.
 
 Example:
 
@@ -17651,7 +17898,10 @@ op_eq_VArrayExpr: true
 ## class CHIRBuilder
 
 ```cangjie
-public class CHIRBuilder
+public class CHIRBuilder {
+    public init(parent: Block)
+    public init(position: InsertPosition)
+}
 ```
 
 Function: CHIR expression builder, used to insert various CHIR expressions (arithmetic, memory, control flow, type conversions, etc.) into a basic block at a specified position.
@@ -17741,7 +17991,7 @@ Parameters:
 
 Return Value:
 
-- Allocate - Allocation expression.
+- [Allocate](#class-allocate) - Allocation expression.
 
 Example:
 
@@ -17781,7 +18031,7 @@ Parameters:
 
 Return Value:
 
-- Apply - Apply expression.
+- [Apply](#class-apply) - Apply expression.
 
 Example:
 
@@ -17824,7 +18074,7 @@ Parameters:
 
 Return Value:
 
-- BinaryExpression - Addition expression.
+- [BinaryExpression](#class-binaryexpression) - Addition expression.
 
 Example:
 
@@ -17864,7 +18114,7 @@ Parameters:
 
 Return Value:
 
-- BinaryExpression - Logical AND expression.
+- [BinaryExpression](#class-binaryexpression) - Logical AND expression.
 
 Example:
 
@@ -17904,7 +18154,7 @@ Parameters:
 
 Return Value:
 
-- BinaryExpression - Bitwise AND expression.
+- [BinaryExpression](#class-binaryexpression) - Bitwise AND expression.
 
 Example:
 
@@ -17944,7 +18194,7 @@ Parameters:
 
 Return Value:
 
-- BinaryExpression - Bitwise OR expression.
+- [BinaryExpression](#class-binaryexpression) - Bitwise OR expression.
 
 Example:
 
@@ -17984,7 +18234,7 @@ Parameters:
 
 Return Value:
 
-- BinaryExpression - Bitwise XOR expression.
+- [BinaryExpression](#class-binaryexpression) - Bitwise XOR expression.
 
 Example:
 
@@ -18025,7 +18275,7 @@ Parameters:
 
 Return Value:
 
-- BinaryExpression - Division expression.
+- [BinaryExpression](#class-binaryexpression) - Division expression.
 
 Example:
 
@@ -18065,7 +18315,7 @@ Parameters:
 
 Return Value:
 
-- BinaryExpression - Equality comparison expression.
+- [BinaryExpression](#class-binaryexpression) - Equality comparison expression.
 
 Example:
 
@@ -18106,7 +18356,7 @@ Parameters:
 
 Return Value:
 
-- BinaryExpression - Exponentiation expression.
+- [BinaryExpression](#class-binaryexpression) - Exponentiation expression.
 
 Example:
 
@@ -18146,7 +18396,7 @@ Parameters:
 
 Return Value:
 
-- BinaryExpression - Greater-than comparison expression.
+- [BinaryExpression](#class-binaryexpression) - Greater-than comparison expression.
 
 Example:
 
@@ -18186,7 +18436,7 @@ Parameters:
 
 Return Value:
 
-- BinaryExpression - Greater-than-or-equal comparison expression.
+- [BinaryExpression](#class-binaryexpression) - Greater-than-or-equal comparison expression.
 
 Example:
 
@@ -18227,7 +18477,7 @@ Parameters:
 
 Return Value:
 
-- BinaryExpression - Left-shift expression.
+- [BinaryExpression](#class-binaryexpression) - Left-shift expression.
 
 Example:
 
@@ -18267,7 +18517,7 @@ Parameters:
 
 Return Value:
 
-- BinaryExpression - Less-than comparison expression.
+- [BinaryExpression](#class-binaryexpression) - Less-than comparison expression.
 
 Example:
 
@@ -18307,7 +18557,7 @@ Parameters:
 
 Return Value:
 
-- BinaryExpression - Less-than-or-equal comparison expression.
+- [BinaryExpression](#class-binaryexpression) - Less-than-or-equal comparison expression.
 
 Example:
 
@@ -18348,7 +18598,7 @@ Parameters:
 
 Return Value:
 
-- BinaryExpression - Modulo expression.
+- [BinaryExpression](#class-binaryexpression) - Modulo expression.
 
 Example:
 
@@ -18389,7 +18639,7 @@ Parameters:
 
 Return Value:
 
-- BinaryExpression - Multiplication expression.
+- [BinaryExpression](#class-binaryexpression) - Multiplication expression.
 
 Example:
 
@@ -18429,7 +18679,7 @@ Parameters:
 
 Return Value:
 
-- BinaryExpression - Not-equal comparison expression.
+- [BinaryExpression](#class-binaryexpression) - Not-equal comparison expression.
 
 Example:
 
@@ -18469,7 +18719,7 @@ Parameters:
 
 Return Value:
 
-- BinaryExpression - Logical OR expression.
+- [BinaryExpression](#class-binaryexpression) - Logical OR expression.
 
 Example:
 
@@ -18510,7 +18760,7 @@ Parameters:
 
 Return Value:
 
-- BinaryExpression - Right-shift expression.
+- [BinaryExpression](#class-binaryexpression) - Right-shift expression.
 
 Example:
 
@@ -18551,7 +18801,7 @@ Parameters:
 
 Return Value:
 
-- BinaryExpression - Subtraction expression.
+- [BinaryExpression](#class-binaryexpression) - Subtraction expression.
 
 Example:
 
@@ -18591,7 +18841,7 @@ Parameters:
 
 Return Value:
 
-- Box - Boxing expression.
+- [Box](#class-box) - Boxing expression.
 
 Example:
 
@@ -18632,7 +18882,7 @@ Parameters:
 
 Return Value:
 
-- Branch - Conditional branch expression.
+- [Branch](#class-branch) - Conditional branch expression.
 
 Example:
 
@@ -18675,7 +18925,7 @@ Parameters:
 
 Return Value:
 
-- CastToConcrete - Cast-to-concrete-type expression.
+- [CastToConcrete](#class-casttoconcrete) - Cast-to-concrete-type expression.
 
 Example:
 
@@ -18715,7 +18965,7 @@ Parameters:
 
 Return Value:
 
-- CastToGeneric - Cast-to-generic-type expression.
+- [CastToGeneric](#class-casttogeneric) - Cast-to-generic-type expression.
 
 Example:
 
@@ -18755,7 +19005,7 @@ Parameters:
 
 Return Value:
 
-- Constant - Constant expression.
+- [Constant](#class-constant) - Constant expression.
 
 Example:
 
@@ -18795,7 +19045,7 @@ Parameters:
 
 Return Value:
 
-- Debug - Debug marker expression.
+- [Debug](#class-debug) - Debug marker expression.
 
 Example:
 
@@ -18831,7 +19081,7 @@ Function: Creates a function exit expression.
 
 Return Value:
 
-- Exit - Function exit expression.
+- [Exit](#class-exit) - Function exit expression.
 
 Example:
 
@@ -18871,7 +19121,7 @@ Parameters:
 
 Return Value:
 
-- Field - Field access expression.
+- [Field](#class-field) - Field access expression.
 
 Example:
 
@@ -18919,7 +19169,7 @@ Parameters:
 
 Return Value:
 
-- FieldByName - Field access expression by name.
+- [FieldByName](#class-fieldbyname) - Field access expression by name.
 
 Example:
 
@@ -18966,7 +19216,7 @@ Parameters:
 
 Return Value:
 
-- GetElementByName - Element read expression.
+- [GetElementByName](#class-getelementbyname) - Element read expression.
 
 Example:
 
@@ -19013,7 +19263,7 @@ Parameters:
 
 Return Value:
 
-- GetElementRef - Element reference expression.
+- [GetElementRef](#class-getelementref) - Element reference expression.
 
 Example:
 
@@ -19059,7 +19309,7 @@ Parameters:
 
 Return Value:
 
-- GetException - Get exception value expression.
+- [GetException](#class-getexception) - Get exception value expression.
 
 Example:
 
@@ -19099,7 +19349,7 @@ Parameters:
 
 Return Value:
 
-- GetInstantiateValue - Generic instantiation value expression.
+- [GetInstantiateValue](#class-getinstantiatevalue) - Generic instantiation value expression.
 
 Example:
 
@@ -19141,7 +19391,7 @@ Parameters:
 
 Return Value:
 
-- GetRTTI - Runtime type information expression.
+- [GetRTTI](#class-getrtti) - Runtime type information expression.
 
 Example:
 
@@ -19181,7 +19431,7 @@ Parameters:
 
 Return Value:
 
-- GetRTTIStatic - Static runtime type information expression.
+- [GetRTTIStatic](#class-getrttistatic) - Static runtime type information expression.
 
 Example:
 
@@ -19220,7 +19470,7 @@ Parameters:
 
 Return Value:
 
-- GoTo - Unconditional jump expression.
+- [GoTo](#class-goto) - Unconditional jump expression.
 
 Example:
 
@@ -19262,7 +19512,7 @@ Parameters:
 
 Return Value:
 
-- InstanceOf - Type check expression.
+- [InstanceOf](#class-instanceof) - Type check expression.
 
 Example:
 
@@ -19303,7 +19553,7 @@ Parameters:
 
 Return Value:
 
-- Invoke - Invoke expression.
+- [Invoke](#class-invoke) - Invoke expression.
 
 Example:
 
@@ -19349,7 +19599,7 @@ Parameters:
 
 Return Value:
 
-- Lambda - Lambda expression.
+- [Lambda](#class-lambda) - Lambda expression.
 
 Example:
 
@@ -19389,7 +19639,7 @@ Parameters:
 
 Return Value:
 
-- Load - Memory load expression.
+- [Load](#class-load) - Memory load expression.
 
 Example:
 
@@ -19432,7 +19682,7 @@ Parameters:
 
 Return Value:
 
-- MultiBranch - Multi-branch expression.
+- [MultiBranch](#class-multibranch) - Multi-branch expression.
 
 Example:
 
@@ -19481,7 +19731,7 @@ Parameters:
 
 Return Value:
 
-- NumericCast - Numeric type conversion expression.
+- [NumericCast](#class-numericcast) - Numeric type conversion expression.
 
 Example:
 
@@ -19520,7 +19770,7 @@ Parameters:
 
 Return Value:
 
-- RaiseException - Raise exception expression.
+- [RaiseException](#class-raiseexception) - Raise exception expression.
 
 Example:
 
@@ -19560,7 +19810,7 @@ Parameters:
 
 Return Value:
 
-- RaiseException - Raise exception expression.
+- [RaiseException](#class-raiseexception) - Raise exception expression.
 
 Example:
 
@@ -19602,7 +19852,7 @@ Parameters:
 
 Return Value:
 
-- RawArrayAllocate - Raw array allocation expression.
+- [RawArrayAllocate](#class-rawarrayallocate) - Raw array allocation expression.
 
 Example:
 
@@ -19643,7 +19893,7 @@ Parameters:
 
 Return Value:
 
-- RawArrayInitByValue - Initialization-by-value expression.
+- [RawArrayInitByValue](#class-rawarrayinitbyvalue) - Initialization-by-value expression.
 
 Example:
 
@@ -19684,7 +19934,7 @@ Parameters:
 
 Return Value:
 
-- RawArrayLiteralInit - Literal initialization expression.
+- [RawArrayLiteralInit](#class-rawarrayliteralinit) - Literal initialization expression.
 
 Example:
 
@@ -19730,7 +19980,7 @@ Parameters:
 
 Return Value:
 
-- Spawn - Spawn expression.
+- [Spawn](#class-spawn) - Spawn expression.
 
 Example:
 
@@ -19772,7 +20022,7 @@ Parameters:
 
 Return Value:
 
-- Spawn - Spawn expression with argument.
+- [Spawn](#class-spawn) - Spawn expression with argument.
 
 Example:
 
@@ -19813,7 +20063,7 @@ Parameters:
 
 Return Value:
 
-- StaticCast - Static type conversion expression.
+- [StaticCast](#class-staticcast) - Static type conversion expression.
 
 Example:
 
@@ -19853,7 +20103,7 @@ Parameters:
 
 Return Value:
 
-- Store - Memory store expression.
+- [Store](#class-store) - Memory store expression.
 
 Example:
 
@@ -19895,7 +20145,7 @@ Parameters:
 
 Return Value:
 
-- StoreElementByName - Element store expression by field name.
+- [StoreElementByName](#class-storeelementbyname) - Element store expression by field name.
 
 Example:
 
@@ -19940,7 +20190,7 @@ Parameters:
 
 Return Value:
 
-- StoreElementRef - Element store expression by numeric index.
+- [StoreElementRef](#class-storeelementref) - Element store expression by numeric index.
 
 Example:
 
@@ -19985,7 +20235,7 @@ Parameters:
 
 Return Value:
 
-- TryAllocate - Allocation expression with exception handling.
+- [TryAllocate](#class-tryallocate) - Allocation expression with exception handling.
 
 Example:
 
@@ -20030,7 +20280,7 @@ Parameters:
 
 Return Value:
 
-- TryApply - Function call expression with exception handling.
+- [TryApply](#class-tryapply) - Function call expression with exception handling.
 
 Example:
 
@@ -20077,7 +20327,7 @@ Parameters:
 
 Return Value:
 
-- TryBinaryExpression - Addition expression with exception handling.
+- [TryBinaryExpression](#class-trybinaryexpression) - Addition expression with exception handling.
 
 Example:
 
@@ -20123,7 +20373,7 @@ Parameters:
 
 Return Value:
 
-- TryBinaryExpression - Division expression with exception handling.
+- [TryBinaryExpression](#class-trybinaryexpression) - Division expression with exception handling.
 
 Example:
 
@@ -20168,7 +20418,7 @@ Parameters:
 
 Return Value:
 
-- TryBinaryExpression - Exponentiation expression with exception handling.
+- [TryBinaryExpression](#class-trybinaryexpression) - Exponentiation expression with exception handling.
 
 Example:
 
@@ -20213,7 +20463,7 @@ Parameters:
 
 Return Value:
 
-- TryBinaryExpression - Left-shift expression with exception handling.
+- [TryBinaryExpression](#class-trybinaryexpression) - Left-shift expression with exception handling.
 
 Example:
 
@@ -20258,7 +20508,7 @@ Parameters:
 
 Return Value:
 
-- TryBinaryExpression - Modulo expression with exception handling.
+- [TryBinaryExpression](#class-trybinaryexpression) - Modulo expression with exception handling.
 
 Example:
 
@@ -20303,7 +20553,7 @@ Parameters:
 
 Return Value:
 
-- TryBinaryExpression - Multiplication expression with exception handling.
+- [TryBinaryExpression](#class-trybinaryexpression) - Multiplication expression with exception handling.
 
 Example:
 
@@ -20348,7 +20598,7 @@ Parameters:
 
 Return Value:
 
-- TryBinaryExpression - Right-shift expression with exception handling.
+- [TryBinaryExpression](#class-trybinaryexpression) - Right-shift expression with exception handling.
 
 Example:
 
@@ -20393,7 +20643,7 @@ Parameters:
 
 Return Value:
 
-- TryBinaryExpression - Subtraction expression with exception handling.
+- [TryBinaryExpression](#class-trybinaryexpression) - Subtraction expression with exception handling.
 
 Example:
 
@@ -20438,7 +20688,7 @@ Parameters:
 
 Return Value:
 
-- TryInvoke - Virtual method call expression with exception handling.
+- [TryInvoke](#class-tryinvoke) - Virtual method call expression with exception handling.
 
 Example:
 
@@ -20487,7 +20737,7 @@ Parameters:
 
 Return Value:
 
-- TryNumericCast - Numeric type conversion expression with exception handling.
+- [TryNumericCast](#class-trynumericcast) - Numeric type conversion expression with exception handling.
 
 Example:
 
@@ -20532,7 +20782,7 @@ Parameters:
 
 Return Value:
 
-- TryRawArrayAllocate - Raw array allocation expression with exception handling.
+- [TryRawArrayAllocate](#class-tryrawarrayallocate) - Raw array allocation expression with exception handling.
 
 Example:
 
@@ -20577,7 +20827,7 @@ Parameters:
 
 Return Value:
 
-- TrySpawn - Spawn expression with exception handling.
+- [TrySpawn](#class-tryspawn) - Spawn expression with exception handling.
 
 Example:
 
@@ -20624,7 +20874,7 @@ Parameters:
 
 Return Value:
 
-- TrySpawn - Spawn expression with argument and exception handling.
+- [TrySpawn](#class-tryspawn) - Spawn expression with argument and exception handling.
 
 Example:
 
@@ -20669,7 +20919,7 @@ Parameters:
 
 Return Value:
 
-- TryUnaryExpression - Negation expression with exception handling.
+- [TryUnaryExpression](#class-tryunaryexpression) - Negation expression with exception handling.
 
 Example:
 
@@ -20711,7 +20961,7 @@ Parameters:
 
 Return Value:
 
-- Tuple - Tuple expression.
+- [Tuple](#class-tuple) - Tuple expression.
 
 Example:
 
@@ -20750,7 +21000,7 @@ Parameters:
 
 Return Value:
 
-- UnaryExpression - Bitwise NOT expression.
+- [UnaryExpression](#class-unaryexpression) - Bitwise NOT expression.
 
 Example:
 
@@ -20790,7 +21040,7 @@ Parameters:
 
 Return Value:
 
-- UnaryExpression - Negation expression.
+- [UnaryExpression](#class-unaryexpression) - Negation expression.
 
 Example:
 
@@ -20829,7 +21079,7 @@ Parameters:
 
 Return Value:
 
-- UnaryExpression - Logical NOT expression.
+- [UnaryExpression](#class-unaryexpression) - Logical NOT expression.
 
 Example:
 
@@ -20869,7 +21119,7 @@ Parameters:
 
 Return Value:
 
-- UnboxToRef - Unbox-to-reference expression.
+- [UnboxToRef](#class-unboxtoref) - Unbox-to-reference expression.
 
 Example:
 
@@ -20910,7 +21160,7 @@ Parameters:
 
 Return Value:
 
-- UnboxToValue - Unbox-to-value expression.
+- [UnboxToValue](#class-unboxtovalue) - Unbox-to-value expression.
 
 Example:
 
@@ -20950,7 +21200,7 @@ Parameters:
 
 Return Value:
 
-- VArrayExpr - VArray expression.
+- [VArrayExpr](#class-varrayexpr) - VArray expression.
 
 Example:
 
@@ -20996,7 +21246,7 @@ Parameters:
 
 Return Value:
 
-- VArrayBuilder - VArray builder expression.
+- [VArrayBuilder](#class-varraybuilder) - VArray builder expression.
 
 Example:
 
