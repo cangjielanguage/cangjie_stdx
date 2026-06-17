@@ -126,7 +126,7 @@ def generate_cmake_defs(args):
         "-DCANGJIE_INCLUDE=" + (";".join(args.include) if args.include else ""),
         "-DCANGJIE_TARGET_SYSROOT=" + (args.target_sysroot if args.target_sysroot else ""),
         "-DCANGJIE_BUILD_WITHOUT_EFFECT_HANDLERS=" + bool_to_opt(args.without_effect_handlers),
-        "-DCANGJIE_SKIP_SYNTAX=" + bool_to_opt(args.skip_syntax),
+        "-DCANGJIE_BUILD_WITHOUT_SYNTAX=" + bool_to_opt(args.without_syntax),
         "-DCANGJIE_BUILD_STDLIB_WITH_COVERAGE=" + bool_to_opt(args.stdlib_coverage),
         "-DCANGJIE_BUILD_ARGS=" + (";".join(args.build_args) if args.build_args else ""),
         "-DBUILD_GCC_TOOLCHAIN=" + (args.gcc_toolchain if args.gcc_toolchain and args.target is None else ""),
@@ -399,7 +399,7 @@ def main():
         "--without-effect-handlers", dest="without_effect_handlers", action="store_true", help="build a version without effect handlers"
     )
     parser_build.add_argument(
-        "--skip-syntax", dest="skip_syntax", action="store_true", help="build without syntax"
+        "--skip-syntax", dest="without_syntax", action="store_true", help="build a version without syntax"
     )
     parser_build.add_argument(
         "--gcc-toolchain", dest="gcc_toolchain", help="Specify GCC toolchain for Clang to use"
