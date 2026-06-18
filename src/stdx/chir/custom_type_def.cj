@@ -202,8 +202,8 @@ public class MemberVar <: ToString {
         result.append(": ")
         result.append(ty.toString())
         var comment = ArrayList<String>()
-        if (_debugLocation.isValid()) {
-            comment.add("loc: " + _debugLocation.toString())
+        if (let str <- _debugLocation.toString() && !str.isEmpty()) {
+            comment.add(str)
         }
         if (!comment.isEmpty()) {
             result.append(" // ")

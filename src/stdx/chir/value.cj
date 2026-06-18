@@ -734,6 +734,44 @@ sealed abstract class GlobalValue <: Value & Equatable<GlobalValue> {
         _attributes.setAttr(Attribute.Static, enable)
     }
 
+    /**
+     * Destroys this global value and removes it from its declared parent when present.
+     *
+     * For functions, also destroys the function body when present. For global variables,
+     * destroys the initializer function when present, then clears the initializer reference.
+     * Package-level lists are not updated; callers remove entries from `Package` separately.
+     */
+    public func destroySelf(): Unit {
+        if (isInvalid()) {
+            return
+        }
+        if (let Some(f) <- (this as Function)) {
+            if (let Some(parent) <- _declaredParent) {
+                parent._methods.removeIf({ m => m == f })
+                if (let Some(varInitFunc) <- parent._instanceVarInitFunc && varInitFunc == f) {
+                    parent._instanceVarInitFunc = None
+                }
+                _declaredParent = None
+            }
+            if (let Some(body) <- f._body) {
+                body.destroySelf()
+            }
+            f._parameters.clear()
+            f._retValue = None
+            f._genericTypeParams.clear()
+        } else if (let Some(gv) <- (this as GlobalVar)) {
+            if (let Some(parent) <- _declaredParent) {
+                parent._staticVars.removeIf({ v => v == gv })
+                _declaredParent = None
+            }
+            if (let Some(initFunc) <- (gv._initializer as Function)) {
+                initFunc.destroySelf()
+            }
+            gv._initializer = None
+        }
+        _kind = ValueKind.Invalid
+    }
+
     protected override func calculateHashCode(): Int64 {
         return identifier.hashCode()
     }

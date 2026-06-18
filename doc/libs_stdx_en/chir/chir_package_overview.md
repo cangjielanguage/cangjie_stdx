@@ -81,7 +81,7 @@ The **chir** (Cangjie High-level IR) package provides the type system and CHIR d
 | [GetInstantiateValue](./chir_package_api/chir_package_classes.md#class-getinstantiatevalue) | Expression to retrieve generic function instantiation value. |
 | [GetRTTI](./chir_package_api/chir_package_classes.md#class-getrtti) | Expression to retrieve runtime type information. |
 | [GetRTTIStatic](./chir_package_api/chir_package_classes.md#class-getrttistatic) | Expression to statically retrieve runtime type information. |
-| [GlobalValue](./chir_package_api/chir_package_classes.md) | Sealed abstract base for global values. |
+| [GlobalValue](./chir_package_api/chir_package_classes.md#class-globalvalue) | Sealed abstract base for global values; provides `destroySelf()` to destroy a function or global variable. |
 | [GlobalVar](./chir_package_api/chir_package_classes.md#class-globalvar) | Global variable definition in CHIR. |
 | [GoTo](./chir_package_api/chir_package_classes.md#class-goto) | Unconditional jump terminator expression. |
 | [InstanceOf](./chir_package_api/chir_package_classes.md#class-instanceof) | Type check expression. |
@@ -102,7 +102,7 @@ The **chir** (Cangjie High-level IR) package provides the type system and CHIR d
 | [NumericCast](./chir_package_api/chir_package_classes.md#class-numericcast) | Numeric type conversion expression. |
 | [NumericCastBase](./chir_package_api/chir_package_classes.md) | Sealed abstract base for numeric type conversion expressions. |
 | [NumericType](./chir_package_api/chir_package_classes.md#class-numerictype) | Abstract base for numeric types. |
-| [Package](./chir_package_api/chir_package_classes.md#class-package) | CHIR package, with query interfaces for global variables (`globalVars`), functions (`functions`), all custom type definitions (`allCustomTypeDefs`), and package init function (`packageInitFunc`), plus builder interfaces for adding functions (`addFunction`), global variables (`addGlobalVar`), and retrieving functions by signature (`getSpecifiedFunction`). |
+| [Package](./chir_package_api/chir_package_classes.md#class-package) | CHIR package, with query interfaces for global variables (`globalVars`), functions (`functions`), all custom type definitions (`allCustomTypeDefs`), and package init functions (`packageInitFunc`, `packageLiteralInitFunc`), plus builder interfaces for adding functions (`addFunction`), global variables (`addGlobalVar`), and retrieving functions by signature (`getSpecifiedFunction`). |
 | [Parameter](./chir_package_api/chir_package_classes.md#class-parameter) | Function parameter in CHIR. |
 | [RaiseException](./chir_package_api/chir_package_classes.md#class-raiseexception) | Raise exception terminator expression. |
 | [RawArrayAllocate](./chir_package_api/chir_package_classes.md#class-rawarrayallocate) | Raw array allocation expression. |

@@ -5061,6 +5061,34 @@ public prop packageInitFunc: ?Function
 
 类型：?[Function](#class-function)
 
+### prop packageLiteralInitFunc
+
+```cangjie
+public prop packageLiteralInitFunc: ?Function
+```
+
+功能：包字面量初始化函数；未设置时为 None。
+
+类型：?[Function](#class-function)
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    println("prop_packageLiteralInitFunc: ${pkg.packageLiteralInitFunc.isNone()}")
+}
+```
+
+运行结果：
+
+```text
+prop_packageLiteralInitFunc: true
+```
+
 ### init(String, AccessLevel)
 
 ```cangjie

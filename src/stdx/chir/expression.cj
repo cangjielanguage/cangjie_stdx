@@ -3313,6 +3313,17 @@ public class StoreElementByName <: Expression & Equatable<StoreElementByName> {
         }
     }
 
+    /**
+     * Gets the `srcValue` property.
+     * @type { Value }
+     */
+    public prop srcValue: Value {
+        get() {
+            assert(operands.size == 2, "StoreElementByName: op is not set")
+            return operands[0]
+        }
+    }
+
     internal init(val: Value, location: Value, fieldNames: ArrayList<String>) {
         super(ExprKind.StoreElementByName, ArrayList<Value>([val, location]))
         this._fieldNames = fieldNames.clone()
@@ -3355,6 +3366,17 @@ public class StoreElementRef <: Expression & Equatable<StoreElementRef> {
     public prop path: Array<UInt64> {
         get() {
             return _path.toArray()
+        }
+    }
+
+    /**
+     * Gets the `srcValue` property.
+     * @type { Value }
+     */
+    public prop srcValue: Value {
+        get() {
+            assert(operands.size == 2, "StoreElementRef: op is not set")
+            return operands[0]
         }
     }
 

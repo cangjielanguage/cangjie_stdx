@@ -157,9 +157,6 @@ class CHIRDeserializerImpl {
         for (def in this.pkg._extendDefs) {
             addExtends(def)
         }
-        for (def in this.pkg._importedExtendDefs) {
-            addExtends(def)
-        }
     }
 
     private func getBasicTypeFromBuilder(typeFormat: PackageFormat_CHIRTypeKind) : Option<Type> {
@@ -493,11 +490,7 @@ class CHIRDeserializerImpl {
         let nonExhaustive = enumDefFormat.GetNonExhaustive()
         let identifier = base.GetIdentifier()
         let enumDef = EnumDef(identifier, srcCodeName, pkgName, nonExhaustive)
-        if (AttributeInfo(base.GetBase().getOrThrow().GetAttributes()).isImported()) {
-            pkg._importedEnumDefs.add(enumDef)
-        } else {
-            pkg._enumDefs.add(enumDef)
-        }
+        pkg._enumDefs.add(enumDef)
         return enumDef
     }
 
@@ -507,11 +500,7 @@ class CHIRDeserializerImpl {
         let srcCodeName = base.GetSrcCodeIdentifier()
         let pkgName = base.GetPackageName()
         let structDef = StructDef(identifier, srcCodeName, pkgName)
-        if (AttributeInfo(base.GetBase().getOrThrow().GetAttributes()).isImported()) {
-            pkg._importedStructDefs.add(structDef)
-        } else {
-            pkg._structDefs.add(structDef)
-        }
+        pkg._structDefs.add(structDef)
         return structDef
     }
 
@@ -521,11 +510,7 @@ class CHIRDeserializerImpl {
         let srcCodeName = base.GetSrcCodeIdentifier()
         let pkgName = base.GetPackageName()
         let classDef = ClassLikeDef(identifier, srcCodeName, pkgName, classDefFormat.GetIsClass())
-        if (AttributeInfo(base.GetBase().getOrThrow().GetAttributes()).isImported()) {
-            pkg._importedClassDefs.add(classDef)
-        } else {
-            pkg._classDefs.add(classDef)
-        }
+        pkg._classDefs.add(classDef)
         return classDef
     }
 
@@ -536,11 +521,7 @@ class CHIRDeserializerImpl {
         let extendedType = getType(extendDefFormat.GetExtendedType())
         let genericTypeParams = getTypeAs<GenericType>(extendDefFormat.GetGenericParams())
         let extendDef = ExtendDef(identifier, pkgName, extendedType, ArrayList<GenericType>.of(genericTypeParams))
-        if (AttributeInfo(base.GetBase().getOrThrow().GetAttributes()).isImported()) {
-            pkg._importedExtendDefs.add(extendDef)
-        } else {
-            pkg._extendDefs.add(extendDef)
-        }
+        pkg._extendDefs.add(extendDef)
         return extendDef
     }
 

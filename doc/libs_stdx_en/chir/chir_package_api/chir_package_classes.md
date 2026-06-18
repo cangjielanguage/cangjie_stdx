@@ -5061,6 +5061,34 @@ Function: Package initialization function; `None` when not set.
 
 Type: ?[Function](#class-function)
 
+### prop packageLiteralInitFunc
+
+```cangjie
+public prop packageLiteralInitFunc: ?Function
+```
+
+Function: Package literal initialization function; `None` when not set.
+
+Type: ?[Function](#class-function)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    println("prop_packageLiteralInitFunc: ${pkg.packageLiteralInitFunc.isNone()}")
+}
+```
+
+Output:
+
+```text
+prop_packageLiteralInitFunc: true
+```
+
 ### init(String, AccessLevel)
 
 ```cangjie

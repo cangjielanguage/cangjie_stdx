@@ -36,9 +36,9 @@ public enum AccessLevel <: ToString {
 /**
  * Represents a package in the CHIR representation.
  *
- * A package contains classDefs, structDefs, enumDefs, and extendDefs, both defined locally
- * and imported from other packages. It also has an access level that controls
- * the visibility of its contents.
+ * A package contains classDefs, structDefs, enumDefs, and extendDefs. Imported
+ * definitions are stored in the same lists and distinguished by the Imported attribute.
+ * It also has an access level that controls the visibility of its contents.
  */
 public class Package <: ToString {
     internal var _classDefs = ArrayList<ClassLikeDef>()
@@ -46,10 +46,6 @@ public class Package <: ToString {
     internal var _extendDefs = ArrayList<ExtendDef>()
     internal var _functions = ArrayList<Function>()
     internal var _globalVars = ArrayList<GlobalVar>()
-    internal var _importedClassDefs = ArrayList<ClassLikeDef>()
-    internal var _importedEnumDefs = ArrayList<EnumDef>()
-    internal var _importedExtendDefs = ArrayList<ExtendDef>()
-    internal var _importedStructDefs = ArrayList<StructDef>()
     internal var _structDefs = ArrayList<StructDef>()
     internal var _packageInitFunc: ?Function = None
     internal var _packageLiteralInitFunc: ?Function = None
@@ -72,11 +68,7 @@ public class Package <: ToString {
      */
     public prop allCustomTypeDefs: Array<CustomTypeDef> {
         get() {
-            return _importedClassDefs.toArray().mapTo<CustomTypeDef>({ d => d })
-                .concat(_importedEnumDefs.toArray().mapTo<CustomTypeDef>({ d => d }))
-                .concat(_importedExtendDefs.toArray().mapTo<CustomTypeDef>({ d => d }))
-                .concat(_importedStructDefs.toArray().mapTo<CustomTypeDef>({ d => d }))
-                .concat(_classDefs.toArray().mapTo<CustomTypeDef>({ d => d }))
+            return _classDefs.toArray().mapTo<CustomTypeDef>({ d => d })
                 .concat(_enumDefs.toArray().mapTo<CustomTypeDef>({ d => d }))
                 .concat(_extendDefs.toArray().mapTo<CustomTypeDef>({ d => d }))
                 .concat(_structDefs.toArray().mapTo<CustomTypeDef>({ d => d }))
@@ -109,7 +101,7 @@ public class Package <: ToString {
      */
     public prop classDefs: Array<ClassLikeDef> {
         get() {
-            return _classDefs.toArray()
+            return filterClassDefs(imported: false)
         }
     }
 
@@ -119,7 +111,7 @@ public class Package <: ToString {
      */
     public prop enumDefs: Array<EnumDef> {
         get() {
-            return _enumDefs.toArray()
+            return filterEnumDefs(imported: false)
         }
     }
 
@@ -129,7 +121,7 @@ public class Package <: ToString {
      */
     public prop extendDefs: Array<ExtendDef> {
         get() {
-            return _extendDefs.toArray()
+            return filterExtendDefs(imported: false)
         }
     }
 
@@ -139,7 +131,7 @@ public class Package <: ToString {
      */
     public prop importedClassDefs: Array<ClassLikeDef> {
         get() {
-            return _importedClassDefs.toArray()
+            return filterClassDefs(imported: true)
         }
     }
 
@@ -149,7 +141,7 @@ public class Package <: ToString {
      */
     public prop importedEnumDefs: Array<EnumDef> {
         get() {
-            return _importedEnumDefs.toArray()
+            return filterEnumDefs(imported: true)
         }
     }
 
@@ -159,7 +151,7 @@ public class Package <: ToString {
      */
     public prop importedExtendDefs: Array<ExtendDef> {
         get() {
-            return _importedExtendDefs.toArray()
+            return filterExtendDefs(imported: true)
         }
     }
 
@@ -169,7 +161,7 @@ public class Package <: ToString {
      */
     public prop importedStructDefs: Array<StructDef> {
         get() {
-            return _importedStructDefs.toArray()
+            return filterStructDefs(imported: true)
         }
     }
 
@@ -194,12 +186,22 @@ public class Package <: ToString {
     }
 
     /**
+     * Gets the package literal initialization function, when present.
+     * @type { ?Function }
+     */
+    public prop packageLiteralInitFunc: ?Function {
+        get() {
+            return _packageLiteralInitFunc
+        }
+    }
+
+    /**
      * Gets struct definitions defined in this package.
      * @type { Array<StructDef> }
      */
     public prop structDefs: Array<StructDef> {
         get() {
-            return _structDefs.toArray()
+            return filterStructDefs(imported: false)
         }
     }
 
@@ -300,7 +302,7 @@ public class Package <: ToString {
         let temp = createClassDef(identifier, srcCodeName, isClass, genericTypeParams)
         temp._packageName = packageName
         temp._attributes.setAttr(Attribute.Imported, true)
-        _importedClassDefs.add(temp)
+        _classDefs.add(temp)
         return temp
     }
 
@@ -317,7 +319,7 @@ public class Package <: ToString {
         let temp = createEnumDef(identifier, srcCodeName, isExhaustive, genericTypeParams)
         temp._packageName = packageName
         temp._attributes.setAttr(Attribute.Imported, true)
-        _importedEnumDefs.add(temp)
+        _enumDefs.add(temp)
         return temp
     }
 
@@ -333,7 +335,7 @@ public class Package <: ToString {
         let temp = createExtendDef(identifier, extendedType, genericTypeParams)
         temp._packageName = packageName
         temp._attributes.setAttr(Attribute.Imported, true)
-        _importedExtendDefs.add(temp)
+        _extendDefs.add(temp)
         return temp
     }
 
@@ -349,7 +351,7 @@ public class Package <: ToString {
         let temp = createStructDef(identifier, srcCodeName, genericTypeParams)
         temp._packageName = packageName
         temp._attributes.setAttr(Attribute.Imported, true)
-        _importedStructDefs.add(temp)
+        _structDefs.add(temp)
         return temp
     }
 
@@ -380,11 +382,6 @@ public class Package <: ToString {
      * @return The matching ClassLikeDef if found in imports or local defs, else None.
      */
     public func getSpecifiedClassDef(packageName: String, srcCodeName: String): ?ClassLikeDef {
-        for (def in _importedClassDefs) {
-            if (def.packageName == packageName && def.srcCodeName == srcCodeName) {
-                return def
-            }
-        }
         for (def in _classDefs) {
             if (def.packageName == packageName && def.srcCodeName == srcCodeName) {
                 return def
@@ -400,11 +397,6 @@ public class Package <: ToString {
      * @return The matching EnumDef if found, else None.
      */
     public func getSpecifiedEnumDef(packageName: String, srcCodeName: String): ?EnumDef {
-        for (def in _importedEnumDefs) {
-            if (def.packageName == packageName && def.srcCodeName == srcCodeName) {
-                return def
-            }
-        }
         for (def in _enumDefs) {
             if (def.packageName == packageName && def.srcCodeName == srcCodeName) {
                 return def
@@ -429,11 +421,6 @@ public class Package <: ToString {
      * @return The matching StructDef if found, else None.
      */
     public func getSpecifiedStructDef(packageName: String, srcCodeName: String): ?StructDef {
-        for (def in _importedStructDefs) {
-            if (def.packageName == packageName && def.srcCodeName == srcCodeName) {
-                return def
-            }
-        }
         for (def in _structDefs) {
             if (def.packageName == packageName && def.srcCodeName == srcCodeName) {
                 return def
@@ -515,5 +502,45 @@ public class Package <: ToString {
         temp._type = ty
         temp._attributes.setAttr(Attribute.PluginAdded, true)
         return temp
+    }
+
+    private func filterClassDefs(imported!: Bool): Array<ClassLikeDef> {
+        let result = ArrayList<ClassLikeDef>()
+        for (def in _classDefs) {
+            if (def.isImported() == imported) {
+                result.add(def)
+            }
+        }
+        return result.toArray()
+    }
+
+    private func filterEnumDefs(imported!: Bool): Array<EnumDef> {
+        let result = ArrayList<EnumDef>()
+        for (def in _enumDefs) {
+            if (def.isImported() == imported) {
+                result.add(def)
+            }
+        }
+        return result.toArray()
+    }
+
+    private func filterExtendDefs(imported!: Bool): Array<ExtendDef> {
+        let result = ArrayList<ExtendDef>()
+        for (def in _extendDefs) {
+            if (def.isImported() == imported) {
+                result.add(def)
+            }
+        }
+        return result.toArray()
+    }
+
+    private func filterStructDefs(imported!: Bool): Array<StructDef> {
+        let result = ArrayList<StructDef>()
+        for (def in _structDefs) {
+            if (def.isImported() == imported) {
+                result.add(def)
+            }
+        }
+        return result.toArray()
     }
 }
