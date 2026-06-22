@@ -38,29 +38,29 @@ protected unsafe func describeImpl(
     message: String
 ): Unit {
     let keySize = UIntNative(body.size) // we do it outside of acq-release
-    let dynMsgPtr = MallocDynMsg()
-    if (dynMsgPtr.isNull()) {
+    let dynMsg = MallocDynMsg()
+    if (dynMsg.isNull()) {
         throw CryptoException("malloc failed")
     }
 
-    let keyBytes = acquireArrayRawData(body)
+    let keyBodyBytes = acquireArrayRawData(body)
     let result = try {
         f(
-            keyBytes.pointer,
+            keyBodyBytes.pointer,
             keySize,
             exception,
-            dynMsgPtr
+            dynMsg
         )
     } finally {
-        releaseArrayRawData(keyBytes)
+        releaseArrayRawData(keyBodyBytes)
     }
     try {
-        if (!dynMsgPtr.read().found) {
-            let funcName = CString(dynMsgPtr.read().funcName).toString()
+        if (!dynMsg.read().found) {
+            let funcName = CString(dynMsg.read().funcName).toString()
             throw CryptoException("Can not load openssl library or function ${funcName}.")
         }
     } finally {
-        FreeDynMsg(dynMsgPtr)
+        FreeDynMsg(dynMsg)
     }
 
     if (exception.read().hasException) {
@@ -471,7 +471,7 @@ func cjX509EncryptPrivateKey(
         } finally {
             FreeDynMsg(dynMsgPtr)
         }
-        return res
+        res
     }
 }
 
@@ -500,18 +500,18 @@ func cjX509DescribePrivateKey(
 
 func CRYPTO_free(ptr: CPointer<Byte>): Unit {
     unsafe {
-        let dynMsgPtr = MallocDynMsg()
-        if (dynMsgPtr.isNull()) {
+        let dynMsg = MallocDynMsg()
+        if (dynMsg.isNull()) {
             throw CryptoException("malloc failed")
         }
-        DYN_CRYPTO_free(ptr, dynMsgPtr)
+        DYN_CRYPTO_free(ptr, dynMsg)
         try {
-            if (!dynMsgPtr.read().found) {
-                let funcName = CString(dynMsgPtr.read().funcName).toString()
+            if (!dynMsg.read().found) {
+                let funcName = CString(dynMsg.read().funcName).toString()
                 throw CryptoException("Can not load openssl library or function ${funcName}.")
             }
         } finally {
-            FreeDynMsg(dynMsgPtr)
+            FreeDynMsg(dynMsg)
         }
     }
 }
