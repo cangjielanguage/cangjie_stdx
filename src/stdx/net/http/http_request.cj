@@ -13,6 +13,24 @@ import std.io.*
 import std.collection.ArrayList
 import stdx.encoding.url.*
 
+func appendBodySize(str: StringBuilder, bodySize: Option<Int64>): Unit {
+    match (bodySize) {
+        case Some(0) => ()
+        case Some(s) => str.append("body size: ${s}\r\n")
+        case None => str.append("unknown body size\r\n")
+    }
+}
+
+func ensureHttpHeaders(headers: ?HttpHeaders, setHeaders: (HttpHeaders) -> Unit): HttpHeaders {
+    return match (headers) {
+        case Some(h) => h
+        case None =>
+            let h = HttpHeaders()
+            setHeaders(h)
+            return h
+    }
+}
+
 public class HttpRequestBuilder {
     var _method: String = "GET"
     var _url: ?URL = None
@@ -377,25 +395,13 @@ public class HttpRequestBuilder {
 
     prop headers: HttpHeaders {
         get() {
-            return match (_headers) {
-                case Some(h) => h
-                case None =>
-                    let h = HttpHeaders()
-                    _headers = h
-                    return h
-            }
+            ensureHttpHeaders(_headers, {h => _headers = h})
         }
     }
 
     prop trailers: HttpHeaders {
         get() {
-            return match (_trailers) {
-                case Some(t) => t
-                case None =>
-                    let t = HttpHeaders()
-                    _trailers = t
-                    return t
-            }
+            ensureHttpHeaders(_trailers, {t => _trailers = t})
         }
     }
 }
@@ -487,13 +493,7 @@ public class HttpRequest <: ToString {
      */
     public prop headers: HttpHeaders {
         get() {
-            return match (_headers) {
-                case Some(h) => h
-                case None =>
-                    let h = HttpHeaders()
-                    _headers = h
-                    return h
-            }
+            ensureHttpHeaders(_headers, {h => _headers = h})
         }
     }
 
@@ -513,13 +513,7 @@ public class HttpRequest <: ToString {
      */
     public prop trailers: HttpHeaders {
         get() {
-            return match (_trailers) {
-                case Some(t) => t
-                case None =>
-                    let t = HttpHeaders()
-                    _trailers = t
-                    t
-            }
+            ensureHttpHeaders(_trailers, {t => _trailers = t})
         }
     }
 
@@ -628,11 +622,7 @@ public class HttpRequest <: ToString {
         }
         str.append("\r\n")
         str.append(_headers?.toString() ?? "\r\n")
-        match (bodySize) {
-            case Some(0) => ()
-            case Some(s) => str.append("body size: ${s}\r\n")
-            case None => str.append("unknown body size\r\n")
-        }
+        appendBodySize(str, bodySize)
         str.append(_trailers?.toString() ?? "")
         return str.toString()
     }

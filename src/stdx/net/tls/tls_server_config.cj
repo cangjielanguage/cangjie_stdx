@@ -21,6 +21,33 @@ const KEYLESS_LOAD_SUCCESS = 0i8
 const KEYLESS_PROVIDER_ADD_FAILED = 1i8
 const KEYLESS_PROVIDER_LOAD_FAILED = 2i8
 
+func checkedTlsStringArray(values: Array<String>, fieldName: String): Array<String> {
+    for (value in values) {
+        checkString(value, fieldName)
+    }
+    values
+}
+
+func checkedTlsCipherSuites(suites: Map<TlsVersion, Array<String>>): Map<TlsVersion, Array<String>> {
+    for ((_, cipherSuites) in suites) {
+        checkedTlsStringArray(cipherSuites, "supportedCipherSuites")
+    }
+    suites
+}
+
+func checkedTlsSecurityLevel(value: Int32): Int32 {
+    if (value < 0 || value > 5) {
+        throw IllegalArgumentException("SecurityLevel should be from 0 to 5.")
+    }
+    value
+}
+
+func checkedServerCertificate(cert: ?(Array<Certificate>, PrivateKey)): (Array<X509Certificate>, PrivateKey) {
+    let value = cert ?? throw TlsException("The server certificate cannot be null.")
+    return (value[0].map({c => c as X509Certificate ??
+        throw TlsException("Only certificates of type `X509Certificate` are allowed.")}), value[1])
+}
+
 public struct TlsServerConfig <: TlsConfig {
     private var _supportedAlpnProtocols: Array<String> = Array<String>()
     private var _certificate: (Array<X509Certificate>, PrivateKey)
@@ -87,10 +114,7 @@ public struct TlsServerConfig <: TlsConfig {
             _supportedAlpnProtocols
         }
         set(v) {
-            for (s in v) {
-                checkString(s, "supportedAlpnProtocols")
-            }
-            _supportedAlpnProtocols = v
+            _supportedAlpnProtocols = checkedTlsStringArray(v, "supportedAlpnProtocols")
         }
     }
 
@@ -108,12 +132,7 @@ public struct TlsServerConfig <: TlsConfig {
             _supportedCipherSuites
         }
         set(v) {
-            for ((_, cipherSuites) in v) {
-                for (cipherSuite in cipherSuites) {
-                    checkString(cipherSuite, "supportedCipherSuites")
-                }
-            }
-            _supportedCipherSuites = v
+            _supportedCipherSuites = checkedTlsCipherSuites(v)
         }
     }
 
@@ -125,9 +144,7 @@ public struct TlsServerConfig <: TlsConfig {
             (_certificate[0].map({c => c}), _certificate[1])
         }
         set(v) {
-            let cert = v ?? throw TlsException("The server certificate cannot be null.")
-            _certificate = (cert[0].map({c => c as X509Certificate ??
-                throw TlsException("Only certificates of type `X509Certificate` are allowed.")}), cert[1])
+            _certificate = checkedServerCertificate(v)
         }
     }
 
@@ -161,10 +178,7 @@ public struct TlsServerConfig <: TlsConfig {
             _securityLevel
         }
         set(value) {
-            if (value < 0 || value > 5) {
-                throw IllegalArgumentException("SecurityLevel should be from 0 to 5.")
-            }
-            _securityLevel = value
+            _securityLevel = checkedTlsSecurityLevel(value)
         }
     }
 }
@@ -350,10 +364,7 @@ public class KeylessTlsServerConfig <: TlsConfig {
             _supportedAlpnProtocols
         }
         set(v) {
-            for (s in v) {
-                checkString(s, "supportedAlpnProtocols")
-            }
-            _supportedAlpnProtocols = v
+            _supportedAlpnProtocols = checkedTlsStringArray(v, "supportedAlpnProtocols")
         }
     }
 
@@ -371,12 +382,7 @@ public class KeylessTlsServerConfig <: TlsConfig {
             _supportedCipherSuites
         }
         set(v) {
-            for ((_, cipherSuites) in v) {
-                for (cipherSuite in cipherSuites) {
-                    checkString(cipherSuite, "supportedCipherSuites")
-                }
-            }
-            _supportedCipherSuites = v
+            _supportedCipherSuites = checkedTlsCipherSuites(v)
         }
     }
 
@@ -388,9 +394,7 @@ public class KeylessTlsServerConfig <: TlsConfig {
             (_certificate[0].map({c => c}), _certificate[1])
         }
         set(v) {
-            let cert = v ?? throw TlsException("The server certificate cannot be null.")
-            _certificate = (cert[0].map({c => c as X509Certificate ??
-                throw TlsException("Only certificates of type `X509Certificate` are allowed.")}), cert[1])
+            _certificate = checkedServerCertificate(v)
         }
     }
 
@@ -424,14 +428,9 @@ public class KeylessTlsServerConfig <: TlsConfig {
             _securityLevel
         }
         set(value) {
-            if (value < 0 || value > 5) {
-                throw IllegalArgumentException("SecurityLevel should be from 0 to 5.")
-            }
-            _securityLevel = value
+            _securityLevel = checkedTlsSecurityLevel(value)
         }
     }
-
-
 
     public init(certChain: Array<X509Certificate>, signCallback: KeylessSignFunc, decryptCallback!: ?KeylessDecryptFunc = None<KeylessDecryptFunc>) {
         if (certChain.isEmpty()) {
