@@ -4,7 +4,7 @@
 
 ```cangjie
 public enum AccessLevel <: ToString & Equatable<AccessLevel> {
-    Internal
+    | Internal
     | Protected
     | Public
 }
@@ -198,11 +198,10 @@ op_ne_AccessLevel same: false
 
 ```cangjie
 public enum OverflowStrategy <: ToString & Equatable<OverflowStrategy> {
-    NA
+    | NA
     | Wrapping
     | Throwing
     | Saturating
-    | ...
 }
 ```
 
@@ -429,10 +428,9 @@ op_ne_OverflowStrategy same: false
 
 ```cangjie
 public enum UnaryExprKind <: ToString & Equatable<UnaryExprKind> {
-    Neg
+    | Neg
     | Not
     | BitNot
-    | ...
 }
 ```
 
@@ -627,7 +625,7 @@ op_ne_UnaryExprKind same: false
 
 ```cangjie
 public enum BinaryExprKind <: ToString & Equatable<BinaryExprKind> {
-    Add
+    | Add
     | Sub
     | Mul
     | Div
@@ -646,7 +644,6 @@ public enum BinaryExprKind <: ToString & Equatable<BinaryExprKind> {
     | NotEqual
     | And
     | Or
-    | ...
 }
 ```
 
@@ -1246,11 +1243,10 @@ op_ne_BinaryExprKind same: false
 
 ```cangjie
 public enum InsertPosition {
-    AtEnd(Block)
+    | AtEnd(Block)
     | AtStart(Block)
     | Before(Expression)
     | After(Expression)
-    | ...
 }
 ```
 
@@ -1518,6 +1514,10 @@ public operator func ==(other: IRActionMode): Bool
 
 Function: Determines whether two IRActionMode values are equal.
 
+Return Value:
+
+- Bool - true if the two IRActionMode values are equal, false otherwise.
+
 ### operator func !=(IRActionMode)
 
 ```cangjie
@@ -1525,6 +1525,10 @@ public operator func !=(other: IRActionMode): Bool
 ```
 
 Function: Determines whether two IRActionMode values are not equal.
+
+Return Value:
+
+- Bool - true if the two IRActionMode values are not equal, false otherwise.
 
 ## enum TypeActionMode
 

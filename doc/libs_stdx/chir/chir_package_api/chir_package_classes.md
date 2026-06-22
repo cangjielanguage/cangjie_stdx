@@ -3,7 +3,10 @@
 ## class CustomAnnoInstance
 
 ```cangjie
-public class CustomAnnoInstance <: ToString
+public class CustomAnnoInstance <: ToString {
+    public init(classSrcCodeName: String)
+    public init(classSrcCodeName: String, loc: DebugLocation)
+}
 ```
 
 功能：表示 CHIR 中**一处**注解实例，对应源码形态 `@ClassName[v1, v2, ...]`：保存注解类名及参数值列表。
@@ -193,7 +196,7 @@ main() {
 ## class BoolType
 
 ```cangjie
-public class BoolType <: BuiltinType & Equatable<BoolType>
+public class BoolType <: BuiltinType & Equatable<BoolType> {}
 ```
 
 功能：表示类型系统中的布尔类型。这是一个单例类型，表示 Bool 类型。
@@ -213,7 +216,7 @@ public static func get(): BoolType
 
 返回值：
 
-- BoolType - BoolType 实例。
+- [BoolType](#class-booltype) - BoolType 实例。
 
 示例：
 
@@ -271,7 +274,7 @@ main() {
 ## class BoxType
 
 ```cangjie
-public class BoxType <: Type & Equatable<BoxType>
+public class BoxType <: Type & Equatable<BoxType> {}
 ```
 
 功能：表示**装箱类型** `Box<T>`，对值进行装箱包装。通过缓存保证同一 `baseType` 对应唯一实例。
@@ -315,6 +318,10 @@ public static func get(baseType: Type): BoxType
 
 功能：获取或创建指定基类型的 `BoxType`。
 
+返回值：
+
+- [BoxType](#class-boxtype) - 给定基类型的 BoxType 实例。
+
 示例：
 
 <!-- verify -->
@@ -340,6 +347,10 @@ public func toString(): String
 ```
 
 功能：字符串形式，一般为 `Box<...>` 风格。
+
+返回值：
+
+- String - 装箱类型的字符串表示。
 
 示例：
 
@@ -367,6 +378,10 @@ public operator func ==(other: BoxType): Bool
 
 功能：比较两个 `BoxType` 是否相同。
 
+返回值：
+
+- Bool - 相等则为 `true`，否则为 `false`。
+
 示例：
 
 <!-- verify -->
@@ -390,7 +405,7 @@ op_eq_BoxType: true
 ## class BuiltinType
 
 ```cangjie
-sealed abstract class BuiltinType <: Type & Equatable<BuiltinType>
+sealed abstract class BuiltinType <: Type & Equatable<BuiltinType> {}
 ```
 
 功能：内置类型（数值、Bool、Unit、指针、数组等）的公共基类；可附加 `ExtendDef`（`addExtend`），并通过 `getSuperTypesRecusively` 收集由 extend 实现的接口父类型。
@@ -448,7 +463,7 @@ public func getSuperTypesRecusively(visited!: ArrayList<(Type, Type)> = ArrayLis
 
 返回值：
 
-- Array\<ClassLikeType> - 收集到的类型序列。
+- Array\<[ClassLikeType](#class-classliketype)> - 收集到的类型序列。
 
 示例：
 
@@ -509,7 +524,7 @@ op_eq_BuiltinType int32vsInt64: false
 ## class CPointerType
 
 ```cangjie
-public class CPointerType <: BuiltinType & Equatable<CPointerType>
+public class CPointerType <: BuiltinType & Equatable<CPointerType> {}
 ```
 
 功能：表示类型系统中的 C 指针类型。该类型表示指向 C 类型的指针，用于与 C 代码互操作。该类维护所有 C 指针类型的缓存以确保唯一性。
@@ -529,7 +544,7 @@ public prop elementType: Type
 
 返回值：
 
-- Type - 元素类型。
+- [Type](#class-type) - 元素类型。
 
 示例：
 
@@ -566,7 +581,7 @@ public static func get(elementType: Type): CPointerType
 
 返回值：
 
-- CPointerType - 给定元素类型的 CPointerType 实例。
+- [CPointerType](#class-cpointertype) - 给定元素类型的 CPointerType 实例。
 
 示例：
 
@@ -657,7 +672,7 @@ op_eq_CPointerType: true
 ## class CStringType
 
 ```cangjie
-public class CStringType <: BuiltinType & Equatable<CStringType>
+public class CStringType <: BuiltinType & Equatable<CStringType> {}
 ```
 
 功能：表示类型系统中的 C 字符串类型。该类型表示 C 风格的空终止字符串，用于与 C 代码互操作。这是一个单例类型，表示内置的 C 字符串类型。
@@ -677,7 +692,7 @@ public static func get(): CStringType
 
 返回值：
 
-- CStringType - CStringType 实例。
+- [CStringType](#class-cstringtype) - CStringType 实例。
 
 示例：
 
@@ -735,7 +750,7 @@ op_eq_CStringType: true
 ## class ClassLikeDef
 
 ```cangjie
-public class ClassLikeDef <: CustomTypeDef & Equatable<ClassLikeDef>
+public class ClassLikeDef <: CustomTypeDef & Equatable<ClassLikeDef> {}
 ```
 
 功能：**类或接口**的定义。
@@ -954,7 +969,7 @@ op_eq_ClassLikeDef: true
 ## class ClassLikeType
 
 ```cangjie
-public class ClassLikeType <: CustomType & Equatable<ClassLikeType>
+public class ClassLikeType <: CustomType & Equatable<ClassLikeType> {}
 ```
 
 功能：类或接口的**实例化类型**。`get(def, genericTypeParams)` 缓存唯一实例。
@@ -1009,7 +1024,7 @@ public static func get(def: ClassLikeDef, genericTypeParams: Array<Type>): Class
 
 返回值：
 
-- ClassLikeType - 实例化类型。
+- [ClassLikeType](#class-classliketype) - 实例化类型。
 
 示例：
 
@@ -1071,7 +1086,7 @@ op_eq_ClassLikeType: true
 ## class CustomType
 
 ```cangjie
-sealed abstract class CustomType <: Type & Equatable<CustomType>
+sealed abstract class CustomType <: Type & Equatable<CustomType> {}
 ```
 
 功能：用户自定义类型（类/接口/结构体/枚举）实例化类型的公共基类，持有 `CustomTypeDef` 与泛型实参。
@@ -1182,6 +1197,10 @@ public func getExtendDefs(visited!: ArrayList<(Type, Type)> = ArrayList<(Type, T
 
 功能：返回 `def.extends` 中 `extendedType` 与当前类型可匹配的 extend 定义。
 
+返回值：
+
+- Array\<[ExtendDef](#class-extenddef)> - 适用的 ExtendDef 节点。
+
 示例：
 
 <!-- verify -->
@@ -1210,6 +1229,10 @@ public func getExtendImplementedInterfaceTypes(visited!: ArrayList<(Type, Type)>
 
 功能：收集适用于当前实例的 `extend` 块所实现的接口（已代入泛型）。
 
+返回值：
+
+- Array\<[ClassLikeType](#class-classliketype)> - 实例化后的接口 ClassLikeType 节点。
+
 示例：
 
 <!-- verify -->
@@ -1237,6 +1260,10 @@ public func getImplementedInterfaceTypes(visited!: ArrayList<(Type, Type)> = Arr
 ```
 
 功能：`extend` 实现的接口与定义上 `implementedInterfaceTypes` 的并集（已实例化）。
+
+返回值：
+
+- Array\<[ClassLikeType](#class-classliketype)> - 合并后的实例化接口类型列表。
 
 示例：
 
@@ -1268,7 +1295,7 @@ public func getInstantiatedMemberVarTypes(): Array<Type>
 
 返回值：
 
-- Array\<Type> - 成员实例化类型序列。
+- Array\<[Type](#class-type)> - 成员实例化类型序列。
 
 示例：
 
@@ -1305,7 +1332,7 @@ public func getMemberVarInstantiatedType(name: String): Type
 
 返回值：
 
-- Type - 成员类型。
+- [Type](#class-type) - 成员类型。
 
 异常：
 
@@ -1339,6 +1366,10 @@ public func getSuperTypesRecusively(visited!: ArrayList<(Type, Type)> = ArrayLis
 ```
 
 功能：递归收集父类与接口父类型（已实例化）。
+
+返回值：
+
+- Array\<[ClassLikeType](#class-classliketype)> - 父类与接口父类型。
 
 示例：
 
@@ -1431,7 +1462,7 @@ op_eq_CustomType: true
 ## class CustomTypeDef
 
 ```cangjie
-sealed abstract class CustomTypeDef <: Base & Equatable<CustomTypeDef> & Hashable
+sealed abstract class CustomTypeDef <: Base & Equatable<CustomTypeDef> & Hashable {}
 ```
 
 功能：类/接口/结构体/枚举/扩展的**定义**公共基类（与 `Base` 组合，含属性、CHIR 注解、调试位置等）。
@@ -1933,6 +1964,10 @@ public func isImported(): Bool
 
 功能：是否为从其它包导入的定义。
 
+返回值：
+
+- Bool - Imported 属性已设置则为 `true`，否则为 `false`。
+
 示例：
 
 <!-- verify -->
@@ -1959,6 +1994,10 @@ public func isPublic(): Bool
 ```
 
 功能：是否带 `public` 属性。
+
+返回值：
+
+- Bool - Public 属性已设置则为 `true`，否则为 `false`。
 
 示例：
 
@@ -1987,6 +2026,10 @@ public func isPrivate(): Bool
 
 功能：是否带 `private` 属性。
 
+返回值：
+
+- Bool - Private 属性已设置则为 `true`，否则为 `false`。
+
 示例：
 
 <!-- verify -->
@@ -2013,6 +2056,10 @@ public func isInternal(): Bool
 ```
 
 功能：是否带 `internal` 属性。
+
+返回值：
+
+- Bool - Internal 属性已设置则为 `true`，否则为 `false`。
 
 示例：
 
@@ -2041,6 +2088,10 @@ public func isProtected(): Bool
 
 功能：是否带 `protected` 属性。
 
+返回值：
+
+- Bool - Protected 属性已设置则为 `true`，否则为 `false`。
+
 示例：
 
 <!-- verify -->
@@ -2067,6 +2118,10 @@ public func isAbstract(): Bool
 ```
 
 功能：是否为 `abstract`。
+
+返回值：
+
+- Bool - Abstract 属性已设置则为 `true`，否则为 `false`。
 
 示例：
 
@@ -2095,6 +2150,10 @@ public func isOpen(): Bool
 
 功能：是否可继承/实现（`virtual` 或 `abstract`）。
 
+返回值：
+
+- Bool - Virtual 或 Abstract 属性已设置则为 `true`，否则为 `false`。
+
 示例：
 
 <!-- verify -->
@@ -2121,6 +2180,10 @@ public func isSealed(): Bool
 ```
 
 功能：是否为 `sealed`。
+
+返回值：
+
+- Bool - Sealed 属性已设置则为 `true`，否则为 `false`。
 
 示例：
 
@@ -2149,6 +2212,10 @@ public func isGeneric(): Bool
 
 功能：是否为泛型定义。
 
+返回值：
+
+- Bool - Generic 属性已设置则为 `true`，否则为 `false`。
+
 示例：
 
 <!-- verify -->
@@ -2175,6 +2242,10 @@ public func isClassLike(): Bool
 ```
 
 功能：种类是否为类/接口。
+
+返回值：
+
+- Bool - 种类为 ClassLike 则为 `true`，否则为 `false`。
 
 示例：
 
@@ -2203,6 +2274,10 @@ public func isClass(): Bool
 
 功能：是否为类（非接口）。
 
+返回值：
+
+- Bool - 是类则为 `true`，否则为 `false`。
+
 示例：
 
 <!-- verify -->
@@ -2229,6 +2304,10 @@ public func isInterface(): Bool
 ```
 
 功能：是否为接口。
+
+返回值：
+
+- Bool - 是接口则为 `true`，否则为 `false`。
 
 示例：
 
@@ -2257,6 +2336,10 @@ public func isEnum(): Bool
 
 功能：是否为枚举定义。
 
+返回值：
+
+- Bool - 种类为 Enum 则为 `true`，否则为 `false`。
+
 示例：
 
 <!-- verify -->
@@ -2284,6 +2367,10 @@ public func isExtend(): Bool
 
 功能：是否为 extend 定义。
 
+返回值：
+
+- Bool - 种类为 Extend 则为 `true`，否则为 `false`。
+
 示例：
 
 <!-- verify -->
@@ -2310,6 +2397,10 @@ public func isStruct(): Bool
 ```
 
 功能：是否为结构体定义。
+
+返回值：
+
+- Bool - 种类为 Struct 则为 `true`，否则为 `false`。
 
 示例：
 
@@ -2368,6 +2459,10 @@ public operator func ==(other: CustomTypeDef): Bool
 ```
 
 功能：按种类、标识、源码名与包名比较。
+
+返回值：
+
+- Bool - 相等则为 `true`，否则为 `false`。
 
 示例：
 
@@ -2489,7 +2584,7 @@ public func getSuperTypesRecusively(): Array<ClassLikeType>
 
 返回值：
 
-- Array\<ClassLikeType> - 收集到的父类型；**不保证顺序**。
+- Array\<[ClassLikeType](#class-classliketype)> - 收集到的父类型；**不保证顺序**。
 
 示例：
 
@@ -2513,7 +2608,7 @@ main() {
 ## class DebugLocation
 
 ```cangjie
-public class DebugLocation <: ToString
+public class DebugLocation <: ToString {}
 ```
 
 功能：源码中的**区间位置**（起止 `Position` 与文件路径），用于调试与打印。
@@ -2679,7 +2774,7 @@ main() {
 ## class EnumCtorInfo
 
 ```cangjie
-public class EnumCtorInfo <: ToString
+public class EnumCtorInfo <: ToString {}
 ```
 
 功能：枚举的一个**构造器/变体**（名称、内部标识、函数类型、注解）。
@@ -2845,7 +2940,7 @@ A
 ## class EnumDef
 
 ```cangjie
-public class EnumDef <: CustomTypeDef & Equatable<EnumDef>
+public class EnumDef <: CustomTypeDef & Equatable<EnumDef> {}
 ```
 
 功能：**枚举**定义；含是否穷尽、构造器列表等。
@@ -3019,7 +3114,7 @@ op_eq_EnumDef: true
 ## class EnumType
 
 ```cangjie
-public class EnumType <: CustomType & Equatable<EnumType>
+public class EnumType <: CustomType & Equatable<EnumType> {}
 ```
 
 功能：枚举的实例化类型；`get(def, genericTypeParams)` 缓存。
@@ -3074,7 +3169,7 @@ public static func get(def: EnumDef, genericTypeParams: Array<Type>): EnumType
 
 返回值：
 
-- EnumType - 实例化枚举类型。
+- [EnumType](#class-enumtype) - 实例化枚举类型。
 
 示例：
 
@@ -3136,7 +3231,7 @@ op_eq_EnumType: true
 ## class ExtendDef
 
 ```cangjie
-public class ExtendDef <: CustomTypeDef
+public class ExtendDef <: CustomTypeDef {}
 ```
 
 功能：**扩展（extend）**定义：对某类型增加实现等，带 `extendedType` 与泛型参数。
@@ -3177,7 +3272,7 @@ Int32
 ## class FloatType
 
 ```cangjie
-public class FloatType <: NumericType & Equatable<FloatType>
+public class FloatType <: NumericType & Equatable<FloatType> {}
 ```
 
 功能：表示类型系统中的浮点类型。该类表示三种浮点类型：Float16、Float32 和 Float64。
@@ -3197,7 +3292,7 @@ public static func getFloat16(): FloatType
 
 返回值：
 
-- FloatType - Float16 类型。
+- [FloatType](#class-floattype) - Float16 类型。
 
 示例：
 
@@ -3227,7 +3322,7 @@ public static func getFloat32(): FloatType
 
 返回值：
 
-- FloatType - Float32 类型。
+- [FloatType](#class-floattype) - Float32 类型。
 
 示例：
 
@@ -3257,7 +3352,7 @@ public static func getFloat64(): FloatType
 
 返回值：
 
-- FloatType - Float64 类型。
+- [FloatType](#class-floattype) - Float64 类型。
 
 示例：
 
@@ -3318,7 +3413,7 @@ Float32 和 Float64 相等: false
 ## class FuncType
 
 ```cangjie
-public class FuncType <: Type & Equatable<FuncType>
+public class FuncType <: Type & Equatable<FuncType> {}
 ```
 
 功能：函数类型（参数类型列表 + 返回类型），可选可变参数与 C 函数标记；按签名缓存。
@@ -3461,7 +3556,7 @@ public static func get(paramTypes: Array<Type>, retType: Type, varArg!: Bool = f
 
 返回值：
 
-- FuncType - 函数类型实例。
+- [FuncType](#class-functype) - 函数类型实例。
 
 示例：
 
@@ -3552,7 +3647,7 @@ op_eq_FuncType: true
 ## class GenericType
 
 ```cangjie
-public class GenericType <: Type & Equatable<GenericType>
+public class GenericType <: Type & Equatable<GenericType> {}
 ```
 
 功能：泛型**形参**（如 `T`），可设置上界 `upperBounds`。按内部 `identifier` 缓存。
@@ -3633,7 +3728,7 @@ public static func get(identifier: String, srcCodeName: String): GenericType
 
 返回值：
 
-- GenericType - 泛型形参类型。
+- [GenericType](#class-generictype) - 泛型形参类型。
 
 示例：
 
@@ -3721,7 +3816,7 @@ op_eq_GenericType: true
 ## class IntType
 
 ```cangjie
-public class IntType <: NumericType & Equatable<IntType>
+public class IntType <: NumericType & Equatable<IntType> {}
 ```
 
 功能：表示类型系统中的整数类型。该类表示各种大小的有符号和无符号整数类型。
@@ -3741,7 +3836,7 @@ public static func getInt16(): IntType
 
 返回值：
 
-- IntType - Int16 类型。
+- [IntType](#class-inttype) - Int16 类型。
 
 示例：
 
@@ -3771,7 +3866,7 @@ public static func getInt32(): IntType
 
 返回值：
 
-- IntType - Int32 类型。
+- [IntType](#class-inttype) - Int32 类型。
 
 示例：
 
@@ -3801,7 +3896,7 @@ public static func getInt64(): IntType
 
 返回值：
 
-- IntType - Int64 类型。
+- [IntType](#class-inttype) - Int64 类型。
 
 示例：
 
@@ -3831,7 +3926,7 @@ public static func getInt8(): IntType
 
 返回值：
 
-- IntType - Int8 类型。
+- [IntType](#class-inttype) - Int8 类型。
 
 示例：
 
@@ -3861,7 +3956,7 @@ public static func getIntNative(): IntType
 
 返回值：
 
-- IntType - IntNative 类型。
+- [IntType](#class-inttype) - IntNative 类型。
 
 示例：
 
@@ -3891,7 +3986,7 @@ public static func getUInt16(): IntType
 
 返回值：
 
-- IntType - UInt16 类型。
+- [IntType](#class-inttype) - UInt16 类型。
 
 示例：
 
@@ -3921,7 +4016,7 @@ public static func getUInt32(): IntType
 
 返回值：
 
-- IntType - UInt32 类型。
+- [IntType](#class-inttype) - UInt32 类型。
 
 示例：
 
@@ -3951,7 +4046,7 @@ public static func getUInt64(): IntType
 
 返回值：
 
-- IntType - UInt64 类型。
+- [IntType](#class-inttype) - UInt64 类型。
 
 示例：
 
@@ -3981,7 +4076,7 @@ public static func getUInt8(): IntType
 
 返回值：
 
-- IntType - UInt8 类型。
+- [IntType](#class-inttype) - UInt8 类型。
 
 示例：
 
@@ -4011,7 +4106,7 @@ public static func getUIntNative(): IntType
 
 返回值：
 
-- IntType - UIntNative 类型。
+- [IntType](#class-inttype) - UIntNative 类型。
 
 示例：
 
@@ -4105,7 +4200,7 @@ UInt32 是有符号的: false
 ## class MemberVar
 
 ```cangjie
-public class MemberVar <: ToString
+public class MemberVar <: ToString {}
 ```
 
 功能：描述自定义类型上的**实例成员变量**（名称、类型、调试位置、注解与访问修饰等）。
@@ -4417,6 +4512,10 @@ public func isReadOnly(): Bool
 
 功能：是否为只读成员。
 
+返回值：
+
+- Bool - READONLY 属性已设置则为 `true`，否则为 `false`。
+
 示例：
 
 <!-- verify -->
@@ -4444,6 +4543,10 @@ public func isInternal(): Bool
 ```
 
 功能：是否为 `internal`。
+
+返回值：
+
+- Bool - INTERNAL 属性已设置则为 `true`，否则为 `false`。
 
 示例：
 
@@ -4473,6 +4576,10 @@ public func isPublic(): Bool
 
 功能：是否为 `public`。
 
+返回值：
+
+- Bool - PUBLIC 属性已设置则为 `true`，否则为 `false`。
+
 示例：
 
 <!-- verify -->
@@ -4501,6 +4608,10 @@ public func isPrivate(): Bool
 
 功能：是否为 `private`。
 
+返回值：
+
+- Bool - PRIVATE 属性已设置则为 `true`，否则为 `false`。
+
 示例：
 
 <!-- verify -->
@@ -4528,6 +4639,10 @@ public func isProtected(): Bool
 ```
 
 功能：是否为 `protected`。
+
+返回值：
+
+- Bool - PROTECTED 属性已设置则为 `true`，否则为 `false`。
 
 示例：
 
@@ -4612,7 +4727,7 @@ main() {
 ## class NothingType
 
 ```cangjie
-public class NothingType <: BuiltinType & Equatable<NothingType>
+public class NothingType <: BuiltinType & Equatable<NothingType> {}
 ```
 
 功能：表示类型系统中的 Nothing 类型（底部类型）。该类型用于表示永远不会返回的表达式。
@@ -4632,7 +4747,7 @@ public static func get(): NothingType
 
 返回值：
 
-- NothingType - NothingType 实例。
+- [NothingType](#class-nothingtype) - NothingType 实例。
 
 示例：
 
@@ -4690,7 +4805,7 @@ main() {
 ## class NumericType
 
 ```cangjie
-sealed abstract class NumericType <: BuiltinType & Equatable<NumericType>
+sealed abstract class NumericType <: BuiltinType & Equatable<NumericType> {}
 ```
 
 功能：数值类型的抽象基类。该类表示数值类型，包括整数类型和浮点类型。
@@ -4741,7 +4856,9 @@ Int32 和 Float32 相等: false
 ## class Package
 
 ```cangjie
-public class Package <: ToString
+public class Package <: ToString {
+    public init(name: String, accessLevel: AccessLevel)
+}
 ```
 
 功能：表示一个 **CHIR 包**：名称、访问级别、导入与本包内的类型定义集合。
@@ -5329,7 +5446,7 @@ public func getSpecifiedClassDef(packageName: String, srcCodeName: String): ?Cla
 
 返回值：
 
-- ?ClassLikeDef - 命中则 `Some`，否则 `None`。
+- ?[ClassLikeDef](#class-classlikedef) - 命中则 `Some`，否则 `None`。
 
 示例：
 
@@ -5361,7 +5478,7 @@ public func getSpecifiedStructDef(packageName: String, srcCodeName: String): ?St
 
 返回值：
 
-- ?StructDef - 可选结果。
+- ?[StructDef](#class-structdef) - 可选结果。
 
 示例：
 
@@ -5393,7 +5510,7 @@ public func getSpecifiedEnumDef(packageName: String, srcCodeName: String): ?Enum
 
 返回值：
 
-- ?EnumDef - 可选结果。
+- ?[EnumDef](#class-enumdef) - 可选结果。
 
 示例：
 
@@ -5516,7 +5633,7 @@ packageAccessLevel: public
 ## class RawArrayType
 
 ```cangjie
-public class RawArrayType <: BuiltinType & Equatable<RawArrayType>
+public class RawArrayType <: BuiltinType & Equatable<RawArrayType> {}
 ```
 
 功能：**原始数组**类型，带元素类型与维度数 `dims`。使用缓存按 `(elementType, dims)` 唯一化。
@@ -5589,6 +5706,10 @@ public static func get(elementType: Type, dims: UInt32): RawArrayType
 ```
 
 功能：获取或创建原始数组类型。
+
+返回值：
+
+- [RawArrayType](#class-rawarraytype) - RawArrayType 实例。
 
 示例：
 
@@ -5676,7 +5797,7 @@ op_eq_RawArrayType: true
 ## class RefType
 
 ```cangjie
-public class RefType <: Type & Equatable<RefType>
+public class RefType <: Type & Equatable<RefType> {}
 ```
 
 功能：表示类型系统中的引用类型。该类型包装另一个类型以表示对该类型的引用。该类维护所有引用类型的缓存以确保唯一性。
@@ -5696,7 +5817,7 @@ public prop baseType: Type
 
 返回值：
 
-- Type - 基类型。
+- [Type](#class-type) - 基类型。
 
 示例：
 
@@ -5733,7 +5854,7 @@ public static func get(baseType: Type): RefType
 
 返回值：
 
-- RefType - 给定基类型的 RefType 实例。
+- [RefType](#class-reftype) - 给定基类型的 RefType 实例。
 
 示例：
 
@@ -5823,7 +5944,7 @@ op_eq_RefType: true
 ## class RuneType
 
 ```cangjie
-public class RuneType <: BuiltinType & Equatable<RuneType>
+public class RuneType <: BuiltinType & Equatable<RuneType> {}
 ```
 
 功能：表示类型系统中的 Rune 类型。该类型表示字符类型。
@@ -5843,7 +5964,7 @@ public static func get(): RuneType
 
 返回值：
 
-- RuneType - RuneType 实例。
+- [RuneType](#class-runetype) - RuneType 实例。
 
 示例：
 
@@ -5901,7 +6022,7 @@ main() {
 ## class StructDef
 
 ```cangjie
-public class StructDef <: CustomTypeDef & Equatable<StructDef>
+public class StructDef <: CustomTypeDef & Equatable<StructDef> {}
 ```
 
 功能：**结构体**定义；`isCStruct` 表示 C 互操作结构体。
@@ -6008,7 +6129,7 @@ op_eq_StructDef: true
 ## class StructType
 
 ```cangjie
-public class StructType <: CustomType & Equatable<StructType>
+public class StructType <: CustomType & Equatable<StructType> {}
 ```
 
 功能：结构体的实例化类型；`get(def, genericTypeParams)` 缓存。
@@ -6063,7 +6184,7 @@ public static func get(def: StructDef, genericTypeParams: Array<Type>): StructTy
 
 返回值：
 
-- StructType - 实例化结构体类型。
+- [StructType](#class-structtype) - 实例化结构体类型。
 
 示例：
 
@@ -6125,7 +6246,7 @@ op_eq_StructType: true
 ## class ThisType
 
 ```cangjie
-public class ThisType <: Type & Equatable<ThisType>
+public class ThisType <: Type & Equatable<ThisType> {}
 ```
 
 功能：类/结构体体内的 **`This`** 类型，单例。
@@ -6145,7 +6266,7 @@ public static func get(): ThisType
 
 返回值：
 
-- ThisType - 单例。
+- [ThisType](#class-thistype) - 单例。
 
 示例：
 
@@ -6202,7 +6323,7 @@ op_eq_ThisType: true
 ## class TupleType
 
 ```cangjie
-public class TupleType <: Type & Equatable<TupleType>
+public class TupleType <: Type & Equatable<TupleType> {}
 ```
 
 功能：元组类型；按元素类型序列签名缓存。
@@ -6255,7 +6376,7 @@ public static func get(elementTypes: Array<Type>): TupleType
 
 返回值：
 
-- TupleType - 元组类型实例。
+- [TupleType](#class-tupletype) - 元组类型实例。
 
 示例：
 
@@ -6344,7 +6465,7 @@ op_eq_TupleType: true
 ## class Type
 
 ```cangjie
-sealed abstract class Type <: ToString & Hashable & Equatable<Type>
+sealed abstract class Type <: ToString & Hashable & Equatable<Type> {}
 ```
 
 功能：类型系统中所有类型的抽象基类。该类提供了类型的基础功能，包括相等性比较、哈希计算和字符串转换。
@@ -6375,7 +6496,7 @@ public prop typeArgs: Array<Type>
 
 返回值：
 
-- Array\<Type> - 类型参数数组。
+- Array\<[Type](#class-type)> - 类型参数数组。
 
 示例：
 
@@ -6833,6 +6954,10 @@ public func isAnyTypeInStd(): Bool
 
 功能：是否为 std 包中的 Any 类型。
 
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
+
 ### func isBoxType()
 
 ```cangjie
@@ -6840,6 +6965,10 @@ public func isBoxType(): Bool
 ```
 
 功能：是否为 BoxType。
+
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
 
 ### func isBoxRefTypeOf(Type)
 
@@ -6853,6 +6982,10 @@ public func isBoxRefTypeOf(other: Type): Bool
 
 - other: Type - 待比较的类型。
 
+返回值：
+
+- Bool - 是 other 的 Box 引用类型则为 `true`，否则为 `false`。
+
 ### func isCFuncType()
 
 ```cangjie
@@ -6860,6 +6993,10 @@ public func isCFuncType(): Bool
 ```
 
 功能：是否为 C 函数类型。
+
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
 
 ### func isCPointerType()
 
@@ -6869,6 +7006,10 @@ public func isCPointerType(): Bool
 
 功能：是否为 CPointer 类型。
 
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
+
 ### func isCStringType()
 
 ```cangjie
@@ -6876,6 +7017,10 @@ public func isCStringType(): Bool
 ```
 
 功能：是否为 CString 类型。
+
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
 
 ### func isCTypeInStd()
 
@@ -6885,6 +7030,10 @@ public func isCTypeInStd(): Bool
 
 功能：是否为 std 包中的 C 类型。
 
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
+
 ### func isClassLikeType()
 
 ```cangjie
@@ -6892,6 +7041,10 @@ public func isClassLikeType(): Bool
 ```
 
 功能：是否为 ClassLikeType。
+
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
 
 ### func isClosureType()
 
@@ -6901,6 +7054,10 @@ public func isClosureType(): Bool
 
 功能：是否为闭包类型。
 
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
+
 ### func isClosureBaseType()
 
 ```cangjie
@@ -6908,6 +7065,10 @@ public func isClosureBaseType(): Bool
 ```
 
 功能：是否为闭包基类型。
+
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
 
 ### func isClosureGenericBaseType()
 
@@ -6917,6 +7078,10 @@ public func isClosureGenericBaseType(): Bool
 
 功能：是否为闭包泛型基类型。
 
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
+
 ### func isClosureInstBaseType()
 
 ```cangjie
@@ -6924,6 +7089,10 @@ public func isClosureInstBaseType(): Bool
 ```
 
 功能：是否为闭包实例化基类型。
+
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
 
 ### func isCustomType()
 
@@ -6933,6 +7102,10 @@ public func isCustomType(): Bool
 
 功能：是否为 CustomType。
 
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
+
 ### func isEnumType()
 
 ```cangjie
@@ -6940,6 +7113,10 @@ public func isEnumType(): Bool
 ```
 
 功能：是否为 EnumType。
+
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
 
 ### func isFuncType()
 
@@ -6949,6 +7126,10 @@ public func isFuncType(): Bool
 
 功能：是否为 FuncType。
 
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
+
 ### func isGenericType()
 
 ```cangjie
@@ -6956,6 +7137,10 @@ public func isGenericType(): Bool
 ```
 
 功能：是否为 GenericType。
+
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
 
 ### func isGenericRelated()
 
@@ -6965,6 +7150,10 @@ public func isGenericRelated(): Bool
 
 功能：是否与泛型相关。
 
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
+
 ### func isReferenceType()
 
 ```cangjie
@@ -6972,6 +7161,10 @@ public func isReferenceType(): Bool
 ```
 
 功能：是否为引用类型（ClassLikeType、RawArrayType、BoxType 或 ThisType）。
+
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
 
 ### func isRawArrayType()
 
@@ -6981,6 +7174,10 @@ public func isRawArrayType(): Bool
 
 功能：是否为 RawArray 类型。
 
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
+
 ### func isStructType()
 
 ```cangjie
@@ -6988,6 +7185,10 @@ public func isStructType(): Bool
 ```
 
 功能：是否为 StructType。
+
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
 
 ### func isThisType()
 
@@ -6997,6 +7198,10 @@ public func isThisType(): Bool
 
 功能：是否为 ThisType。
 
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
+
 ### func isTupleType()
 
 ```cangjie
@@ -7004,6 +7209,10 @@ public func isTupleType(): Bool
 ```
 
 功能：是否为 TupleType。
+
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
 
 ### func isValueType()
 
@@ -7013,6 +7222,10 @@ public func isValueType(): Bool
 
 功能：是否为值类型。
 
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
+
 ### func isVArrayType()
 
 ```cangjie
@@ -7021,6 +7234,10 @@ public func isVArrayType(): Bool
 
 功能：是否为 VArrayType。
 
+返回值：
+
+- Bool - 是则为 `true`，否则为 `false`。
+
 ### func satisfyCType()
 
 ```cangjie
@@ -7028,6 +7245,10 @@ public func satisfyCType(): Bool
 ```
 
 功能：是否满足 C 类型约束。
+
+返回值：
+
+- Bool - 满足则为 `true`，否则为 `false`。
 
 ### func isEqualOrSubTypeOf(Type, ArrayList<(Type, Type)>)
 
@@ -7042,6 +7263,10 @@ public func isEqualOrSubTypeOf(parent: Type, visited!: ArrayList<(Type, Type)> =
 - parent: Type - 待比较的父类型。
 - visited!: ArrayList<(Type, Type)> - 环检测用访问表；一般可传默认空表。
 
+返回值：
+
+- Bool - 是 parent 的相等或子类型则为 `true`，否则为 `false`。
+
 ### func isEqualOrInstantiatedTypeOf(Type, ArrayList<(Type, Type)>)
 
 ```cangjie
@@ -7054,6 +7279,10 @@ public func isEqualOrInstantiatedTypeOf(genericRelatedType: Type, visited!: Arra
 
 - genericRelatedType: Type - 待比较的泛型关联类型。
 - visited!: ArrayList<(Type, Type)> - 环检测用访问表；一般可传默认空表。
+
+返回值：
+
+- Bool - 是 genericRelatedType 的相等或实例化类型则为 `true`，否则为 `false`。
 
 ### func satisfyGenericConstraints(GenericType, HashMap<GenericType, Type>, ArrayList<(Type, Type)>)
 
@@ -7068,6 +7297,10 @@ public func satisfyGenericConstraints(gType: GenericType, instMap: HashMap<Gener
 - gType: GenericType - 泛型类型。
 - instMap: HashMap<GenericType, Type> - 泛型实例化映射表。
 - visited!: ArrayList<(Type, Type)> - 环检测用访问表；一般可传默认空表。
+
+返回值：
+
+- Bool - 满足泛型约束则为 `true`，否则为 `false`。
 
 ### operator func ==(Type)
 
@@ -7119,7 +7352,7 @@ public func stripAllRefs(): Type
 
 返回值：
 
-- Type - 去除所有引用包装后的基类型。
+- [Type](#class-type) - 去除所有引用包装后的基类型。
 
 示例：
 
@@ -7176,7 +7409,7 @@ main() {
 ## class UnitType
 
 ```cangjie
-public class UnitType <: BuiltinType & Equatable<UnitType>
+public class UnitType <: BuiltinType & Equatable<UnitType> {}
 ```
 
 功能：表示类型系统中的 Unit 类型。该类型表示没有有意义的值，类似于 C 语言中的 void。
@@ -7196,7 +7429,7 @@ public static func get(): UnitType
 
 返回值：
 
-- UnitType - UnitType 实例。
+- [UnitType](#class-unittype) - UnitType 实例。
 
 示例：
 
@@ -7254,7 +7487,7 @@ main() {
 ## class VArrayType
 
 ```cangjie
-public class VArrayType <: BuiltinType & Equatable<VArrayType>
+public class VArrayType <: BuiltinType & Equatable<VArrayType> {}
 ```
 
 功能：**定长 VArray** 类型 `VArray<T, $n>`，编译期固定长度。按 `(elementType, size)` 缓存唯一实例。
@@ -7327,6 +7560,10 @@ public static func get(elementType: Type, size: Int64): VArrayType
 ```
 
 功能：获取或创建 VArray 类型。
+
+返回值：
+
+- [VArrayType](#class-varraytype) - VArrayType 实例。
 
 示例：
 
@@ -7414,7 +7651,10 @@ op_eq_VArrayType: true
 ## class CHIRException
 
 ```cangjie
-public class CHIRException <: Exception
+public class CHIRException <: Exception {
+    public init()
+    public init(message: String)
+}
 ```
 
 功能：CHIR 构建或 IR 状态不一致时抛出的检查型异常。
@@ -7482,7 +7722,10 @@ init_with_msg: true
 ## class FuncSigInfo
 
 ```cangjie
-public class FuncSigInfo
+public class FuncSigInfo {
+    public init(name: String, ty: FuncType)
+    public init(name: String, ty: FuncType, genericTypeParams: Array<GenericType>)
+}
 ```
 
 功能：函数符号的轻量签名包（名称、函数类型、泛型形参），用于描述函数调用的目标签名信息。
@@ -7709,7 +7952,7 @@ h<Generic-pkg:T>(Int32) -> Unit
 ## class CHIRVisitor
 
 ```cangjie
-public abstract class CHIRVisitor
+public abstract class CHIRVisitor {}
 ```
 
 功能：CHIR 函数、块组、基本块与嵌套表达式的**抽象访问器**。子类可重写 [`action`](#func-actionexpression) 以观察每个表达式节点；`walk` 方法递归遍历直至返回 `IRActionMode.Stop`。
@@ -7866,7 +8109,9 @@ visitor_done
 ## class FuncCallContext
 
 ```cangjie
-public class FuncCallContext
+public class FuncCallContext {
+    public init(args: Array<Value>, instTypeArgs: Array<Type>, objType: ?Type)
+}
 ```
 
 功能：函数调用上下文，封装实参值列表、实例化类型实参以及可选的调用对象类型。
@@ -8016,7 +8261,9 @@ public func setInstTypeArg(index: Int64, arg: Type): Unit
 ## class InvokeCallContext
 
 ```cangjie
-public class InvokeCallContext
+public class InvokeCallContext {
+    public init(caller: Value, virMethodCtx: FuncSigInfo, funcCallCtx: FuncCallContext)
+}
 ```
 
 功能：虚方法调用上下文，封装调用者值、虚方法签名信息以及函数调用上下文。
@@ -8152,7 +8399,7 @@ prop_funcCallCtx: 0
 ## class Block
 
 ```cangjie
-public class Block <: Value & Equatable<Block>
+public class Block <: Value & Equatable<Block> {}
 ```
 
 功能：表示 CHIR 中的**基本块**，是函数体内控制流的基本单元。每个基本块包含一系列表达式，并可与前驱基本块形成控制流图；设置 `exceptions` 后可标记为异常处理 landing pad 块。
@@ -8528,7 +8775,7 @@ op_eq_Block: true
 ## class BlockGroup
 
 ```cangjie
-public class BlockGroup <: Value & Equatable<BlockGroup>
+public class BlockGroup <: Value & Equatable<BlockGroup> {}
 ```
 
 功能：表示 CHIR 中的**基本块组**，即函数体或 lambda 体的控制流图容器，包含若干基本块并维护入口块指针。
@@ -8672,7 +8919,7 @@ public func appendBlock(): Block
 
 返回值：
 
-- Block - 新创建的基本块。
+- [Block](#class-block) - 新创建的基本块。
 
 示例：
 
@@ -8832,7 +9079,7 @@ op_eq_BlockGroup: true
 ## class BoolLiteral
 
 ```cangjie
-public class BoolLiteral <: LiteralValue & Equatable<BoolLiteral>
+public class BoolLiteral <: LiteralValue & Equatable<BoolLiteral> {}
 ```
 
 功能：表示布尔字面量（`true` 或 `false`），按值缓存保证同一布尔值对应唯一实例。
@@ -8884,7 +9131,7 @@ public static func get(value: Bool): BoolLiteral
 
 返回值：
 
-- BoolLiteral - 对应的布尔字面量。
+- [BoolLiteral](#class-boolliteral) - 对应的布尔字面量。
 
 示例：
 
@@ -8972,7 +9219,7 @@ op_eq_BoolLiteral: true
 ## class FloatLiteral
 
 ```cangjie
-public class FloatLiteral <: LiteralValue & Equatable<FloatLiteral>
+public class FloatLiteral <: LiteralValue & Equatable<FloatLiteral> {}
 ```
 
 功能：表示浮点字面量，按 `(FloatType, Float64)` 缓存保证同一类型与值对应唯一实例。
@@ -9025,7 +9272,7 @@ public static func get(ty: FloatType, value: Float64): FloatLiteral
 
 返回值：
 
-- FloatLiteral - 对应的浮点字面量。
+- [FloatLiteral](#class-floatliteral) - 对应的浮点字面量。
 
 示例：
 
@@ -9113,7 +9360,7 @@ op_eq_FloatLiteral: true
 ## class Function
 
 ```cangjie
-public class Function <: GlobalValue & Equatable<Function>
+public class Function <: GlobalValue & Equatable<Function> {}
 ```
 
 功能：表示 CHIR 中的**函数定义**，包含函数类型、参数、函数体（BlockGroup）、泛型形参以及抽象/open 等属性标记。
@@ -9773,7 +10020,7 @@ op_eq_Function: true
 ## class GlobalVar
 
 ```cangjie
-public class GlobalVar <: GlobalValue & Equatable<GlobalVar>
+public class GlobalVar <: GlobalValue & Equatable<GlobalVar> {}
 ```
 
 功能：表示 CHIR 中的**全局变量定义**，包含类型、初始化值及只读标记。
@@ -10007,7 +10254,7 @@ op_eq_GlobalVar: true
 ## class IntLiteral
 
 ```cangjie
-public class IntLiteral <: LiteralValue & Equatable<IntLiteral>
+public class IntLiteral <: LiteralValue & Equatable<IntLiteral> {}
 ```
 
 功能：表示整数字面量，按 `(IntType, UInt64)` 缓存保证同一类型与值对应唯一实例。
@@ -10088,7 +10335,7 @@ public static func get(ty: IntType, value: UInt64): IntLiteral
 
 返回值：
 
-- IntLiteral - 对应的整数字面量。
+- [IntLiteral](#class-intliteral) - 对应的整数字面量。
 
 示例：
 
@@ -10206,7 +10453,7 @@ op_eq_IntLiteral: true
 ## class LocalVar
 
 ```cangjie
-public class LocalVar <: Value & Equatable<LocalVar>
+public class LocalVar <: Value & Equatable<LocalVar> {}
 ```
 
 功能：表示 CHIR 中的**局部变量**，由表达式结果产生，也可作为函数返回值。
@@ -10396,7 +10643,7 @@ op_eq_LocalVar: true
 ## class NullLiteral
 
 ```cangjie
-public class NullLiteral <: LiteralValue & Equatable<NullLiteral>
+public class NullLiteral <: LiteralValue & Equatable<NullLiteral> {}
 ```
 
 功能：表示 Null 字面量，按类型缓存保证同一类型对应唯一实例。
@@ -10420,7 +10667,7 @@ public static func get(ty: Type): NullLiteral
 
 返回值：
 
-- NullLiteral - Null 字面量实例。
+- [NullLiteral](#class-nullliteral) - Null 字面量实例。
 
 示例：
 
@@ -10508,7 +10755,7 @@ op_eq_NullLiteral: true
 ## class Parameter
 
 ```cangjie
-public class Parameter <: Value & Equatable<Parameter>
+public class Parameter <: Value & Equatable<Parameter> {}
 ```
 
 功能：表示 CHIR 中的**函数参数**，包含类型、源码名、注解等信息。
@@ -10680,7 +10927,7 @@ op_eq_Parameter: true
 ## class RuneLiteral
 
 ```cangjie
-public class RuneLiteral <: LiteralValue & Equatable<RuneLiteral>
+public class RuneLiteral <: LiteralValue & Equatable<RuneLiteral> {}
 ```
 
 功能：表示 Rune（字符）字面量，按值缓存保证同一 Rune 值对应唯一实例。
@@ -10732,7 +10979,7 @@ public static func get(value: Rune): RuneLiteral
 
 返回值：
 
-- RuneLiteral - 对应的 Rune 字面量。
+- [RuneLiteral](#class-runeliteral) - 对应的 Rune 字面量。
 
 示例：
 
@@ -10820,7 +11067,7 @@ op_eq_RuneLiteral: true
 ## class StringLiteral
 
 ```cangjie
-public class StringLiteral <: LiteralValue & Equatable<StringLiteral>
+public class StringLiteral <: LiteralValue & Equatable<StringLiteral> {}
 ```
 
 功能：表示字符串字面量，按值缓存保证同一字符串值对应唯一实例。
@@ -10873,7 +11120,7 @@ public static func get(ty: Type, value: String): StringLiteral
 
 返回值：
 
-- StringLiteral - 对应的字符串字面量。
+- [StringLiteral](#class-stringliteral) - 对应的字符串字面量。
 
 示例：
 
@@ -10961,7 +11208,7 @@ op_eq_StringLiteral: true
 ## class UnitLiteral
 
 ```cangjie
-public class UnitLiteral <: LiteralValue & Equatable<UnitLiteral>
+public class UnitLiteral <: LiteralValue & Equatable<UnitLiteral> {}
 ```
 
 功能：表示 Unit 字面量（单例，表示无返回值）。
@@ -10981,7 +11228,7 @@ public static func get(): UnitLiteral
 
 返回值：
 
-- UnitLiteral - Unit 字面量实例。
+- [UnitLiteral](#class-unitliteral) - Unit 字面量实例。
 
 示例：
 
@@ -11069,7 +11316,7 @@ op_eq_UnitLiteral: true
 ## class Allocate
 
 ```cangjie
-public class Allocate <: AllocateBase & Equatable<Allocate>
+public class Allocate <: AllocateBase & Equatable<Allocate> {}
 ```
 
 功能：内存分配表达式，分配指定类型的空间但不带异常处理。
@@ -11093,7 +11340,7 @@ public static func create(allocatedType: Type): Allocate
 
 返回值：
 
-- Allocate - 创建的内存分配表达式。
+- [Allocate](#class-allocate) - 创建的内存分配表达式。
 
 示例：
 
@@ -11160,7 +11407,7 @@ op_eq_Allocate: true
 ## class TryAllocate
 
 ```cangjie
-public class TryAllocate <: AllocateBase & Equatable<TryAllocate>
+public class TryAllocate <: AllocateBase & Equatable<TryAllocate> {}
 ```
 
 功能：带异常处理的内存分配表达式，分配成功时跳转到正常分支，失败时跳转到异常分支。
@@ -11258,7 +11505,7 @@ public static func create(allocatedType: Type, normal: Block, err: Block): TryAl
 
 返回值：
 
-- TryAllocate - 创建的带异常处理的内存分配表达式。
+- [TryAllocate](#class-tryallocate) - 创建的带异常处理的内存分配表达式。
 
 示例：
 
@@ -11331,7 +11578,7 @@ op_eq_TryAllocate: true
 ## class BinaryExpression
 
 ```cangjie
-public class BinaryExpression <: BinaryExpressionBase & Equatable<BinaryExpression>
+public class BinaryExpression <: BinaryExpressionBase & Equatable<BinaryExpression> {}
 ```
 
 功能：二元运算表达式（不带异常处理），支持数学运算、位运算、比较运算和逻辑运算。
@@ -11357,7 +11604,7 @@ public static func create(kind: BinaryExprKind, leftOp: Value, rightOp: Value): 
 
 返回值：
 
-- BinaryExpression - 创建的二元运算表达式。
+- [BinaryExpression](#class-binaryexpression) - 创建的二元运算表达式。
 
 示例：
 
@@ -11428,7 +11675,7 @@ op_eq_BinaryExpression: true
 ## class TryBinaryExpression
 
 ```cangjie
-public class TryBinaryExpression <: BinaryExpressionBase & Equatable<TryBinaryExpression>
+public class TryBinaryExpression <: BinaryExpressionBase & Equatable<TryBinaryExpression> {}
 ```
 
 功能：带异常处理的二元运算表达式，运算成功时跳转到正常分支，溢出或出错时跳转到异常分支。
@@ -11532,7 +11779,7 @@ public static func create(kind: BinaryExprKind, leftOp: Value, rightOp: Value, n
 
 返回值：
 
-- TryBinaryExpression - 创建的带异常处理的二元运算表达式。
+- [TryBinaryExpression](#class-trybinaryexpression) - 创建的带异常处理的二元运算表达式。
 
 示例：
 
@@ -11609,7 +11856,7 @@ op_eq_TryBinaryExpression: true
 ## class Branch
 
 ```cangjie
-public class Branch <: Expression & Equatable<Branch>
+public class Branch <: Expression & Equatable<Branch> {}
 ```
 
 功能：条件分支（if-else）终止器表达式，根据条件值跳转到真分支或假分支目标块。
@@ -11749,7 +11996,7 @@ public static func create(condition: Value, trueTarget: Block, falseTarget: Bloc
 
 返回值：
 
-- Branch - 创建的条件分支表达式。
+- [Branch](#class-branch) - 创建的条件分支表达式。
 
 示例：
 
@@ -11826,7 +12073,7 @@ op_eq_Branch: true
 ## class Constant
 
 ```cangjie
-public class Constant <: Expression & Equatable<Constant>
+public class Constant <: Expression & Equatable<Constant> {}
 ```
 
 功能：字面量常量表达式，表示一个编译期确定的常量值。
@@ -11850,7 +12097,7 @@ public static func create(val: LiteralValue): Constant
 
 返回值：
 
-- Constant - 创建的常量表达式。
+- [Constant](#class-constant) - 创建的常量表达式。
 
 示例：
 
@@ -11917,7 +12164,7 @@ op_eq_Constant: true
 ## class Debug
 
 ```cangjie
-public class Debug <: Expression & Equatable<Debug>
+public class Debug <: Expression & Equatable<Debug> {}
 ```
 
 功能：调试标记表达式，保存源码位置映射信息，用于将 IR 中的值与源码中的变量名关联。
@@ -11977,7 +12224,7 @@ public static func create(location: Value, srcName: String): Debug
 
 返回值：
 
-- Debug - 创建的调试标记表达式。
+- [Debug](#class-debug) - 创建的调试标记表达式。
 
 示例：
 
@@ -12048,7 +12295,7 @@ op_eq_Debug: true
 ## class Exit
 
 ```cangjie
-public class Exit <: Expression & Equatable<Exit>
+public class Exit <: Expression & Equatable<Exit> {}
 ```
 
 功能：函数退出终止器表达式，表示函数正常执行结束。
@@ -12068,7 +12315,7 @@ public static func create(): Exit
 
 返回值：
 
-- Exit - 创建的退出表达式。
+- [Exit](#class-exit) - 创建的退出表达式。
 
 示例：
 
@@ -12135,7 +12382,7 @@ op_eq_Exit: true
 ## class Field
 
 ```cangjie
-public class Field <: Expression & Equatable<Field>
+public class Field <: Expression & Equatable<Field> {}
 ```
 
 功能：按数字索引路径访问字段的表达式，通过数值索引序列定位聚合体中的子字段。
@@ -12198,7 +12445,7 @@ public static func create(location: Value, path: ArrayList<UInt64>): Field
 
 返回值：
 
-- Field - 创建的字段访问表达式。
+- [Field](#class-field) - 创建的字段访问表达式。
 
 示例：
 
@@ -12275,7 +12522,7 @@ op_eq_Field: true
 ## class FieldByName
 
 ```cangjie
-public class FieldByName <: Expression & Equatable<FieldByName>
+public class FieldByName <: Expression & Equatable<FieldByName> {}
 ```
 
 功能：按字段名路径访问字段的表达式，通过字符串字段名序列定位聚合体中的子字段。
@@ -12338,7 +12585,7 @@ public static func create(location: Value, fieldNames: ArrayList<String>): Field
 
 返回值：
 
-- FieldByName - 创建的字段名访问表达式。
+- [FieldByName](#class-fieldbyname) - 创建的字段名访问表达式。
 
 示例：
 
@@ -12415,7 +12662,7 @@ op_eq_FieldByName: true
 ## class Apply
 
 ```cangjie
-public class Apply <: ApplyBase & Equatable<Apply>
+public class Apply <: ApplyBase & Equatable<Apply> {}
 ```
 
 功能：函数调用（Apply）表达式，表示对函数的直接调用。
@@ -12440,7 +12687,7 @@ public static func create(callee: Value, funcCallCtx: FuncCallContext): Apply
 
 返回值：
 
-- Apply - 创建的函数调用表达式。
+- [Apply](#class-apply) - 创建的函数调用表达式。
 
 示例：
 
@@ -12523,7 +12770,7 @@ op_eq_Apply: true
 ## class TryApply
 
 ```cangjie
-public class TryApply <: ApplyBase & Equatable<TryApply>
+public class TryApply <: ApplyBase & Equatable<TryApply> {}
 ```
 
 功能：带异常处理的函数调用表达式，调用成功时跳转到正常分支，抛出异常时跳转到异常分支。
@@ -12626,7 +12873,7 @@ public static func create(callee: Value, funcCallCtx: FuncCallContext, normal: B
 
 返回值：
 
-- TryApply - 创建的带异常处理的函数调用表达式。
+- [TryApply](#class-tryapply) - 创建的带异常处理的函数调用表达式。
 
 示例：
 
@@ -12715,7 +12962,7 @@ op_eq_TryApply: true
 ## class Intrinsic
 
 ```cangjie
-public class Intrinsic <: IntrinsicBase & Equatable<Intrinsic>
+public class Intrinsic <: IntrinsicBase & Equatable<Intrinsic> {}
 ```
 
 功能：内建函数调用表达式（不带异常处理），表示对编译器内建函数（如 `sizeof`、`alignof` 等）的调用。Intrinsic 实例由编译器内部流程创建，可通过遍历 Block 的 `exprs` 列表访问已有的 Intrinsic 表达式。
@@ -12756,7 +13003,7 @@ public operator func ==(other: Intrinsic): Bool
 ## class TryIntrinsic
 
 ```cangjie
-public class TryIntrinsic <: IntrinsicBase & Equatable<TryIntrinsic>
+public class TryIntrinsic <: IntrinsicBase & Equatable<TryIntrinsic> {}
 ```
 
 功能：带异常处理的内建函数调用表达式。TryIntrinsic 实例由编译器内部流程创建，可通过遍历 Block 的 `exprs` 列表访问已有的 TryIntrinsic 表达式。
@@ -12817,7 +13064,7 @@ public operator func ==(other: TryIntrinsic): Bool
 ## class Invoke
 
 ```cangjie
-public class Invoke <: InvokeBase & Equatable<Invoke>
+public class Invoke <: InvokeBase & Equatable<Invoke> {}
 ```
 
 功能：虚方法调用（Invoke）表达式，表示对实例方法的虚调用。
@@ -12842,7 +13089,7 @@ public static func create(retTy: Type, callContext: InvokeCallContext): Invoke
 
 返回值：
 
-- Invoke - 创建的虚方法调用表达式。
+- [Invoke](#class-invoke) - 创建的虚方法调用表达式。
 
 示例：
 
@@ -12929,7 +13176,7 @@ op_eq_Invoke: true
 ## class TryInvoke
 
 ```cangjie
-public class TryInvoke <: InvokeBase & Equatable<TryInvoke>
+public class TryInvoke <: InvokeBase & Equatable<TryInvoke> {}
 ```
 
 功能：带异常处理的虚方法调用表达式，调用成功时跳转到正常分支，抛出异常时跳转到异常分支。
@@ -13036,7 +13283,7 @@ public static func create(retTy: Type, callContext: InvokeCallContext, normal: B
 
 返回值：
 
-- TryInvoke - 创建的带异常处理的虚方法调用表达式。
+- [TryInvoke](#class-tryinvoke) - 创建的带异常处理的虚方法调用表达式。
 
 示例：
 
@@ -13129,7 +13376,7 @@ op_eq_TryInvoke: true
 ## class GetElementByName
 
 ```cangjie
-public class GetElementByName <: Expression & Equatable<GetElementByName>
+public class GetElementByName <: Expression & Equatable<GetElementByName> {}
 ```
 
 功能：按字段名读取聚合体元素的表达式，返回元素的引用。
@@ -13192,7 +13439,7 @@ public static func create(location: Value, fieldNames: ArrayList<String>): GetEl
 
 返回值：
 
-- GetElementByName - 创建的元素读取表达式。
+- [GetElementByName](#class-getelementbyname) - 创建的元素读取表达式。
 
 示例：
 
@@ -13269,7 +13516,7 @@ op_eq_GetElementByName: true
 ## class GetElementRef
 
 ```cangjie
-public class GetElementRef <: Expression & Equatable<GetElementRef>
+public class GetElementRef <: Expression & Equatable<GetElementRef> {}
 ```
 
 功能：按数字索引读取聚合体元素引用的表达式，返回元素的引用。
@@ -13332,7 +13579,7 @@ public static func create(location: Value, path: ArrayList<UInt64>): GetElementR
 
 返回值：
 
-- GetElementRef - 创建的元素引用读取表达式。
+- [GetElementRef](#class-getelementref) - 创建的元素引用读取表达式。
 
 示例：
 
@@ -13409,7 +13656,7 @@ op_eq_GetElementRef: true
 ## class GetException
 
 ```cangjie
-public class GetException <: Expression & Equatable<GetException>
+public class GetException <: Expression & Equatable<GetException> {}
 ```
 
 功能：获取异常值的表达式，在异常处理 landing pad 块中用于读取捕获到的异常对象。
@@ -13433,7 +13680,7 @@ public static func create(retTy: Type): GetException
 
 返回值：
 
-- GetException - 创建的获取异常值表达式。
+- [GetException](#class-getexception) - 创建的获取异常值表达式。
 
 示例：
 
@@ -13500,7 +13747,7 @@ op_eq_GetException: true
 ## class GetInstantiateValue
 
 ```cangjie
-public class GetInstantiateValue <: Expression & Equatable<GetInstantiateValue>
+public class GetInstantiateValue <: Expression & Equatable<GetInstantiateValue> {}
 ```
 
 功能：获取泛型函数实例化值的表达式，用于表示泛型函数的单态化实例。
@@ -13560,7 +13807,7 @@ public static func create(val: Function, instantiateTypes: ArrayList<Type>): Get
 
 返回值：
 
-- GetInstantiateValue - 创建的实例化值表达式。
+- [GetInstantiateValue](#class-getinstantiatevalue) - 创建的实例化值表达式。
 
 示例：
 
@@ -13631,7 +13878,7 @@ op_eq_GetInstantiateValue: true
 ## class GetRTTI
 
 ```cangjie
-public class GetRTTI <: Expression & Equatable<GetRTTI>
+public class GetRTTI <: Expression & Equatable<GetRTTI> {}
 ```
 
 功能：获取运行时类型信息的表达式，从值中提取 RTTI 数据。
@@ -13655,7 +13902,7 @@ public static func create(val: Value): GetRTTI
 
 返回值：
 
-- GetRTTI - 创建的 RTTI 获取表达式。
+- [GetRTTI](#class-getrtti) - 创建的 RTTI 获取表达式。
 
 示例：
 
@@ -13724,7 +13971,7 @@ op_eq_GetRTTI: true
 ## class GetRTTIStatic
 
 ```cangjie
-public class GetRTTIStatic <: Expression & Equatable<GetRTTIStatic>
+public class GetRTTIStatic <: Expression & Equatable<GetRTTIStatic> {}
 ```
 
 功能：静态获取运行时类型信息的表达式，从类型直接提取 RTTI 数据（不依赖值实例）。
@@ -13781,7 +14028,7 @@ public static func create(ty: Type): GetRTTIStatic
 
 返回值：
 
-- GetRTTIStatic - 创建的静态 RTTI 获取表达式。
+- [GetRTTIStatic](#class-getrttistatic) - 创建的静态 RTTI 获取表达式。
 
 示例：
 
@@ -13848,7 +14095,7 @@ op_eq_GetRTTIStatic: true
 ## class GoTo
 
 ```cangjie
-public class GoTo <: Expression & Equatable<GoTo>
+public class GoTo <: Expression & Equatable<GoTo> {}
 ```
 
 功能：无条件跳转终止器表达式，直接跳转到目标基本块。
@@ -13872,7 +14119,7 @@ public static func create(target: Block): GoTo
 
 返回值：
 
-- GoTo - 创建的无条件跳转表达式。
+- [GoTo](#class-goto) - 创建的无条件跳转表达式。
 
 示例：
 
@@ -13943,7 +14190,7 @@ op_eq_GoTo: true
 ## class InstanceOf
 
 ```cangjie
-public class InstanceOf <: Expression & Equatable<InstanceOf>
+public class InstanceOf <: Expression & Equatable<InstanceOf> {}
 ```
 
 功能：类型检查表达式，判断源值是否属于目标类型，返回布尔结果。
@@ -14002,7 +14249,7 @@ public static func create(srcVal: Value, targetTy: Type): InstanceOf
 
 返回值：
 
-- InstanceOf - 创建的类型检查表达式。
+- [InstanceOf](#class-instanceof) - 创建的类型检查表达式。
 
 示例：
 
@@ -14071,7 +14318,7 @@ op_eq_InstanceOf: true
 ## class Lambda
 
 ```cangjie
-public class Lambda <: Expression & Equatable<Lambda>
+public class Lambda <: Expression & Equatable<Lambda> {}
 ```
 
 功能：Lambda / 局部函数表达式，表示一个嵌套的匿名函数或局部函数定义。
@@ -14340,7 +14587,7 @@ public static func create(ty: FuncType, identifier: String, srcName: String, gen
 
 返回值：
 
-- Lambda - 创建的 Lambda 表达式。
+- [Lambda](#class-lambda) - 创建的 Lambda 表达式。
 
 示例：
 
@@ -14517,7 +14764,7 @@ op_eq_Lambda: true
 ## class Load
 
 ```cangjie
-public class Load <: Expression & Equatable<Load>
+public class Load <: Expression & Equatable<Load> {}
 ```
 
 功能：内存加载表达式。
@@ -14573,7 +14820,7 @@ public static func create(location: Value): Load
 
 返回值：
 
-- Load - 内存加载表达式实例。
+- [Load](#class-load) - 内存加载表达式实例。
 
 示例：
 
@@ -14638,7 +14885,7 @@ op_eq_Load: true
 ## class MultiBranch
 
 ```cangjie
-public class MultiBranch <: Expression & Equatable<MultiBranch>
+public class MultiBranch <: Expression & Equatable<MultiBranch> {}
 ```
 
 功能：多分支（switch-case）终止器表达式。
@@ -14825,7 +15072,7 @@ public static func create(condition: Value, default: Block, targets: ArrayList<B
 
 返回值：
 
-- MultiBranch - 多分支终止器表达式实例。
+- [MultiBranch](#class-multibranch) - 多分支终止器表达式实例。
 
 示例：
 
@@ -14904,7 +15151,7 @@ op_eq_MultiBranch: true
 ## class NumericCast
 
 ```cangjie
-public class NumericCast <: NumericCastBase & Equatable<NumericCast>
+public class NumericCast <: NumericCastBase & Equatable<NumericCast> {}
 ```
 
 功能：数值类型转换表达式。
@@ -14930,7 +15177,7 @@ public static func create(srcVal: Value, targetType: Type, overflow: OverflowStr
 
 返回值：
 
-- NumericCast - 数值类型转换表达式实例。
+- [NumericCast](#class-numericcast) - 数值类型转换表达式实例。
 
 示例：
 
@@ -14995,7 +15242,7 @@ op_eq_NumericCast: true
 ## class TryNumericCast
 
 ```cangjie
-public class TryNumericCast <: NumericCastBase & Equatable<TryNumericCast>
+public class TryNumericCast <: NumericCastBase & Equatable<TryNumericCast> {}
 ```
 
 功能：带异常处理的数值类型转换表达式。
@@ -15090,7 +15337,7 @@ public static func create(srcVal: Value, targetType: Type, normal: Block, err: B
 
 返回值：
 
-- TryNumericCast - 带异常处理的数值类型转换表达式实例。
+- [TryNumericCast](#class-trynumericcast) - 带异常处理的数值类型转换表达式实例。
 
 示例：
 
@@ -15159,7 +15406,7 @@ op_eq_TryNumericCast: true
 ## class RaiseException
 
 ```cangjie
-public class RaiseException <: Expression & Equatable<RaiseException>
+public class RaiseException <: Expression & Equatable<RaiseException> {}
 ```
 
 功能：抛出异常终止器表达式。
@@ -15183,7 +15430,7 @@ public static func create(value: Value): RaiseException
 
 返回值：
 
-- RaiseException - 抛出异常终止器表达式实例。
+- [RaiseException](#class-raiseexception) - 抛出异常终止器表达式实例。
 
 示例：
 
@@ -15225,7 +15472,7 @@ public static func create(value: Value, successor: Block): RaiseException
 
 返回值：
 
-- RaiseException - 抛出异常终止器表达式实例。
+- [RaiseException](#class-raiseexception) - 抛出异常终止器表达式实例。
 
 示例：
 
@@ -15297,7 +15544,7 @@ op_eq_RaiseException: true
 ## class RawArrayAllocate
 
 ```cangjie
-public class RawArrayAllocate <: RawArrayAllocateBase & Equatable<RawArrayAllocate>
+public class RawArrayAllocate <: RawArrayAllocateBase & Equatable<RawArrayAllocate> {}
 ```
 
 功能：原始数组分配表达式。
@@ -15322,7 +15569,7 @@ public static func create(elementType: Type, size: Value): RawArrayAllocate
 
 返回值：
 
-- RawArrayAllocate - 原始数组分配表达式实例。
+- [RawArrayAllocate](#class-rawarrayallocate) - 原始数组分配表达式实例。
 
 示例：
 
@@ -15387,7 +15634,7 @@ op_eq_RawArrayAllocate: true
 ## class TryRawArrayAllocate
 
 ```cangjie
-public class TryRawArrayAllocate <: RawArrayAllocateBase & Equatable<TryRawArrayAllocate>
+public class TryRawArrayAllocate <: RawArrayAllocateBase & Equatable<TryRawArrayAllocate> {}
 ```
 
 功能：带异常处理的原始数组分配表达式。
@@ -15482,7 +15729,7 @@ public static func create(elementType: Type, size: Value, normal: Block, err: Bl
 
 返回值：
 
-- TryRawArrayAllocate - 带异常处理的原始数组分配表达式实例。
+- [TryRawArrayAllocate](#class-tryrawarrayallocate) - 带异常处理的原始数组分配表达式实例。
 
 示例：
 
@@ -15551,7 +15798,7 @@ op_eq_TryRawArrayAllocate: true
 ## class RawArrayInitByValue
 
 ```cangjie
-public class RawArrayInitByValue <: Expression & Equatable<RawArrayInitByValue>
+public class RawArrayInitByValue <: Expression & Equatable<RawArrayInitByValue> {}
 ```
 
 功能：按值初始化原始数组表达式。
@@ -15577,7 +15824,7 @@ public static func create(memory: Value, size: Value, initVal: Value): RawArrayI
 
 返回值：
 
-- RawArrayInitByValue - 按值初始化原始数组表达式实例。
+- [RawArrayInitByValue](#class-rawarrayinitbyvalue) - 按值初始化原始数组表达式实例。
 
 示例：
 
@@ -15646,7 +15893,7 @@ op_eq_RawArrayInitByValue: true
 ## class RawArrayLiteralInit
 
 ```cangjie
-public class RawArrayLiteralInit <: Expression & Equatable<RawArrayLiteralInit>
+public class RawArrayLiteralInit <: Expression & Equatable<RawArrayLiteralInit> {}
 ```
 
 功能：字面量初始化原始数组表达式。
@@ -15671,7 +15918,7 @@ public static func create(memory: Value, elements: ArrayList<Value>): RawArrayLi
 
 返回值：
 
-- RawArrayLiteralInit - 字面量初始化原始数组表达式实例。
+- [RawArrayLiteralInit](#class-rawarrayliteralinit) - 字面量初始化原始数组表达式实例。
 
 示例：
 
@@ -15748,7 +15995,7 @@ op_eq_RawArrayLiteralInit: true
 ## class Spawn
 
 ```cangjie
-public class Spawn <: SpawnBase & Equatable<Spawn>
+public class Spawn <: SpawnBase & Equatable<Spawn> {}
 ```
 
 功能：并发 Spawn 表达式（不带异常处理）。
@@ -15773,7 +16020,7 @@ public static func create(retTy: Type, lambda: Value): Spawn
 
 返回值：
 
-- Spawn - Spawn 表达式实例。
+- [Spawn](#class-spawn) - Spawn 表达式实例。
 
 示例：
 
@@ -15813,7 +16060,7 @@ public static func create(retTy: Type, lambda: Value, arg: Value): Spawn
 
 返回值：
 
-- Spawn - Spawn 表达式实例。
+- [Spawn](#class-spawn) - Spawn 表达式实例。
 
 示例：
 
@@ -15879,7 +16126,7 @@ op_eq_Spawn: true
 ## class TrySpawn
 
 ```cangjie
-public class TrySpawn <: SpawnBase & Equatable<TrySpawn>
+public class TrySpawn <: SpawnBase & Equatable<TrySpawn> {}
 ```
 
 功能：带异常处理的并发 Spawn 表达式。
@@ -15974,7 +16221,7 @@ public static func create(retTy: Type, lambda: Value, normal: Block, err: Block)
 
 返回值：
 
-- TrySpawn - 带异常处理的 Spawn 表达式实例。
+- [TrySpawn](#class-tryspawn) - 带异常处理的 Spawn 表达式实例。
 
 示例：
 
@@ -16018,7 +16265,7 @@ public static func create(retTy: Type, lambda: Value, arg: Value, normal: Block,
 
 返回值：
 
-- TrySpawn - 带异常处理的 Spawn 表达式实例。
+- [TrySpawn](#class-tryspawn) - 带异常处理的 Spawn 表达式实例。
 
 示例：
 
@@ -16088,7 +16335,7 @@ op_eq_TrySpawn: true
 ## class Store
 
 ```cangjie
-public class Store <: Expression & Equatable<Store>
+public class Store <: Expression & Equatable<Store> {}
 ```
 
 功能：内存存储表达式。
@@ -16179,7 +16426,7 @@ public static func create(val: Value, location: Value): Store
 
 返回值：
 
-- Store - 内存存储表达式实例。
+- [Store](#class-store) - 内存存储表达式实例。
 
 示例：
 
@@ -16246,7 +16493,7 @@ op_eq_Store: true
 ## class StoreElementByName
 
 ```cangjie
-public class StoreElementByName <: Expression & Equatable<StoreElementByName>
+public class StoreElementByName <: Expression & Equatable<StoreElementByName> {}
 ```
 
 功能：按字段名存储聚合体元素的表达式。
@@ -16308,7 +16555,7 @@ public static func create(val: Value, location: Value, fieldNames: ArrayList<Str
 
 返回值：
 
-- StoreElementByName - 按字段名存储聚合体元素表达式实例。
+- [StoreElementByName](#class-storeelementbyname) - 按字段名存储聚合体元素表达式实例。
 
 示例：
 
@@ -16381,7 +16628,7 @@ op_eq_StoreElementByName: true
 ## class StoreElementRef
 
 ```cangjie
-public class StoreElementRef <: Expression & Equatable<StoreElementRef>
+public class StoreElementRef <: Expression & Equatable<StoreElementRef> {}
 ```
 
 功能：按数字索引存储聚合体元素的表达式。
@@ -16443,7 +16690,7 @@ public static func create(val: Value, location: Value, path: ArrayList<UInt64>):
 
 返回值：
 
-- StoreElementRef - 按数字索引存储聚合体元素表达式实例。
+- [StoreElementRef](#class-storeelementref) - 按数字索引存储聚合体元素表达式实例。
 
 示例：
 
@@ -16516,7 +16763,7 @@ op_eq_StoreElementRef: true
 ## class Tuple
 
 ```cangjie
-public class Tuple <: Expression & Equatable<Tuple>
+public class Tuple <: Expression & Equatable<Tuple> {}
 ```
 
 功能：元组构造表达式。
@@ -16577,7 +16824,7 @@ public static func create(elements: ArrayList<Value>): Tuple
 
 返回值：
 
-- Tuple - 元组构造表达式实例。
+- [Tuple](#class-tuple) - 元组构造表达式实例。
 
 示例：
 
@@ -16652,7 +16899,7 @@ op_eq_Tuple: true
 ## class Box
 
 ```cangjie
-public class Box <: TypeCast & Equatable<Box>
+public class Box <: TypeCast & Equatable<Box> {}
 ```
 
 功能：装箱类型转换表达式。
@@ -16677,7 +16924,7 @@ public static func create(srcVal: Value, targetType: Type): Box
 
 返回值：
 
-- Box - 装箱类型转换表达式实例。
+- [Box](#class-box) - 装箱类型转换表达式实例。
 
 示例：
 
@@ -16744,7 +16991,7 @@ op_eq_Box: true
 ## class StaticCast
 
 ```cangjie
-public class StaticCast <: TypeCast & Equatable<StaticCast>
+public class StaticCast <: TypeCast & Equatable<StaticCast> {}
 ```
 
 功能：静态类型转换表达式。
@@ -16769,7 +17016,7 @@ public static func create(srcVal: Value, targetType: Type): StaticCast
 
 返回值：
 
-- StaticCast - 静态类型转换表达式实例。
+- [StaticCast](#class-staticcast) - 静态类型转换表达式实例。
 
 示例：
 
@@ -16834,7 +17081,7 @@ op_eq_StaticCast: true
 ## class CastToConcrete
 
 ```cangjie
-public class CastToConcrete <: TypeCast & Equatable<CastToConcrete>
+public class CastToConcrete <: TypeCast & Equatable<CastToConcrete> {}
 ```
 
 功能：向具体类型转换表达式。
@@ -16859,7 +17106,7 @@ public static func create(srcVal: Value, targetType: Type): CastToConcrete
 
 返回值：
 
-- CastToConcrete - 向具体类型转换表达式实例。
+- [CastToConcrete](#class-casttoconcrete) - 向具体类型转换表达式实例。
 
 示例：
 
@@ -16924,7 +17171,7 @@ op_eq_CastToConcrete: true
 ## class CastToGeneric
 
 ```cangjie
-public class CastToGeneric <: TypeCast & Equatable<CastToGeneric>
+public class CastToGeneric <: TypeCast & Equatable<CastToGeneric> {}
 ```
 
 功能：向泛型类型转换表达式。
@@ -16949,7 +17196,7 @@ public static func create(srcVal: Value, targetType: Type): CastToGeneric
 
 返回值：
 
-- CastToGeneric - 向泛型类型转换表达式实例。
+- [CastToGeneric](#class-casttogeneric) - 向泛型类型转换表达式实例。
 
 示例：
 
@@ -17016,7 +17263,7 @@ op_eq_CastToGeneric: true
 ## class UnboxToRef
 
 ```cangjie
-public class UnboxToRef <: TypeCast & Equatable<UnboxToRef>
+public class UnboxToRef <: TypeCast & Equatable<UnboxToRef> {}
 ```
 
 功能：拆箱为引用的类型转换表达式。
@@ -17041,7 +17288,7 @@ public static func create(srcVal: Value, targetType: Type): UnboxToRef
 
 返回值：
 
-- UnboxToRef - 拆箱为引用的类型转换表达式实例。
+- [UnboxToRef](#class-unboxtoref) - 拆箱为引用的类型转换表达式实例。
 
 示例：
 
@@ -17106,7 +17353,7 @@ op_eq_UnboxToRef: true
 ## class UnboxToValue
 
 ```cangjie
-public class UnboxToValue <: TypeCast & Equatable<UnboxToValue>
+public class UnboxToValue <: TypeCast & Equatable<UnboxToValue> {}
 ```
 
 功能：拆箱为值的类型转换表达式。
@@ -17131,7 +17378,7 @@ public static func create(srcVal: Value, targetType: Type): UnboxToValue
 
 返回值：
 
-- UnboxToValue - 拆箱为值的类型转换表达式实例。
+- [UnboxToValue](#class-unboxtovalue) - 拆箱为值的类型转换表达式实例。
 
 示例：
 
@@ -17196,7 +17443,7 @@ op_eq_UnboxToValue: true
 ## class UnaryExpression
 
 ```cangjie
-public class UnaryExpression <: UnaryExpressionBase & Equatable<UnaryExpression>
+public class UnaryExpression <: UnaryExpressionBase & Equatable<UnaryExpression> {}
 ```
 
 功能：一元运算表达式（不带异常处理）。
@@ -17221,7 +17468,7 @@ public static func create(kind: UnaryExprKind, op: Value): UnaryExpression
 
 返回值：
 
-- UnaryExpression - 一元运算表达式实例。
+- [UnaryExpression](#class-unaryexpression) - 一元运算表达式实例。
 
 示例：
 
@@ -17286,7 +17533,7 @@ op_eq_UnaryExpression: true
 ## class TryUnaryExpression
 
 ```cangjie
-public class TryUnaryExpression <: UnaryExpressionBase & Equatable<TryUnaryExpression>
+public class TryUnaryExpression <: UnaryExpressionBase & Equatable<TryUnaryExpression> {}
 ```
 
 功能：带异常处理的一元运算表达式。
@@ -17380,7 +17627,7 @@ public static func create(op: Value, normal: Block, err: Block): TryUnaryExpress
 
 返回值：
 
-- TryUnaryExpression - 带异常处理的一元运算表达式实例。
+- [TryUnaryExpression](#class-tryunaryexpression) - 带异常处理的一元运算表达式实例。
 
 示例：
 
@@ -17449,7 +17696,7 @@ op_eq_TryUnaryExpression: true
 ## class VArrayBuilder
 
 ```cangjie
-public class VArrayBuilder <: Expression & Equatable<VArrayBuilder>
+public class VArrayBuilder <: Expression & Equatable<VArrayBuilder> {}
 ```
 
 功能：VArray 构建器表达式。
@@ -17476,7 +17723,7 @@ public static func create(retTy: Type, size: Value, initVal: Value, initFunc: Va
 
 返回值：
 
-- VArrayBuilder - VArray 构建器表达式实例。
+- [VArrayBuilder](#class-varraybuilder) - VArray 构建器表达式实例。
 
 示例：
 
@@ -17545,7 +17792,7 @@ op_eq_VArrayBuilder: true
 ## class VArrayExpr
 
 ```cangjie
-public class VArrayExpr <: Expression & Equatable<VArrayExpr>
+public class VArrayExpr <: Expression & Equatable<VArrayExpr> {}
 ```
 
 功能：VArray 字面量表达式。
@@ -17569,7 +17816,7 @@ public static func create(elements: ArrayList<Value>): VArrayExpr
 
 返回值：
 
-- VArrayExpr - VArray 字面量表达式实例。
+- [VArrayExpr](#class-varrayexpr) - VArray 字面量表达式实例。
 
 示例：
 
@@ -17646,7 +17893,10 @@ op_eq_VArrayExpr: true
 ## class CHIRBuilder
 
 ```cangjie
-public class CHIRBuilder
+public class CHIRBuilder {
+    public init(parent: Block)
+    public init(position: InsertPosition)
+}
 ```
 
 功能：CHIR 表达式构建器，用于在基本块中按指定位置插入各类 CHIR 表达式（算术、内存、控制流、类型转换等）。
@@ -17736,7 +17986,7 @@ public func createAllocate(ty: Type): Allocate
 
 返回值：
 
-- Allocate - 分配表达式。
+- [Allocate](#class-allocate) - 分配表达式。
 
 示例：
 
@@ -17776,7 +18026,7 @@ public func createApply(callee: Value, funcCallCtx: FuncCallContext): Apply
 
 返回值：
 
-- Apply - Apply 表达式。
+- [Apply](#class-apply) - Apply 表达式。
 
 示例：
 
@@ -17819,7 +18069,7 @@ public func createBinaryAdd(leftOp: Value, rightOp: Value, overflow: OverflowStr
 
 返回值：
 
-- BinaryExpression - 加法表达式。
+- [BinaryExpression](#class-binaryexpression) - 加法表达式。
 
 示例：
 
@@ -17859,7 +18109,7 @@ public func createBinaryAnd(leftOp: Value, rightOp: Value): BinaryExpression
 
 返回值：
 
-- BinaryExpression - 逻辑与表达式。
+- [BinaryExpression](#class-binaryexpression) - 逻辑与表达式。
 
 示例：
 
@@ -17899,7 +18149,7 @@ public func createBinaryBitAnd(leftOp: Value, rightOp: Value): BinaryExpression
 
 返回值：
 
-- BinaryExpression - 按位与表达式。
+- [BinaryExpression](#class-binaryexpression) - 按位与表达式。
 
 示例：
 
@@ -17939,7 +18189,7 @@ public func createBinaryBitOr(leftOp: Value, rightOp: Value): BinaryExpression
 
 返回值：
 
-- BinaryExpression - 按位或表达式。
+- [BinaryExpression](#class-binaryexpression) - 按位或表达式。
 
 示例：
 
@@ -17979,7 +18229,7 @@ public func createBinaryBitXor(leftOp: Value, rightOp: Value): BinaryExpression
 
 返回值：
 
-- BinaryExpression - 按位异或表达式。
+- [BinaryExpression](#class-binaryexpression) - 按位异或表达式。
 
 示例：
 
@@ -18020,7 +18270,7 @@ public func createBinaryDiv(leftOp: Value, rightOp: Value, overflow: OverflowStr
 
 返回值：
 
-- BinaryExpression - 除法表达式。
+- [BinaryExpression](#class-binaryexpression) - 除法表达式。
 
 示例：
 
@@ -18060,7 +18310,7 @@ public func createBinaryEqual(leftOp: Value, rightOp: Value): BinaryExpression
 
 返回值：
 
-- BinaryExpression - 等于比较表达式。
+- [BinaryExpression](#class-binaryexpression) - 等于比较表达式。
 
 示例：
 
@@ -18101,7 +18351,7 @@ public func createBinaryExp(leftOp: Value, rightOp: Value, overflow: OverflowStr
 
 返回值：
 
-- BinaryExpression - 指数表达式。
+- [BinaryExpression](#class-binaryexpression) - 指数表达式。
 
 示例：
 
@@ -18141,7 +18391,7 @@ public func createBinaryGreaterThan(leftOp: Value, rightOp: Value): BinaryExpres
 
 返回值：
 
-- BinaryExpression - 大于比较表达式。
+- [BinaryExpression](#class-binaryexpression) - 大于比较表达式。
 
 示例：
 
@@ -18181,7 +18431,7 @@ public func createBinaryGreaterThanOrEqual(leftOp: Value, rightOp: Value): Binar
 
 返回值：
 
-- BinaryExpression - 大于等于比较表达式。
+- [BinaryExpression](#class-binaryexpression) - 大于等于比较表达式。
 
 示例：
 
@@ -18222,7 +18472,7 @@ public func createBinaryLShift(leftOp: Value, rightOp: Value, overflow: Overflow
 
 返回值：
 
-- BinaryExpression - 左移表达式。
+- [BinaryExpression](#class-binaryexpression) - 左移表达式。
 
 示例：
 
@@ -18262,7 +18512,7 @@ public func createBinaryLessThan(leftOp: Value, rightOp: Value): BinaryExpressio
 
 返回值：
 
-- BinaryExpression - 小于比较表达式。
+- [BinaryExpression](#class-binaryexpression) - 小于比较表达式。
 
 示例：
 
@@ -18302,7 +18552,7 @@ public func createBinaryLessThanOrEqual(leftOp: Value, rightOp: Value): BinaryEx
 
 返回值：
 
-- BinaryExpression - 小于等于比较表达式。
+- [BinaryExpression](#class-binaryexpression) - 小于等于比较表达式。
 
 示例：
 
@@ -18343,7 +18593,7 @@ public func createBinaryMod(leftOp: Value, rightOp: Value, overflow: OverflowStr
 
 返回值：
 
-- BinaryExpression - 取模表达式。
+- [BinaryExpression](#class-binaryexpression) - 取模表达式。
 
 示例：
 
@@ -18384,7 +18634,7 @@ public func createBinaryMul(leftOp: Value, rightOp: Value, overflow: OverflowStr
 
 返回值：
 
-- BinaryExpression - 乘法表达式。
+- [BinaryExpression](#class-binaryexpression) - 乘法表达式。
 
 示例：
 
@@ -18424,7 +18674,7 @@ public func createBinaryNotEqual(leftOp: Value, rightOp: Value): BinaryExpressio
 
 返回值：
 
-- BinaryExpression - 不等于比较表达式。
+- [BinaryExpression](#class-binaryexpression) - 不等于比较表达式。
 
 示例：
 
@@ -18464,7 +18714,7 @@ public func createBinaryOr(leftOp: Value, rightOp: Value): BinaryExpression
 
 返回值：
 
-- BinaryExpression - 逻辑或表达式。
+- [BinaryExpression](#class-binaryexpression) - 逻辑或表达式。
 
 示例：
 
@@ -18505,7 +18755,7 @@ public func createBinaryRShift(leftOp: Value, rightOp: Value, overflow: Overflow
 
 返回值：
 
-- BinaryExpression - 右移表达式。
+- [BinaryExpression](#class-binaryexpression) - 右移表达式。
 
 示例：
 
@@ -18546,7 +18796,7 @@ public func createBinarySub(leftOp: Value, rightOp: Value, overflow: OverflowStr
 
 返回值：
 
-- BinaryExpression - 减法表达式。
+- [BinaryExpression](#class-binaryexpression) - 减法表达式。
 
 示例：
 
@@ -18586,7 +18836,7 @@ public func createBox(srcVal: Value, dstTy: Type): Box
 
 返回值：
 
-- Box - 装箱表达式。
+- [Box](#class-box) - 装箱表达式。
 
 示例：
 
@@ -18627,7 +18877,7 @@ public func createBranch(condition: Value, trueTarget: Block, falseTarget: Block
 
 返回值：
 
-- Branch - 条件分支表达式。
+- [Branch](#class-branch) - 条件分支表达式。
 
 示例：
 
@@ -18670,7 +18920,7 @@ public func createCastToConcrete(srcVal: Value, targetType: Type): CastToConcret
 
 返回值：
 
-- CastToConcrete - 向具体类型转换表达式。
+- [CastToConcrete](#class-casttoconcrete) - 向具体类型转换表达式。
 
 示例：
 
@@ -18710,7 +18960,7 @@ public func createCastToGeneric(srcVal: Value, targetType: Type): CastToGeneric
 
 返回值：
 
-- CastToGeneric - 向泛型类型转换表达式。
+- [CastToGeneric](#class-casttogeneric) - 向泛型类型转换表达式。
 
 示例：
 
@@ -18750,7 +19000,7 @@ public func createConstant(val: LiteralValue): Constant
 
 返回值：
 
-- Constant - 常量表达式。
+- [Constant](#class-constant) - 常量表达式。
 
 示例：
 
@@ -18790,7 +19040,7 @@ public func createDebug(location: Value, srcCodeName: String): Debug
 
 返回值：
 
-- Debug - 调试标记表达式。
+- [Debug](#class-debug) - 调试标记表达式。
 
 示例：
 
@@ -18826,7 +19076,7 @@ public func createExit(): Exit
 
 返回值：
 
-- Exit - 函数退出表达式。
+- [Exit](#class-exit) - 函数退出表达式。
 
 示例：
 
@@ -18866,7 +19116,7 @@ public func createField(val: Value, path: ArrayList<UInt64>): Field
 
 返回值：
 
-- Field - 字段访问表达式。
+- [Field](#class-field) - 字段访问表达式。
 
 示例：
 
@@ -18914,7 +19164,7 @@ public func createFieldByName(val: Value, fieldNames: ArrayList<String>): FieldB
 
 返回值：
 
-- FieldByName - 按字段名的字段访问表达式。
+- [FieldByName](#class-fieldbyname) - 按字段名的字段访问表达式。
 
 示例：
 
@@ -18961,7 +19211,7 @@ public func createGetElementByName(location: Value, fieldNames: ArrayList<String
 
 返回值：
 
-- GetElementByName - 元素读取表达式。
+- [GetElementByName](#class-getelementbyname) - 元素读取表达式。
 
 示例：
 
@@ -19008,7 +19258,7 @@ public func createGetElementRef(location: Value, path: ArrayList<UInt64>): GetEl
 
 返回值：
 
-- GetElementRef - 元素引用表达式。
+- [GetElementRef](#class-getelementref) - 元素引用表达式。
 
 示例：
 
@@ -19054,7 +19304,7 @@ public func createGetException(retTy: Type): GetException
 
 返回值：
 
-- GetException - 获取异常值表达式。
+- [GetException](#class-getexception) - 获取异常值表达式。
 
 示例：
 
@@ -19094,7 +19344,7 @@ public func createGetInstantiateValue(val: Function, instantiateTypes: ArrayList
 
 返回值：
 
-- GetInstantiateValue - 泛型实例化值表达式。
+- [GetInstantiateValue](#class-getinstantiatevalue) - 泛型实例化值表达式。
 
 示例：
 
@@ -19136,7 +19386,7 @@ public func createGetRTTI(val: Value): GetRTTI
 
 返回值：
 
-- GetRTTI - 运行时类型信息表达式。
+- [GetRTTI](#class-getrtti) - 运行时类型信息表达式。
 
 示例：
 
@@ -19176,7 +19426,7 @@ public func createGetRTTIStatic(rttiType: Type): GetRTTIStatic
 
 返回值：
 
-- GetRTTIStatic - 静态运行时类型信息表达式。
+- [GetRTTIStatic](#class-getrttistatic) - 静态运行时类型信息表达式。
 
 示例：
 
@@ -19215,7 +19465,7 @@ public func createGoTo(target: Block): GoTo
 
 返回值：
 
-- GoTo - 无条件跳转表达式。
+- [GoTo](#class-goto) - 无条件跳转表达式。
 
 示例：
 
@@ -19257,7 +19507,7 @@ public func createInstanceOf(srcVal: Value, targetTy: Type): InstanceOf
 
 返回值：
 
-- InstanceOf - 类型检查表达式。
+- [InstanceOf](#class-instanceof) - 类型检查表达式。
 
 示例：
 
@@ -19298,7 +19548,7 @@ public func createInvoke(retTy: Type, callContext: InvokeCallContext): Invoke
 
 返回值：
 
-- Invoke - Invoke 表达式。
+- [Invoke](#class-invoke) - Invoke 表达式。
 
 示例：
 
@@ -19344,7 +19594,7 @@ public func createLambda(ty: FuncType, mangledName: String, srcName: String, gen
 
 返回值：
 
-- Lambda - Lambda 表达式。
+- [Lambda](#class-lambda) - Lambda 表达式。
 
 示例：
 
@@ -19384,7 +19634,7 @@ public func createLoad(location: Value): Load
 
 返回值：
 
-- Load - 内存加载表达式。
+- [Load](#class-load) - 内存加载表达式。
 
 示例：
 
@@ -19427,7 +19677,7 @@ public func createMultiBranch(condition: Value, defaultBlock: Block, targets: Ar
 
 返回值：
 
-- MultiBranch - 多分支表达式。
+- [MultiBranch](#class-multibranch) - 多分支表达式。
 
 示例：
 
@@ -19476,7 +19726,7 @@ public func createNumericCast(srcVal: Value, dstTy: Type, overflow: OverflowStra
 
 返回值：
 
-- NumericCast - 数值类型转换表达式。
+- [NumericCast](#class-numericcast) - 数值类型转换表达式。
 
 示例：
 
@@ -19515,7 +19765,7 @@ public func createRaiseException(value: Value): RaiseException
 
 返回值：
 
-- RaiseException - 抛出异常表达式。
+- [RaiseException](#class-raiseexception) - 抛出异常表达式。
 
 示例：
 
@@ -19555,7 +19805,7 @@ public func createRaiseException(value: Value, successor: Block): RaiseException
 
 返回值：
 
-- RaiseException - 抛出异常表达式。
+- [RaiseException](#class-raiseexception) - 抛出异常表达式。
 
 示例：
 
@@ -19597,7 +19847,7 @@ public func createRawArrayAllocate(elementType: Type, size: Value): RawArrayAllo
 
 返回值：
 
-- RawArrayAllocate - 原始数组分配表达式。
+- [RawArrayAllocate](#class-rawarrayallocate) - 原始数组分配表达式。
 
 示例：
 
@@ -19638,7 +19888,7 @@ public func createRawArrayInitByValue(memory: Value, size: Value, initVal: Value
 
 返回值：
 
-- RawArrayInitByValue - 按值初始化表达式。
+- [RawArrayInitByValue](#class-rawarrayinitbyvalue) - 按值初始化表达式。
 
 示例：
 
@@ -19679,7 +19929,7 @@ public func createRawArrayLiteralInit(memory: Value, elements: ArrayList<Value>)
 
 返回值：
 
-- RawArrayLiteralInit - 字面量初始化表达式。
+- [RawArrayLiteralInit](#class-rawarrayliteralinit) - 字面量初始化表达式。
 
 示例：
 
@@ -19725,7 +19975,7 @@ public func createSpawn(retTy: Type, val: Value): Spawn
 
 返回值：
 
-- Spawn - Spawn 表达式。
+- [Spawn](#class-spawn) - Spawn 表达式。
 
 示例：
 
@@ -19767,7 +20017,7 @@ public func createSpawn(retTy: Type, val: Value, arg: Value): Spawn
 
 返回值：
 
-- Spawn - 带参数的 Spawn 表达式。
+- [Spawn](#class-spawn) - 带参数的 Spawn 表达式。
 
 示例：
 
@@ -19808,7 +20058,7 @@ public func createStaticCast(srcVal: Value, dstTy: Type): StaticCast
 
 返回值：
 
-- StaticCast - 静态类型转换表达式。
+- [StaticCast](#class-staticcast) - 静态类型转换表达式。
 
 示例：
 
@@ -19848,7 +20098,7 @@ public func createStore(val: Value, location: Value): Store
 
 返回值：
 
-- Store - 内存存储表达式。
+- [Store](#class-store) - 内存存储表达式。
 
 示例：
 
@@ -19890,7 +20140,7 @@ public func createStoreElementByName(val: Value, location: Value, fieldNames: Ar
 
 返回值：
 
-- StoreElementByName - 按字段名的元素存储表达式。
+- [StoreElementByName](#class-storeelementbyname) - 按字段名的元素存储表达式。
 
 示例：
 
@@ -19935,7 +20185,7 @@ public func createStoreElementRef(val: Value, location: Value, path: ArrayList<U
 
 返回值：
 
-- StoreElementRef - 按数字索引的元素存储表达式。
+- [StoreElementRef](#class-storeelementref) - 按数字索引的元素存储表达式。
 
 示例：
 
@@ -19980,7 +20230,7 @@ public func createTryAllocate(ty: Type, normal: Block, err: Block): TryAllocate
 
 返回值：
 
-- TryAllocate - 带异常处理的分配表达式。
+- [TryAllocate](#class-tryallocate) - 带异常处理的分配表达式。
 
 示例：
 
@@ -20025,7 +20275,7 @@ public func createTryApply(callee: Value, funcCallCtx: FuncCallContext, normal: 
 
 返回值：
 
-- TryApply - 带异常处理的函数调用表达式。
+- [TryApply](#class-tryapply) - 带异常处理的函数调用表达式。
 
 示例：
 
@@ -20072,7 +20322,7 @@ public func createTryBinaryAdd(leftOp: Value, rightOp: Value, normal: Block, err
 
 返回值：
 
-- TryBinaryExpression - 带异常处理的加法表达式。
+- [TryBinaryExpression](#class-trybinaryexpression) - 带异常处理的加法表达式。
 
 示例：
 
@@ -20118,7 +20368,7 @@ public func createTryBinaryDiv(leftOp: Value, rightOp: Value, overflow: Overflow
 
 返回值：
 
-- TryBinaryExpression - 带异常处理的除法表达式。
+- [TryBinaryExpression](#class-trybinaryexpression) - 带异常处理的除法表达式。
 
 示例：
 
@@ -20163,7 +20413,7 @@ public func createTryBinaryExp(leftOp: Value, rightOp: Value, normal: Block, err
 
 返回值：
 
-- TryBinaryExpression - 带异常处理的指数表达式。
+- [TryBinaryExpression](#class-trybinaryexpression) - 带异常处理的指数表达式。
 
 示例：
 
@@ -20208,7 +20458,7 @@ public func createTryBinaryLShift(leftOp: Value, rightOp: Value, normal: Block, 
 
 返回值：
 
-- TryBinaryExpression - 带异常处理的左移表达式。
+- [TryBinaryExpression](#class-trybinaryexpression) - 带异常处理的左移表达式。
 
 示例：
 
@@ -20253,7 +20503,7 @@ public func createTryBinaryMod(leftOp: Value, rightOp: Value, normal: Block, err
 
 返回值：
 
-- TryBinaryExpression - 带异常处理的取模表达式。
+- [TryBinaryExpression](#class-trybinaryexpression) - 带异常处理的取模表达式。
 
 示例：
 
@@ -20298,7 +20548,7 @@ public func createTryBinaryMul(leftOp: Value, rightOp: Value, normal: Block, err
 
 返回值：
 
-- TryBinaryExpression - 带异常处理的乘法表达式。
+- [TryBinaryExpression](#class-trybinaryexpression) - 带异常处理的乘法表达式。
 
 示例：
 
@@ -20343,7 +20593,7 @@ public func createTryBinaryRShift(leftOp: Value, rightOp: Value, normal: Block, 
 
 返回值：
 
-- TryBinaryExpression - 带异常处理的右移表达式。
+- [TryBinaryExpression](#class-trybinaryexpression) - 带异常处理的右移表达式。
 
 示例：
 
@@ -20388,7 +20638,7 @@ public func createTryBinarySub(leftOp: Value, rightOp: Value, normal: Block, err
 
 返回值：
 
-- TryBinaryExpression - 带异常处理的减法表达式。
+- [TryBinaryExpression](#class-trybinaryexpression) - 带异常处理的减法表达式。
 
 示例：
 
@@ -20433,7 +20683,7 @@ public func createTryInvoke(retTy: Type, callContext: InvokeCallContext, normal:
 
 返回值：
 
-- TryInvoke - 带异常处理的虚方法调用表达式。
+- [TryInvoke](#class-tryinvoke) - 带异常处理的虚方法调用表达式。
 
 示例：
 
@@ -20482,7 +20732,7 @@ public func createTryNumericCast(srcVal: Value, dstTy: Type, normal: Block, err:
 
 返回值：
 
-- TryNumericCast - 带异常处理的数值类型转换表达式。
+- [TryNumericCast](#class-trynumericcast) - 带异常处理的数值类型转换表达式。
 
 示例：
 
@@ -20527,7 +20777,7 @@ public func createTryRawArrayAllocate(elementType: Type, size: Value, normal: Bl
 
 返回值：
 
-- TryRawArrayAllocate - 带异常处理的原始数组分配表达式。
+- [TryRawArrayAllocate](#class-tryrawarrayallocate) - 带异常处理的原始数组分配表达式。
 
 示例：
 
@@ -20572,7 +20822,7 @@ public func createTrySpawn(retTy: Type, val: Value, normal: Block, err: Block): 
 
 返回值：
 
-- TrySpawn - 带异常处理的 Spawn 表达式。
+- [TrySpawn](#class-tryspawn) - 带异常处理的 Spawn 表达式。
 
 示例：
 
@@ -20619,7 +20869,7 @@ public func createTrySpawn(retTy: Type, val: Value, arg: Value, normal: Block, e
 
 返回值：
 
-- TrySpawn - 带参数和异常处理的 Spawn 表达式。
+- [TrySpawn](#class-tryspawn) - 带参数和异常处理的 Spawn 表达式。
 
 示例：
 
@@ -20664,7 +20914,7 @@ public func createTryUnaryNeg(op: Value, normal: Block, err: Block): TryUnaryExp
 
 返回值：
 
-- TryUnaryExpression - 带异常处理的取负表达式。
+- [TryUnaryExpression](#class-tryunaryexpression) - 带异常处理的取负表达式。
 
 示例：
 
@@ -20706,7 +20956,7 @@ public func createTuple(elements: Array<Value>): Tuple
 
 返回值：
 
-- Tuple - 元组表达式。
+- [Tuple](#class-tuple) - 元组表达式。
 
 示例：
 
@@ -20745,7 +20995,7 @@ public func createUnaryBitNot(op: Value): UnaryExpression
 
 返回值：
 
-- UnaryExpression - 按位取反表达式。
+- [UnaryExpression](#class-unaryexpression) - 按位取反表达式。
 
 示例：
 
@@ -20785,7 +21035,7 @@ public func createUnaryNeg(op: Value, overflow: OverflowStrategy): UnaryExpressi
 
 返回值：
 
-- UnaryExpression - 取负表达式。
+- [UnaryExpression](#class-unaryexpression) - 取负表达式。
 
 示例：
 
@@ -20824,7 +21074,7 @@ public func createUnaryNot(op: Value): UnaryExpression
 
 返回值：
 
-- UnaryExpression - 逻辑取反表达式。
+- [UnaryExpression](#class-unaryexpression) - 逻辑取反表达式。
 
 示例：
 
@@ -20864,7 +21114,7 @@ public func createUnboxToRef(srcVal: Value, dstTy: Type): UnboxToRef
 
 返回值：
 
-- UnboxToRef - 拆箱为引用表达式。
+- [UnboxToRef](#class-unboxtoref) - 拆箱为引用表达式。
 
 示例：
 
@@ -20905,7 +21155,7 @@ public func createUnboxToValue(srcVal: Value, dstTy: Type): UnboxToValue
 
 返回值：
 
-- UnboxToValue - 拆箱为值表达式。
+- [UnboxToValue](#class-unboxtovalue) - 拆箱为值表达式。
 
 示例：
 
@@ -20945,7 +21195,7 @@ public func createVArray(elements: ArrayList<Value>): VArrayExpr
 
 返回值：
 
-- VArrayExpr - VArray 表达式。
+- [VArrayExpr](#class-varrayexpr) - VArray 表达式。
 
 示例：
 
@@ -20991,7 +21241,7 @@ public func createVArrayBuilder(retTy: Type, size: Value, initVal: Value, initFu
 
 返回值：
 
-- VArrayBuilder - VArray 构建器表达式。
+- [VArrayBuilder](#class-varraybuilder) - VArray 构建器表达式。
 
 示例：
 

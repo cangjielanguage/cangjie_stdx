@@ -3,7 +3,7 @@
 ## struct Position
 
 ```cangjie
-public struct Position <: ToString
+public struct Position <: ToString {}
 ```
 
 Function: Represents **a point** in source (line and column), used in `start` / `end` on [DebugLocation](chir_package_classes.md#class-debuglocation). When valid, line and column are **1-based**; `isValid()` requires both to be greater than `0`.
