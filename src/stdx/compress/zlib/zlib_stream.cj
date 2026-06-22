@@ -118,23 +118,25 @@ public class CompressInputStream <: InputStream {
                 deflater.deflate(outBuf.slice(outBufCursor, singleOutLen), NoFlush)
             }
         }
-        return outBufCursor
+        outBufCursor
     }
 
     private func getInput(): Bool {
-        var readRet = 0
-        if (inBufEnd == inBufCursor) {
-            readRet = inputStream.read(inBuf)
-            if (readRet <= 0) {
-                readEnd = true
-                if (!readStarted) {
-                    return false
-                }
-            }
-            readStarted = true
-            inBufCursor = 0
-            inBufEnd = readRet
+        if (inBufEnd != inBufCursor) {
+            return true
         }
+
+        var readRet = inputStream.read(inBuf)
+        if (readRet <= 0) {
+             readEnd = true
+             if (!readStarted) {
+                return false
+            }
+        }
+
+        readStarted = true
+        inBufCursor = 0
+        inBufEnd = readRet
         return true
     }
 
@@ -232,17 +234,6 @@ public class CompressOutputStream <: OutputStream {
     }
 
     /**
-     * Flushes compressed data from the internal buffer and writes to the bound output stream.
-     * Then refreshes the bound output stream.
-     *
-     * @throws ZlibException if the CompressOutputStream is closed or failed to encode stream.
-     */
-    public func flush(): Unit {
-        flushOutBuf()
-        outputStream.flush()
-    }
-
-    /**
      * Closes this stream and release internal compressor resources.
      *
      * @throws ZlibException if the CompressOutputStream is closed, or failed to encode stream,
@@ -260,6 +251,17 @@ public class CompressOutputStream <: OutputStream {
             deflater.deflateEnd()
             closed = true
         }
+    }
+
+    /**
+     * Flushes compressed data from the internal buffer and writes to the bound output stream.
+     * Then refreshes the bound output stream.
+     *
+     * @throws ZlibException if the CompressOutputStream is closed or failed to encode stream.
+     */
+    public func flush(): Unit {
+        flushOutBuf()
+        outputStream.flush()
     }
 
     private func finishDeflate(): Unit {
