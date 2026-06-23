@@ -205,25 +205,13 @@ public class HttpResponseBuilder {
 
     prop headers: HttpHeaders {
         get() {
-            return match (_headers) {
-                case Some(h) => h
-                case None =>
-                    let h = HttpHeaders()
-                    _headers = h
-                    return h
-            }
+            ensureHttpHeaders(_headers, {h => _headers = h})
         }
     }
 
     prop trailers: HttpHeaders {
         get() {
-            return match (_trailers) {
-                case Some(t) => t
-                case None =>
-                    let t = HttpHeaders()
-                    _trailers = t
-                    return t
-            }
+            ensureHttpHeaders(_trailers, {t => _trailers = t})
         }
     }
 }
@@ -270,13 +258,7 @@ public class HttpResponse <: ToString {
      */
     public prop headers: HttpHeaders {
         get() {
-            return match (_headers) {
-                case Some(h) => h
-                case None =>
-                    let h = HttpHeaders()
-                    _headers = h
-                    return h
-            }
+            ensureHttpHeaders(_headers, {h => _headers = h})
         }
     }
 
@@ -296,13 +278,7 @@ public class HttpResponse <: ToString {
      */
     public prop trailers: HttpHeaders {
         get() {
-            return match (_trailers) {
-                case Some(t) => t
-                case None =>
-                    let t = HttpHeaders()
-                    _trailers = t
-                    return t
-            }
+            ensureHttpHeaders(_trailers, {t => _trailers = t})
         }
     }
 
@@ -360,11 +336,7 @@ public class HttpResponse <: ToString {
         var str = StringBuilder()
         str.append("${_version} ${_status} ${phrase}\r\n")
         str.append(_headers?.toString() ?? "\r\n")
-        match (bodySize) {
-            case Some(0) => ()
-            case Some(s) => str.append("body size: ${s}\r\n")
-            case None => str.append("unknown body size\r\n")
-        }
+        appendBodySize(str, bodySize)
         str.append(_trailers?.toString() ?? "")
         return str.toString()
     }
