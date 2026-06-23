@@ -152,8 +152,8 @@ The **chir** (Cangjie High-level IR) package provides the type system and CHIR d
 
 | Name | Description |
 | --- | --- |
-| [serializePackage](./chir_package_api/chir_package_classes.md#func-serializepackage) | Serialize a Package to binary data. |
-| [deserializePackage](./chir_package_api/chir_package_classes.md#func-deserializepackage) | Deserialize a Package from binary data. |
+| [serializePackage](./chir_package_api/chir_package_classes.md#func-serializepackagepackage) | Serialize a Package to binary data. |
+| [deserializePackage](./chir_package_api/chir_package_classes.md#func-deserializepackagecpointeruint8-int64) | Deserialize a Package from binary data. |
 | [freeSerializedMemory](./chir_package_api/chir_package_classes.md#func-freeserializedmemory) | Free memory produced by serialization. |
 
 ### Enums

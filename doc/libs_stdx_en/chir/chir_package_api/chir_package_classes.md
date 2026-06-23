@@ -1462,7 +1462,7 @@ op_eq_CustomType: true
 ## class CustomTypeDef
 
 ```cangjie
-sealed abstract class CustomTypeDef <: Base & Equatable<CustomTypeDef> & Hashable {}
+sealed abstract class CustomTypeDef <: Equatable<CustomTypeDef> & Hashable {}
 ```
 
 Function: Common base class for **definitions** of class/interface/struct/enum/extension (combined with `Base`; includes attributes, CHIR annotations, debug locations, etc.).
@@ -6613,6 +6613,10 @@ public func isBuiltinType(): Bool
 
 Function: Whether this is a builtin type (Int, Float, Bool, Rune, Unit, Nothing, RawArray, VArray, CPointer, CString, etc.).
 
+Return Value:
+
+- Bool - Returns true if the type is builtin, false otherwise.
+
 ### func isFloatType()
 
 ```cangjie
@@ -8396,6 +8400,480 @@ Output:
 prop_funcCallCtx: 0
 ```
 
+## class Value
+
+```cangjie
+sealed abstract class Value <: ToString & Hashable & Equatable<Value> {}
+```
+
+Function: Abstract base class of all CHIR values, covering blocks, block groups, functions, global variables, local variables, parameters and literals. Provides common information such as identifier, type and user list, plus equality, hashing and type-testing capabilities.
+
+Parent Types:
+
+- ToString
+- Hashable
+- Equatable\<[Value](#class-value)>
+
+### prop identifier
+
+```cangjie
+public mut prop identifier: String
+```
+
+Function: Identifier of the value (may carry a prefix such as the global-symbol prefix, block prefix or local-variable prefix); readable and writable.
+
+Type: String
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("prop_identifier: ${f.identifier}")
+}
+```
+
+Output:
+
+```text
+prop_identifier: @f_m
+```
+
+### prop identifierWithoutPrefix
+
+```cangjie
+public prop identifierWithoutPrefix: String
+```
+
+Function: Identifier with built-in prefixes (global-symbol prefix, block prefix, local-variable prefix) stripped.
+
+Type: String
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("prop_identifierWithoutPrefix: ${f.identifierWithoutPrefix}")
+}
+```
+
+Output:
+
+```text
+prop_identifierWithoutPrefix: f_m
+```
+
+### prop ty
+
+```cangjie
+public mut prop ty: Type
+```
+
+Function: Type of the value; readable and writable.
+
+Type: [Type](#class-type)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("prop_ty: ${f.ty.qualifiedName}")
+}
+```
+
+Output:
+
+```text
+prop_ty: ()->Unit
+```
+
+### prop users
+
+```cangjie
+public prop users: Array<Expression>
+```
+
+Function: List of expressions that use this value as an operand (user list).
+
+Type: Array\<[Expression](#class-expression)>
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("prop_users: ${f.users.size}")
+}
+```
+
+Output:
+
+```text
+prop_users: 0
+```
+
+### func dump()
+
+```cangjie
+public func dump(): Unit
+```
+
+Function: Prints the string representation of the value to standard output.
+
+Example:
+
+<!-- run -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.dump()
+}
+```
+
+### func hashCode()
+
+```cangjie
+public func hashCode(): Int64
+```
+
+Function: Gets the hash code of this value.
+
+Return Value:
+
+- Int64 - Hash code of the value.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("func_hashCode: ${f.hashCode() == f.hashCode()}")
+}
+```
+
+Output:
+
+```text
+func_hashCode: true
+```
+
+### func isBlock()
+
+```cangjie
+public func isBlock(): Bool
+```
+
+Function: Checks whether this value is a [Block](#class-block).
+
+Return Value:
+
+- Bool - Returns true when this is a block, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("func_isBlock: ${f.isBlock()}")
+}
+```
+
+Output:
+
+```text
+func_isBlock: false
+```
+
+### func isBlockGroup()
+
+```cangjie
+public func isBlockGroup(): Bool
+```
+
+Function: Checks whether this value is a [BlockGroup](#class-blockgroup).
+
+Return Value:
+
+- Bool - Returns true when this is a block group, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("func_isBlockGroup: ${f.isBlockGroup()}")
+}
+```
+
+Output:
+
+```text
+func_isBlockGroup: false
+```
+
+### func isFunction()
+
+```cangjie
+public func isFunction(): Bool
+```
+
+Function: Checks whether this value is a [Function](#class-function).
+
+Return Value:
+
+- Bool - Returns true when this is a function, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("func_isFunction: ${f.isFunction()}")
+}
+```
+
+Output:
+
+```text
+func_isFunction: true
+```
+
+### func isGlobalVar()
+
+```cangjie
+public func isGlobalVar(): Bool
+```
+
+Function: Checks whether this value is a [GlobalVar](#class-globalvar).
+
+Return Value:
+
+- Bool - Returns true when this is a global variable, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("func_isGlobalVar: ${f.isGlobalVar()}")
+}
+```
+
+Output:
+
+```text
+func_isGlobalVar: false
+```
+
+### func isLiteral()
+
+```cangjie
+public func isLiteral(): Bool
+```
+
+Function: Checks whether this value is a subclass of [LiteralValue](#class-literalvalue).
+
+Return Value:
+
+- Bool - Returns true when this is a literal, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("func_isLiteral: ${f.isLiteral()}")
+}
+```
+
+Output:
+
+```text
+func_isLiteral: false
+```
+
+### func isLocalVar()
+
+```cangjie
+public func isLocalVar(): Bool
+```
+
+Function: Checks whether this value is a [LocalVar](#class-localvar).
+
+Return Value:
+
+- Bool - Returns true when this is a local variable, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("func_isLocalVar: ${f.isLocalVar()}")
+}
+```
+
+Output:
+
+```text
+func_isLocalVar: false
+```
+
+### func isParameter()
+
+```cangjie
+public func isParameter(): Bool
+```
+
+Function: Checks whether this value is a [Parameter](#class-parameter).
+
+Return Value:
+
+- Bool - Returns true when this is a parameter, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("func_isParameter: ${f.isParameter()}")
+}
+```
+
+Output:
+
+```text
+func_isParameter: false
+```
+
+### func replaceWith(Value)
+
+```cangjie
+public func replaceWith(other: Value): Unit
+```
+
+Function: Replaces this value with another value in every expression that uses it.
+
+Parameters:
+
+- other: [Value](#class-value) - The new value to replace with.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([IntType.getInt64()], IntType.getInt64()), "f_m", "f", "demo")
+    f.initBody()
+    let bg = f.body.getOrThrow()
+    let block = bg.entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let p0 = f.parameters[0]
+    let lit = IntLiteral.get(IntType.getInt64(), 1)
+    builder.createBinaryAdd(p0, lit, OverflowStrategy.NA)
+    let lit2 = IntLiteral.get(IntType.getInt64(), 2)
+    p0.replaceWith(lit2)
+    println("func_replaceWith: ${block.exprs.size}")
+}
+```
+
+Output:
+
+```text
+func_replaceWith: 1
+```
+
+### operator func ==(Value)
+
+```cangjie
+public operator func ==(other: Value): Bool
+```
+
+Function: Reference comparison, checks whether two Value instances are identical.
+
+Parameters:
+
+- other: [Value](#class-value) - The other value.
+
+Return Value:
+
+- Bool - Whether the references are identical.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("op_eq_Value: ${f == f}")
+}
+```
+
+Output:
+
+```text
+op_eq_Value: true
+```
+
 ## class Block
 
 ```cangjie
@@ -9076,6 +9554,53 @@ Output:
 op_eq_BlockGroup: true
 ```
 
+## class LiteralValue
+
+```cangjie
+sealed abstract class LiteralValue <: Value & Equatable<LiteralValue> {}
+```
+
+Function: Abstract base class of compile-time literal values in CHIR; parent type of literal kinds such as [BoolLiteral](#class-boolliteral), [IntLiteral](#class-intliteral) and [FloatLiteral](#class-floatliteral).
+
+Parent Types:
+
+- [Value](#class-value)
+- Equatable\<[LiteralValue](#class-literalvalue)>
+
+### operator func ==(LiteralValue)
+
+```cangjie
+public operator func ==(other: LiteralValue): Bool
+```
+
+Function: Reference comparison, checks whether two LiteralValue instances are identical.
+
+Parameters:
+
+- other: [LiteralValue](#class-literalvalue) - The other literal value.
+
+Return Value:
+
+- Bool - Whether the references are identical.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let lit = IntLiteral.get(IntType.getInt64(), 1)
+    println("op_eq_LiteralValue: ${lit == lit}")
+}
+```
+
+Output:
+
+```text
+op_eq_LiteralValue: true
+```
+
 ## class BoolLiteral
 
 ```cangjie
@@ -9355,6 +9880,746 @@ Output:
 
 ```text
 op_eq_FloatLiteral: true
+```
+
+## class GlobalValue
+
+```cangjie
+sealed abstract class GlobalValue <: Value & Equatable<GlobalValue> {}
+```
+
+Function: Abstract base class of package-level global values (functions and global variables). Provides source/package name, declared parent type, feature list, custom annotation instances, and query/set capabilities for access level, static/const/external-linkage attributes.
+
+Parent Types:
+
+- [Value](#class-value)
+- Equatable\<[GlobalValue](#class-globalvalue)>
+
+### prop customAnnoInstances
+
+```cangjie
+public mut prop customAnnoInstances: Array<CustomAnnoInstance>
+```
+
+Function: List of custom annotation instances attached to this global value; readable and writable.
+
+Type: Array\<[CustomAnnoInstance](#class-customannoinstance)>
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("prop_customAnnoInstances: ${f.customAnnoInstances.size}")
+}
+```
+
+Output:
+
+```text
+prop_customAnnoInstances: 0
+```
+
+### prop declaredParent
+
+```cangjie
+public prop declaredParent: ?CustomTypeDef
+```
+
+Function: Type definition that declares this global value; `None` for free-standing declarations.
+
+Type: ?[CustomTypeDef](#class-customtypedef)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("prop_declaredParent: ${f.declaredParent.isNone()}")
+}
+```
+
+Output:
+
+```text
+prop_declaredParent: true
+```
+
+### prop features
+
+```cangjie
+public prop features: Array<String>
+```
+
+Function: List of feature strings carried by this global value.
+
+Type: Array\<String>
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("prop_features: ${f.features.size}")
+}
+```
+
+Output:
+
+```text
+prop_features: 0
+```
+
+### prop packageName
+
+```cangjie
+public prop packageName: String
+```
+
+Function: Name of the package this global value belongs to.
+
+Type: String
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("prop_packageName: ${f.packageName}")
+}
+```
+
+Output:
+
+```text
+prop_packageName: demo
+```
+
+### prop outerType
+
+```cangjie
+public prop outerType: ?Type
+```
+
+Function: Outer type that declares this global value; `None` when there is no outer type.
+
+Type: ?[Type](#class-type)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("prop_outerType: ${f.outerType.isNone()}")
+}
+```
+
+Output:
+
+```text
+prop_outerType: true
+```
+
+### prop srcCodeName
+
+```cangjie
+public prop srcCodeName: String
+```
+
+Function: Name of this global value in source code.
+
+Type: String
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("prop_srcCodeName: ${f.srcCodeName}")
+}
+```
+
+Output:
+
+```text
+prop_srcCodeName: f
+```
+
+### func isCompilerAdd()
+
+```cangjie
+public func isCompilerAdd(): Bool
+```
+
+Function: Checks whether this global value was added by the compiler.
+
+Return Value:
+
+- Bool - Returns true when added by the compiler, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("func_isCompilerAdd: ${f.isCompilerAdd()}")
+}
+```
+
+Output:
+
+```text
+func_isCompilerAdd: false
+```
+
+### func isConst()
+
+```cangjie
+public func isConst(): Bool
+```
+
+Function: Checks whether this global value is marked as constant.
+
+Return Value:
+
+- Bool - Returns true when marked as constant, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("func_isConst: ${f.isConst()}")
+}
+```
+
+Output:
+
+```text
+func_isConst: false
+```
+
+### func isExternalLinkage()
+
+```cangjie
+public func isExternalLinkage(): Bool
+```
+
+Function: Checks whether this global value has external linkage (`LinkType.External`).
+
+Return Value:
+
+- Bool - Returns true when it has external linkage, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("func_isExternalLinkage: ${f.isExternalLinkage()}")
+}
+```
+
+Output:
+
+```text
+func_isExternalLinkage: true
+```
+
+### func isForeign()
+
+```cangjie
+public func isForeign(): Bool
+```
+
+Function: Checks whether this global value is a foreign function.
+
+Return Value:
+
+- Bool - Returns true when it is a foreign function, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("func_isForeign: ${f.isForeign()}")
+}
+```
+
+Output:
+
+```text
+func_isForeign: false
+```
+
+### func isImported()
+
+```cangjie
+public func isImported(): Bool
+```
+
+Function: Checks whether this global value is imported from another package.
+
+Return Value:
+
+- Bool - Returns true when imported, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("func_isImported: ${f.isImported()}")
+}
+```
+
+Output:
+
+```text
+func_isImported: false
+```
+
+### func isInternal()
+
+```cangjie
+public func isInternal(): Bool
+```
+
+Function: Checks whether the access level of this global value is internal.
+
+Return Value:
+
+- Bool - Returns true when the access level is internal, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("func_isInternal: ${f.isInternal()}")
+}
+```
+
+Output:
+
+```text
+func_isInternal: false
+```
+
+### func isPrivate()
+
+```cangjie
+public func isPrivate(): Bool
+```
+
+Function: Checks whether the access level of this global value is private.
+
+Return Value:
+
+- Bool - Returns true when the access level is private, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("func_isPrivate: ${f.isPrivate()}")
+}
+```
+
+Output:
+
+```text
+func_isPrivate: false
+```
+
+### func isProtected()
+
+```cangjie
+public func isProtected(): Bool
+```
+
+Function: Checks whether the access level of this global value is protected.
+
+Return Value:
+
+- Bool - Returns true when the access level is protected, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("func_isProtected: ${f.isProtected()}")
+}
+```
+
+Output:
+
+```text
+func_isProtected: false
+```
+
+### func isPublic()
+
+```cangjie
+public func isPublic(): Bool
+```
+
+Function: Checks whether the access level of this global value is public.
+
+Return Value:
+
+- Bool - Returns true when the access level is public, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("func_isPublic: ${f.isPublic()}")
+}
+```
+
+Output:
+
+```text
+func_isPublic: false
+```
+
+### func isStatic()
+
+```cangjie
+public func isStatic(): Bool
+```
+
+Function: Checks whether this global value is a static member.
+
+Return Value:
+
+- Bool - Returns true when it is a static member, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("func_isStatic: ${f.isStatic()}")
+}
+```
+
+Output:
+
+```text
+func_isStatic: false
+```
+
+### func setConst(Bool)
+
+```cangjie
+public func setConst(enable: Bool): Unit
+```
+
+Function: Sets the constant flag of this global value.
+
+Parameters:
+
+- enable: Bool - true marks as constant, false clears the mark.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.setConst(true)
+    println("func_setConst: ${f.isConst()}")
+}
+```
+
+Output:
+
+```text
+func_setConst: true
+```
+
+### func setImported(Bool)
+
+```cangjie
+public func setImported(enable: Bool): Unit
+```
+
+Function: Sets the imported flag of this global value.
+
+Parameters:
+
+- enable: Bool - true marks as imported, false clears the mark.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.setImported(true)
+    println("func_setImported: ${f.isImported()}")
+}
+```
+
+Output:
+
+```text
+func_setImported: true
+```
+
+### func setInternal()
+
+```cangjie
+public func setInternal(): Unit
+```
+
+Function: Sets the access level of this global value to internal.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.setInternal()
+    println("func_setInternal: ${f.isInternal()}")
+}
+```
+
+Output:
+
+```text
+func_setInternal: true
+```
+
+### func setPrivate()
+
+```cangjie
+public func setPrivate(): Unit
+```
+
+Function: Sets the access level of this global value to private.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.setPrivate()
+    println("func_setPrivate: ${f.isPrivate()}")
+}
+```
+
+Output:
+
+```text
+func_setPrivate: true
+```
+
+### func setProtected()
+
+```cangjie
+public func setProtected(): Unit
+```
+
+Function: Sets the access level of this global value to protected.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.setProtected()
+    println("func_setProtected: ${f.isProtected()}")
+}
+```
+
+Output:
+
+```text
+func_setProtected: true
+```
+
+### func setPublic()
+
+```cangjie
+public func setPublic(): Unit
+```
+
+Function: Sets the access level of this global value to public.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.setPublic()
+    println("func_setPublic: ${f.isPublic()}")
+}
+```
+
+Output:
+
+```text
+func_setPublic: true
+```
+
+### func setStatic(Bool)
+
+```cangjie
+public func setStatic(enable: Bool): Unit
+```
+
+Function: Sets the static-member flag of this global value.
+
+Parameters:
+
+- enable: Bool - true marks as a static member, false clears the mark.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.setStatic(true)
+    println("func_setStatic: ${f.isStatic()}")
+}
+```
+
+Output:
+
+```text
+func_setStatic: true
+```
+
+### operator func ==(GlobalValue)
+
+```cangjie
+public operator func ==(other: GlobalValue): Bool
+```
+
+Function: Reference comparison, checks whether two GlobalValue instances are identical.
+
+Parameters:
+
+- other: [GlobalValue](#class-globalvalue) - The other global value.
+
+Return Value:
+
+- Bool - Whether the references are identical.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("op_eq_GlobalValue: ${f == f}")
+}
+```
+
+Output:
+
+```text
+op_eq_GlobalValue: true
 ```
 
 ## class Function
@@ -11315,6 +12580,758 @@ op_eq_UnitLiteral: true
 
 </task_result>
 
+## class Expression
+
+```cangjie
+sealed abstract class Expression <: ToString & Hashable & Equatable<Expression> {}
+```
+
+Function: Abstract base class of all CHIR expressions. An expression is the instruction unit inside a basic block; it holds the operand list, owning block, result local variable and attached block groups, and provides move, destroy, result-query and type-testing capabilities.
+
+Parent Types:
+
+- ToString
+- Hashable
+- Equatable\<[Expression](#class-expression)>
+
+### prop blockGroups
+
+```cangjie
+public prop blockGroups: Array<BlockGroup>
+```
+
+Function: List of block groups attached to this expression.
+
+Type: Array\<[BlockGroup](#class-blockgroup)>
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Allocate.create(IntType.getInt32())
+    block.appendExpr(expr)
+    println("prop_blockGroups: ${expr.blockGroups.size}")
+}
+```
+
+Output:
+
+```text
+prop_blockGroups: 0
+```
+
+### prop operands
+
+```cangjie
+public prop operands: Array<Value>
+```
+
+Function: Ordered operand list of this expression.
+
+Type: Array\<[Value](#class-value)>
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Allocate.create(IntType.getInt32())
+    block.appendExpr(expr)
+    println("prop_operands: ${expr.operands.size}")
+}
+```
+
+Output:
+
+```text
+prop_operands: 0
+```
+
+### prop owner
+
+```cangjie
+public prop owner: Block
+```
+
+Function: Basic block that contains this expression; throws when not set.
+
+Type: [Block](#class-block)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Allocate.create(IntType.getInt32())
+    block.appendExpr(expr)
+    println("prop_owner: ${expr.owner == block}")
+}
+```
+
+Output:
+
+```text
+prop_owner: true
+```
+
+### prop result
+
+```cangjie
+public prop result: LocalVar
+```
+
+Function: Result local variable produced by this expression; throws when not set.
+
+Type: [LocalVar](#class-localvar)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Allocate.create(IntType.getInt32())
+    block.appendExpr(expr)
+    println("prop_result: ${expr.result.ty.qualifiedName}")
+}
+```
+
+Output:
+
+```text
+prop_result: Int32
+```
+
+### prop successors
+
+```cangjie
+public prop successors: Array<Block>
+```
+
+Function: List of successor blocks referenced by this expression's operands.
+
+Type: Array\<[Block](#class-block)>
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Allocate.create(IntType.getInt32())
+    block.appendExpr(expr)
+    println("prop_successors: ${expr.successors.size}")
+}
+```
+
+Output:
+
+```text
+prop_successors: 0
+```
+
+### prop topLevelFunc
+
+```cangjie
+public prop topLevelFunc: Function
+```
+
+Function: Top-level function this expression belongs to.
+
+Type: [Function](#class-function)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Allocate.create(IntType.getInt32())
+    block.appendExpr(expr)
+    println("prop_topLevelFunc: ${expr.topLevelFunc == f}")
+}
+```
+
+Output:
+
+```text
+prop_topLevelFunc: true
+```
+
+### func destroySelf()
+
+```cangjie
+public func destroySelf(): Unit
+```
+
+Function: Destroys this expression, detaching all use/ownership relations with its operands, owning block and attached block groups.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Allocate.create(IntType.getInt32())
+    block.appendExpr(expr)
+    expr.destroySelf()
+    println("func_destroySelf: ${block.exprs.size}")
+}
+```
+
+Output:
+
+```text
+func_destroySelf: 0
+```
+
+### func dump()
+
+```cangjie
+public func dump(): Unit
+```
+
+Function: Prints the string representation of the expression to standard output.
+
+Example:
+
+<!-- run -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Allocate.create(IntType.getInt32())
+    block.appendExpr(expr)
+    expr.dump()
+}
+```
+
+### func hasExceptionBranch()
+
+```cangjie
+public func hasExceptionBranch(): Bool
+```
+
+Function: Checks whether this expression carries normal/error branch operands (e.g. TryApply, TryInvoke).
+
+Return Value:
+
+- Bool - Returns true when it carries an exception branch, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Allocate.create(IntType.getInt32())
+    block.appendExpr(expr)
+    println("func_hasExceptionBranch: ${expr.hasExceptionBranch()}")
+}
+```
+
+Output:
+
+```text
+func_hasExceptionBranch: false
+```
+
+### func hashCode()
+
+```cangjie
+public func hashCode(): Int64
+```
+
+Function: Computes the hash code of this expression from its result value.
+
+Return Value:
+
+- Int64 - Hash code of the expression.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Allocate.create(IntType.getInt32())
+    block.appendExpr(expr)
+    println("func_hashCode: ${expr.hashCode() == expr.hashCode()}")
+}
+```
+
+Output:
+
+```text
+func_hashCode: true
+```
+
+### func isTerminator()
+
+```cangjie
+public func isTerminator(): Bool
+```
+
+Function: Checks whether this expression is a terminator (e.g. Branch, Exit, GoTo).
+
+Return Value:
+
+- Bool - Returns true when it is a terminator, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Allocate.create(IntType.getInt32())
+    block.appendExpr(expr)
+    println("func_isTerminator: ${expr.isTerminator()}")
+}
+```
+
+Output:
+
+```text
+func_isTerminator: false
+```
+
+### func isLambda()
+
+```cangjie
+public func isLambda(): Bool
+```
+
+Function: Checks whether this expression is a Lambda expression.
+
+Return Value:
+
+- Bool - Returns true when it is a Lambda expression, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Allocate.create(IntType.getInt32())
+    block.appendExpr(expr)
+    println("func_isLambda: ${expr.isLambda()}")
+}
+```
+
+Output:
+
+```text
+func_isLambda: false
+```
+
+### func isExit()
+
+```cangjie
+public func isExit(): Bool
+```
+
+Function: Checks whether this expression is an Exit expression.
+
+Return Value:
+
+- Bool - Returns true when it is an Exit expression, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Allocate.create(IntType.getInt32())
+    block.appendExpr(expr)
+    println("func_isExit: ${expr.isExit()}")
+}
+```
+
+Output:
+
+```text
+func_isExit: false
+```
+
+### func moveAfter(Expression)
+
+```cangjie
+public func moveAfter(other: Expression): Unit
+```
+
+Function: Moves this expression right after another expression; cannot be moved after a terminator.
+
+Parameters:
+
+- other: [Expression](#class-expression) - The anchor expression.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let e1 = builder.createBinaryAdd(IntLiteral.get(IntType.getInt64(), 1), IntLiteral.get(IntType.getInt64(), 2), OverflowStrategy.NA)
+    let e2 = builder.createBinarySub(IntLiteral.get(IntType.getInt64(), 5), IntLiteral.get(IntType.getInt64(), 3), OverflowStrategy.NA)
+    e2.moveAfter(e1)
+    println("func_moveAfter: ${block.exprs[0] == e1}")
+}
+```
+
+Output:
+
+```text
+func_moveAfter: true
+```
+
+### func moveBefore(Expression)
+
+```cangjie
+public func moveBefore(other: Expression): Unit
+```
+
+Function: Moves this expression right before another expression; a terminator cannot be moved in front of another expression.
+
+Parameters:
+
+- other: [Expression](#class-expression) - The anchor expression.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let e1 = builder.createBinaryAdd(IntLiteral.get(IntType.getInt64(), 1), IntLiteral.get(IntType.getInt64(), 2), OverflowStrategy.NA)
+    let e2 = builder.createBinarySub(IntLiteral.get(IntType.getInt64(), 5), IntLiteral.get(IntType.getInt64(), 3), OverflowStrategy.NA)
+    e1.moveBefore(e2)
+    println("func_moveBefore: ${block.exprs[0] == e1}")
+}
+```
+
+Output:
+
+```text
+func_moveBefore: true
+```
+
+### func replaceOperand(Value, Value)
+
+```cangjie
+public func replaceOperand(operand: Value, other: Value): Unit
+```
+
+Function: Replaces a specified operand of this expression with another value.
+
+Parameters:
+
+- operand: [Value](#class-value) - The operand to be replaced.
+- other: [Value](#class-value) - The new value to replace with.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let l1 = IntLiteral.get(IntType.getInt64(), 1)
+    let l2 = IntLiteral.get(IntType.getInt64(), 2)
+    let l3 = IntLiteral.get(IntType.getInt64(), 3)
+    let expr = builder.createBinaryAdd(l1, l2, OverflowStrategy.NA)
+    expr.replaceOperand(l1, l3)
+    println("func_replaceOperand: ${expr.operands[0] == l3}")
+}
+```
+
+Output:
+
+```text
+func_replaceOperand: true
+```
+
+### func toString()
+
+```cangjie
+public open func toString(): String
+```
+
+Function: Builds the readable string representation of this expression.
+
+Return Value:
+
+- String - Readable text of the expression.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let expr = builder.createBinaryAdd(IntLiteral.get(IntType.getInt64(), 1), IntLiteral.get(IntType.getInt64(), 2), OverflowStrategy.NA)
+    println("func_toString: ${expr.toString().isEmpty()}")
+}
+```
+
+Output:
+
+```text
+func_toString: false
+```
+
+### func tryGetResult()
+
+```cangjie
+public func tryGetResult(): Option<LocalVar>
+```
+
+Function: Tries to get the result local variable of this expression; returns `None` when not set.
+
+Return Value:
+
+- Option\<[LocalVar](#class-localvar)> - The result local variable, or `None` when not set.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Allocate.create(IntType.getInt32())
+    block.appendExpr(expr)
+    println("func_tryGetResult: ${expr.tryGetResult().isSome()}")
+}
+```
+
+Output:
+
+```text
+func_tryGetResult: true
+```
+
+### operator func ==(Expression)
+
+```cangjie
+public operator func ==(other: Expression): Bool
+```
+
+Function: Reference comparison, checks whether two Expression instances are identical.
+
+Parameters:
+
+- other: [Expression](#class-expression) - The other expression.
+
+Return Value:
+
+- Bool - Whether the references are identical.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Allocate.create(IntType.getInt32())
+    block.appendExpr(expr)
+    println("op_eq_Expression: ${expr == expr}")
+}
+```
+
+Output:
+
+```text
+op_eq_Expression: true
+```
+
+## class AllocateBase
+
+```cangjie
+sealed abstract class AllocateBase <: Expression & Equatable<AllocateBase> {}
+```
+
+Function: Abstract base class of memory-allocation expressions; provides the allocated type, parent type of [Allocate](#class-allocate) and [TryAllocate](#class-tryallocate).
+
+Parent Types:
+
+- [Expression](#class-expression)
+- Equatable\<[AllocateBase](#class-allocatebase)>
+
+### prop allocatedType
+
+```cangjie
+public prop allocatedType: Type
+```
+
+Function: Type allocated by this allocation expression.
+
+Type: [Type](#class-type)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Allocate.create(IntType.getInt32())
+    block.appendExpr(expr)
+    println("prop_allocatedType: ${expr.allocatedType.qualifiedName}")
+}
+```
+
+Output:
+
+```text
+prop_allocatedType: Int32
+```
+
+### operator func ==(AllocateBase)
+
+```cangjie
+public operator func ==(other: AllocateBase): Bool
+```
+
+Function: Reference comparison, checks whether two AllocateBase instances are identical.
+
+Parameters:
+
+- other: [AllocateBase](#class-allocatebase) - The other allocation-base expression.
+
+Return Value:
+
+- Bool - Whether the references are identical.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Allocate.create(IntType.getInt32())
+    block.appendExpr(expr)
+    println("op_eq_AllocateBase: ${expr == expr}")
+}
+```
+
+Output:
+
+```text
+op_eq_AllocateBase: true
+```
+
 ## class Allocate
 
 ```cangjie
@@ -11575,6 +13592,92 @@ Output:
 
 ```text
 op_eq_TryAllocate: true
+```
+
+## class BinaryExpressionBase
+
+```cangjie
+sealed abstract class BinaryExpressionBase <: Expression & Equatable<BinaryExpressionBase> {}
+```
+
+Function: Abstract base class of binary expressions ([BinaryExpression](#class-binaryexpression), [TryBinaryExpression](#class-trybinaryexpression), etc.); provides query and set of the overflow strategy.
+
+Parent Types:
+
+- [Expression](#class-expression)
+- Equatable\<[BinaryExpressionBase](#class-binaryexpressionbase)>
+
+### prop overflow
+
+```cangjie
+public mut prop overflow: OverflowStrategy
+```
+
+Function: Overflow strategy used by this binary expression; readable and writable, defaults to [OverflowStrategy](./chir_package_enums.md#enum-overflowstrategy).NA.
+
+Type: [OverflowStrategy](./chir_package_enums.md#enum-overflowstrategy)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let expr = builder.createBinaryAdd(IntLiteral.get(IntType.getInt64(), 1), IntLiteral.get(IntType.getInt64(), 2), OverflowStrategy.NA)
+    expr.overflow = OverflowStrategy.Throwing
+    println("prop_overflow: ${expr.overflow}")
+}
+```
+
+Output:
+
+```text
+prop_overflow: Throwing
+```
+
+### operator func ==(BinaryExpressionBase)
+
+```cangjie
+public operator func ==(other: BinaryExpressionBase): Bool
+```
+
+Function: Reference comparison, checks whether two BinaryExpressionBase instances are identical.
+
+Parameters:
+
+- other: [BinaryExpressionBase](#class-binaryexpressionbase) - The other binary-expression-base expression.
+
+Return Value:
+
+- Bool - Whether the references are identical.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let expr = builder.createBinaryAdd(IntLiteral.get(IntType.getInt64(), 1), IntLiteral.get(IntType.getInt64(), 2), OverflowStrategy.NA)
+    println("op_eq_BinaryExpressionBase: ${expr == expr}")
+}
+```
+
+Output:
+
+```text
+op_eq_BinaryExpressionBase: true
 ```
 
 ## class BinaryExpression
@@ -12661,6 +14764,262 @@ Output:
 op_eq_FieldByName: true
 ```
 
+## class FuncCall
+
+```cangjie
+sealed abstract class FuncCall <: Expression & Equatable<FuncCall> {}
+```
+
+Function: Abstract base class of function-call expressions; parent type of [ApplyBase](#class-applybase), [IntrinsicBase](#class-intrinsicbase) and [InvokeBase](#class-invokebase); provides query of instantiated type arguments, object type and argument list.
+
+Parent Types:
+
+- [Expression](#class-expression)
+- Equatable\<[FuncCall](#class-funccall)>
+
+### prop instantiatedTypeArgs
+
+```cangjie
+public prop instantiatedTypeArgs: Array<Type>
+```
+
+Function: Instantiated type argument list of this function-call expression.
+
+Type: Array\<[Type](#class-type)>
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let fType = FuncType.get([], UnitType.get())
+    let f = pkg.addFunction(fType, "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let callCtx = FuncCallContext([], [], None)
+    let expr = Apply.create(f, callCtx)
+    block.appendExpr(expr)
+    println("prop_instantiatedTypeArgs: ${expr.instantiatedTypeArgs.size}")
+}
+```
+
+Output:
+
+```text
+prop_instantiatedTypeArgs: 0
+```
+
+### prop objType
+
+```cangjie
+public prop objType: ?Type
+```
+
+Function: Object type of this function-call expression (the object type for member-method calls); `None` for non-member calls.
+
+Type: ?[Type](#class-type)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let fType = FuncType.get([], UnitType.get())
+    let f = pkg.addFunction(fType, "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let callCtx = FuncCallContext([], [], None)
+    let expr = Apply.create(f, callCtx)
+    block.appendExpr(expr)
+    println("prop_objType: ${expr.objType.isNone()}")
+}
+```
+
+Output:
+
+```text
+prop_objType: true
+```
+
+### func getArgs()
+
+```cangjie
+public func getArgs(): Array<Value>
+```
+
+Function: Gets the argument list of this function-call expression.
+
+Return Value:
+
+- Array\<[Value](#class-value)> - The argument array.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let fType = FuncType.get([], UnitType.get())
+    let f = pkg.addFunction(fType, "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let callCtx = FuncCallContext([], [], None)
+    let expr = Apply.create(f, callCtx)
+    block.appendExpr(expr)
+    println("func_getArgs: ${expr.getArgs().size}")
+}
+```
+
+Output:
+
+```text
+func_getArgs: 0
+```
+
+### operator func ==(FuncCall)
+
+```cangjie
+public operator func ==(other: FuncCall): Bool
+```
+
+Function: Reference comparison, checks whether two FuncCall instances are identical.
+
+Parameters:
+
+- other: [FuncCall](#class-funccall) - The other function-call-base expression.
+
+Return Value:
+
+- Bool - Whether the references are identical.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let fType = FuncType.get([], UnitType.get())
+    let f = pkg.addFunction(fType, "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let callCtx = FuncCallContext([], [], None)
+    let expr = Apply.create(f, callCtx)
+    block.appendExpr(expr)
+    println("op_eq_FuncCall: ${expr == expr}")
+}
+```
+
+Output:
+
+```text
+op_eq_FuncCall: true
+```
+
+## class ApplyBase
+
+```cangjie
+sealed abstract class ApplyBase <: FuncCall & Equatable<ApplyBase> {}
+```
+
+Function: Abstract base class of Apply (plain function call) expressions; parent type of [Apply](#class-apply) and [TryApply](#class-tryapply); provides query of the callee value.
+
+Parent Types:
+
+- [FuncCall](#class-funccall)
+- Equatable\<[ApplyBase](#class-applybase)>
+
+### prop callee
+
+```cangjie
+public prop callee: Value
+```
+
+Function: Callee function value.
+
+Type: [Value](#class-value)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let fType = FuncType.get([], UnitType.get())
+    let f = pkg.addFunction(fType, "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let callCtx = FuncCallContext([], [], None)
+    let expr = Apply.create(f, callCtx)
+    block.appendExpr(expr)
+    println("prop_callee: ${expr.callee == f}")
+}
+```
+
+Output:
+
+```text
+prop_callee: true
+```
+
+### operator func ==(ApplyBase)
+
+```cangjie
+public operator func ==(other: ApplyBase): Bool
+```
+
+Function: Reference comparison, checks whether two ApplyBase instances are identical.
+
+Parameters:
+
+- other: [ApplyBase](#class-applybase) - The other Apply-base expression.
+
+Return Value:
+
+- Bool - Whether the references are identical.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let fType = FuncType.get([], UnitType.get())
+    let f = pkg.addFunction(fType, "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let callCtx = FuncCallContext([], [], None)
+    let expr = Apply.create(f, callCtx)
+    block.appendExpr(expr)
+    println("op_eq_ApplyBase: ${expr == expr}")
+}
+```
+
+Output:
+
+```text
+op_eq_ApplyBase: true
+```
+
 ## class Apply
 
 ```cangjie
@@ -12961,6 +15320,35 @@ Output:
 op_eq_TryApply: true
 ```
 
+## class IntrinsicBase
+
+```cangjie
+sealed abstract class IntrinsicBase <: FuncCall & Equatable<IntrinsicBase> {}
+```
+
+Function: Abstract base class of intrinsic function-call expressions; parent type of [Intrinsic](#class-intrinsic) and [TryIntrinsic](#class-tryintrinsic).
+
+Parent Types:
+
+- [FuncCall](#class-funccall)
+- Equatable\<[IntrinsicBase](#class-intrinsicbase)>
+
+### operator func ==(IntrinsicBase)
+
+```cangjie
+public operator func ==(other: IntrinsicBase): Bool
+```
+
+Function: Reference comparison, checks whether two IntrinsicBase instances are identical.
+
+Parameters:
+
+- other: [IntrinsicBase](#class-intrinsicbase) - The other Intrinsic-base expression.
+
+Return Value:
+
+- Bool - Whether the references are identical.
+
 ## class Intrinsic
 
 ```cangjie
@@ -13062,6 +15450,169 @@ Parameters:
 Return Value:
 
 - Bool - Whether they are the same reference.
+
+## class InvokeBase
+
+```cangjie
+sealed abstract class InvokeBase <: FuncCall & Equatable<InvokeBase> {}
+```
+
+Function: Abstract base class of Invoke (member-method call) expressions; parent type of [Invoke](#class-invoke) and [TryInvoke](#class-tryinvoke); provides query of method name, method type and method generic type parameters.
+
+Parent Types:
+
+- [FuncCall](#class-funccall)
+- Equatable\<[InvokeBase](#class-invokebase)>
+
+### prop methodGenericTypeParams
+
+```cangjie
+public prop methodGenericTypeParams: Array<GenericType>
+```
+
+Function: Method generic type parameter list of this member-method call.
+
+Type: Array\<[GenericType](#class-generictype)>
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let virMethodCtx = FuncSigInfo("m", FuncType.get([], UnitType.get()))
+    let invokeCtx = InvokeCallContext(f, virMethodCtx, FuncCallContext([], [], None))
+    let expr = Invoke.create(UnitType.get(), invokeCtx)
+    block.appendExpr(expr)
+    println("prop_methodGenericTypeParams: ${expr.methodGenericTypeParams.size}")
+}
+```
+
+Output:
+
+```text
+prop_methodGenericTypeParams: 0
+```
+
+### prop methodName
+
+```cangjie
+public prop methodName: String
+```
+
+Function: Method name of this member-method call.
+
+Type: String
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let virMethodCtx = FuncSigInfo("m", FuncType.get([], UnitType.get()))
+    let invokeCtx = InvokeCallContext(f, virMethodCtx, FuncCallContext([], [], None))
+    let expr = Invoke.create(UnitType.get(), invokeCtx)
+    block.appendExpr(expr)
+    println("prop_methodName: ${expr.methodName}")
+}
+```
+
+Output:
+
+```text
+prop_methodName: m
+```
+
+### prop methodType
+
+```cangjie
+public prop methodType: FuncType
+```
+
+Function: Method type of this member-method call.
+
+Type: [FuncType](#class-functype)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let virMethodCtx = FuncSigInfo("m", FuncType.get([], UnitType.get()))
+    let invokeCtx = InvokeCallContext(f, virMethodCtx, FuncCallContext([], [], None))
+    let expr = Invoke.create(UnitType.get(), invokeCtx)
+    block.appendExpr(expr)
+    println("prop_methodType: ${expr.methodType.qualifiedName}")
+}
+```
+
+Output:
+
+```text
+prop_methodType: ()->Unit
+```
+
+### operator func ==(InvokeBase)
+
+```cangjie
+public operator func ==(other: InvokeBase): Bool
+```
+
+Function: Reference comparison, checks whether two InvokeBase instances are identical.
+
+Parameters:
+
+- other: [InvokeBase](#class-invokebase) - The other Invoke-base expression.
+
+Return Value:
+
+- Bool - Whether the references are identical.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let virMethodCtx = FuncSigInfo("m", FuncType.get([], UnitType.get()))
+    let invokeCtx = InvokeCallContext(f, virMethodCtx, FuncCallContext([], [], None))
+    let expr = Invoke.create(UnitType.get(), invokeCtx)
+    block.appendExpr(expr)
+    println("op_eq_InvokeBase: ${expr == expr}")
+}
+```
+
+Output:
+
+```text
+op_eq_InvokeBase: true
+```
 
 ## class Invoke
 
@@ -15150,6 +17701,91 @@ Output:
 op_eq_MultiBranch: true
 ```
 
+## class NumericCastBase
+
+```cangjie
+sealed abstract class NumericCastBase <: Expression & Equatable<NumericCastBase> {}
+```
+
+Function: Abstract base class of numeric-cast expressions; parent type of [NumericCast](#class-numericcast) and [TryNumericCast](#class-trynumericcast); provides query and set of the overflow strategy.
+
+Parent Types:
+
+- [Expression](#class-expression)
+- Equatable\<[NumericCastBase](#class-numericcastbase)>
+
+### prop overflow
+
+```cangjie
+public mut prop overflow: OverflowStrategy
+```
+
+Function: Overflow strategy used by this numeric-cast expression; readable and writable.
+
+Type: [OverflowStrategy](./chir_package_enums.md#enum-overflowstrategy)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let expr = builder.createNumericCast(IntLiteral.get(IntType.getInt64(), 1), IntType.getInt32(), OverflowStrategy.NA)
+    println("prop_overflow: ${expr.overflow}")
+}
+```
+
+Output:
+
+```text
+prop_overflow: NA
+```
+
+### operator func ==(NumericCastBase)
+
+```cangjie
+public operator func ==(other: NumericCastBase): Bool
+```
+
+Function: Reference comparison, checks whether two NumericCastBase instances are identical.
+
+Parameters:
+
+- other: [NumericCastBase](#class-numericcastbase) - The other numeric-cast-base expression.
+
+Return Value:
+
+- Bool - Whether the references are identical.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let expr = builder.createNumericCast(IntLiteral.get(IntType.getInt64(), 1), IntType.getInt32(), OverflowStrategy.NA)
+    println("op_eq_NumericCastBase: ${expr == expr}")
+}
+```
+
+Output:
+
+```text
+op_eq_NumericCastBase: true
+```
+
 ## class NumericCast
 
 ```cangjie
@@ -15543,6 +18179,91 @@ Output:
 op_eq_RaiseException: true
 ```
 </task_result>
+
+## class RawArrayAllocateBase
+
+```cangjie
+sealed abstract class RawArrayAllocateBase <: Expression & Equatable<RawArrayAllocateBase> {}
+```
+
+Function: Abstract base class of raw-array allocation expressions; parent type of [RawArrayAllocate](#class-rawarrayallocate) and [TryRawArrayAllocate](#class-tryrawarrayallocate); provides query of the allocated element type.
+
+Parent Types:
+
+- [Expression](#class-expression)
+- Equatable\<[RawArrayAllocateBase](#class-rawarrayallocatebase)>
+
+### prop elementType
+
+```cangjie
+public prop elementType: Type
+```
+
+Function: Element type allocated by this allocation expression.
+
+Type: [Type](#class-type)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = RawArrayAllocate.create(IntType.getInt32(), IntLiteral.get(IntType.getInt64(), 4))
+    block.appendExpr(expr)
+    println("prop_elementType: ${expr.elementType.qualifiedName}")
+}
+```
+
+Output:
+
+```text
+prop_elementType: Int32
+```
+
+### operator func ==(RawArrayAllocateBase)
+
+```cangjie
+public operator func ==(other: RawArrayAllocateBase): Bool
+```
+
+Function: Reference comparison, checks whether two RawArrayAllocateBase instances are identical.
+
+Parameters:
+
+- other: [RawArrayAllocateBase](#class-rawarrayallocatebase) - The other raw-array-allocation-base expression.
+
+Return Value:
+
+- Bool - Whether the references are identical.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = RawArrayAllocate.create(IntType.getInt32(), IntLiteral.get(IntType.getInt64(), 4))
+    block.appendExpr(expr)
+    println("op_eq_RawArrayAllocateBase: ${expr == expr}")
+}
+```
+
+Output:
+
+```text
+op_eq_RawArrayAllocateBase: true
+```
 
 ## class RawArrayAllocate
 
@@ -15993,6 +18714,126 @@ Output:
 
 ```text
 op_eq_RawArrayLiteralInit: true
+```
+
+## class SpawnBase
+
+```cangjie
+sealed abstract class SpawnBase <: Expression & Equatable<SpawnBase> {}
+```
+
+Function: Abstract base class of Spawn (coroutine-creation) expressions; parent type of [Spawn](#class-spawn) and [TrySpawn](#class-tryspawn); provides query and set of the execute closure.
+
+Parent Types:
+
+- [Expression](#class-expression)
+- Equatable\<[SpawnBase](#class-spawnbase)>
+
+### prop executeClosure
+
+```cangjie
+public mut prop executeClosure: Function
+```
+
+Function: Execute closure associated with this Spawn expression; throws when read before being set.
+
+Type: [Function](#class-function)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let expr = builder.createSpawn(UnitType.get(), f)
+    println("prop_executeClosure: ${expr.needExecuteClosure()}")
+}
+```
+
+Output:
+
+```text
+prop_executeClosure: false
+```
+
+### func needExecuteClosure()
+
+```cangjie
+public func needExecuteClosure(): Bool
+```
+
+Function: Checks whether this Spawn expression has an execute closure set.
+
+Return Value:
+
+- Bool - Returns true when an execute closure is set, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let expr = builder.createSpawn(UnitType.get(), f)
+    println("func_needExecuteClosure: ${expr.needExecuteClosure()}")
+}
+```
+
+Output:
+
+```text
+func_needExecuteClosure: false
+```
+
+### operator func ==(SpawnBase)
+
+```cangjie
+public operator func ==(other: SpawnBase): Bool
+```
+
+Function: Reference comparison, checks whether two SpawnBase instances are identical.
+
+Parameters:
+
+- other: [SpawnBase](#class-spawnbase) - The other Spawn-base expression.
+
+Return Value:
+
+- Bool - Whether the references are identical.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let expr = builder.createSpawn(UnitType.get(), f)
+    println("op_eq_SpawnBase: ${expr == expr}")
+}
+```
+
+Output:
+
+```text
+op_eq_SpawnBase: true
 ```
 
 ## class Spawn
@@ -16899,6 +19740,162 @@ Output:
 op_eq_Tuple: true
 ```
 
+## class TypeCast
+
+```cangjie
+sealed abstract class TypeCast <: Expression & Equatable<TypeCast> {}
+```
+
+Function: Abstract base class of type-cast expressions; parent type of [Box](#class-box), [StaticCast](#class-staticcast), [CastToConcrete](#class-casttoconcrete), [CastToGeneric](#class-casttogeneric), etc.; provides query of source value, source type and target type.
+
+Parent Types:
+
+- [Expression](#class-expression)
+- Equatable\<[TypeCast](#class-typecast)>
+
+### prop sourceType
+
+```cangjie
+public prop sourceType: Type
+```
+
+Function: Source value type of this type cast.
+
+Type: [Type](#class-type)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let expr = builder.createBox(IntLiteral.get(IntType.getInt64(), 1), IntType.getInt64())
+    block.appendExpr(expr)
+    println("prop_sourceType: ${expr.sourceType.qualifiedName}")
+}
+```
+
+Output:
+
+```text
+prop_sourceType: Int64
+```
+
+### prop srcValue
+
+```cangjie
+public prop srcValue: Value
+```
+
+Function: Source value of this type cast.
+
+Type: [Value](#class-value)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let lit = IntLiteral.get(IntType.getInt64(), 1)
+    let expr = builder.createBox(lit, IntType.getInt64())
+    block.appendExpr(expr)
+    println("prop_srcValue: ${expr.srcValue == lit}")
+}
+```
+
+Output:
+
+```text
+prop_srcValue: true
+```
+
+### prop targetType
+
+```cangjie
+public prop targetType: Type
+```
+
+Function: Target type of this type cast.
+
+Type: [Type](#class-type)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let expr = builder.createBox(IntLiteral.get(IntType.getInt64(), 1), IntType.getInt64())
+    block.appendExpr(expr)
+    println("prop_targetType: ${expr.targetType.qualifiedName}")
+}
+```
+
+Output:
+
+```text
+prop_targetType: Int64
+```
+
+### operator func ==(TypeCast)
+
+```cangjie
+public operator func ==(other: TypeCast): Bool
+```
+
+Function: Reference comparison, checks whether two TypeCast instances are identical.
+
+Parameters:
+
+- other: [TypeCast](#class-typecast) - The other type-cast expression.
+
+Return Value:
+
+- Bool - Whether the references are identical.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let expr = builder.createBox(IntLiteral.get(IntType.getInt64(), 1), IntType.getInt64())
+    block.appendExpr(expr)
+    println("op_eq_TypeCast: ${expr == expr}")
+}
+```
+
+Output:
+
+```text
+op_eq_TypeCast: true
+```
+
 ## class Box
 
 ```cangjie
@@ -17441,6 +20438,92 @@ Output:
 
 ```text
 op_eq_UnboxToValue: true
+```
+
+## class UnaryExpressionBase
+
+```cangjie
+sealed abstract class UnaryExpressionBase <: Expression & Equatable<UnaryExpressionBase> {}
+```
+
+Function: Abstract base class of unary expressions ([UnaryExpression](#class-unaryexpression), [TryUnaryExpression](#class-tryunaryexpression), etc.); provides query and set of the overflow strategy.
+
+Parent Types:
+
+- [Expression](#class-expression)
+- Equatable\<[UnaryExpressionBase](#class-unaryexpressionbase)>
+
+### prop overflow
+
+```cangjie
+public mut prop overflow: OverflowStrategy
+```
+
+Function: Overflow strategy used by this unary expression; readable and writable, defaults to [OverflowStrategy](./chir_package_enums.md#enum-overflowstrategy).NA.
+
+Type: [OverflowStrategy](./chir_package_enums.md#enum-overflowstrategy)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let expr = builder.createUnaryNeg(IntLiteral.get(IntType.getInt64(), 1), OverflowStrategy.NA)
+    expr.overflow = OverflowStrategy.Throwing
+    println("prop_overflow: ${expr.overflow}")
+}
+```
+
+Output:
+
+```text
+prop_overflow: Throwing
+```
+
+### operator func ==(UnaryExpressionBase)
+
+```cangjie
+public operator func ==(other: UnaryExpressionBase): Bool
+```
+
+Function: Reference comparison, checks whether two UnaryExpressionBase instances are identical.
+
+Parameters:
+
+- other: [UnaryExpressionBase](#class-unaryexpressionbase) - The other unary-expression-base expression.
+
+Return Value:
+
+- Bool - Whether the references are identical.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let expr = builder.createUnaryNeg(IntLiteral.get(IntType.getInt64(), 1), OverflowStrategy.NA)
+    println("op_eq_UnaryExpressionBase: ${expr == expr}")
+}
+```
+
+Output:
+
+```text
+op_eq_UnaryExpressionBase: true
 ```
 
 ## class UnaryExpression
@@ -21272,7 +24355,7 @@ Output:
 createVArrayBuilder: true
 ```
 
-## func serializePackage
+## func serializePackage(Package)
 
 ```cangjie
 public func serializePackage(pkg: Package): (CPointer<UInt8>, Int64)
@@ -21302,7 +24385,7 @@ main() {
 }
 ```
 
-## func deserializePackage
+## func deserializePackage(CPointer\<UInt8>, Int64)
 
 ```cangjie
 public func deserializePackage(root: CPointer<UInt8>, length: Int64): Package
@@ -21323,7 +24406,7 @@ Exceptions:
 
 - [CHIRException](#class-chirexception) - Thrown when root is null.
 
-## func freeSerializedMemory
+## func freeSerializedMemory()
 
 ```cangjie
 public func freeSerializedMemory(): Unit

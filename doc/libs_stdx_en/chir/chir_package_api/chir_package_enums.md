@@ -202,6 +202,7 @@ public enum OverflowStrategy <: ToString & Equatable<OverflowStrategy> {
     | Wrapping
     | Throwing
     | Saturating
+    | ...
 }
 ```
 
@@ -431,6 +432,7 @@ public enum UnaryExprKind <: ToString & Equatable<UnaryExprKind> {
     | Neg
     | Not
     | BitNot
+    | ...
 }
 ```
 
@@ -644,6 +646,7 @@ public enum BinaryExprKind <: ToString & Equatable<BinaryExprKind> {
     | NotEqual
     | And
     | Or
+    | ...
 }
 ```
 
@@ -1247,12 +1250,13 @@ public enum InsertPosition {
     | AtStart(Block)
     | Before(Expression)
     | After(Expression)
+    | ...
 }
 ```
 
 Function: **Insertion position** when building expressions with CHIRBuilder, specifying how new expressions are inserted into a basic block.
 
-### AtEnd
+### AtEnd(Block)
 
 ```cangjie
 AtEnd(Block)
@@ -1287,7 +1291,7 @@ Output:
 exprs count: 1
 ```
 
-### AtStart
+### AtStart(Block)
 
 ```cangjie
 AtStart(Block)
@@ -1322,7 +1326,7 @@ Output:
 exprs count: 1
 ```
 
-### Before
+### Before(Expression)
 
 ```cangjie
 Before(Expression)
@@ -1359,7 +1363,7 @@ Output:
 exprs count: 2
 ```
 
-### After
+### After(Expression)
 
 ```cangjie
 After(Expression)
@@ -1509,26 +1513,72 @@ skip
 ### operator func ==(IRActionMode)
 
 ```cangjie
-public operator func ==(other: IRActionMode): Bool
+public operator func ==(rhs: IRActionMode): Bool
 ```
 
 Function: Determines whether two IRActionMode values are equal.
+
+Parameters:
+
+- rhs: IRActionMode - The other IRActionMode.
 
 Return Value:
 
 - Bool - true if the two IRActionMode values are equal, false otherwise.
 
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    println("op_eq_IRActionMode same: ${IRActionMode.Continue == IRActionMode.Continue}")
+    println("op_eq_IRActionMode diff: ${IRActionMode.Continue == IRActionMode.Stop}")
+}
+```
+
+Output:
+
+```text
+op_eq_IRActionMode same: true
+op_eq_IRActionMode diff: false
+```
+
 ### operator func !=(IRActionMode)
 
 ```cangjie
-public operator func !=(other: IRActionMode): Bool
+public operator func !=(rhs: IRActionMode): Bool
 ```
 
-Function: Determines whether two IRActionMode values are not equal.
+Function: Opposite of `==` in the previous section: `true` when the two IRActionMode values differ, `false` when they are equal (equivalent to `!(this == rhs)`).
+
+Parameters:
+
+- rhs: IRActionMode - The other IRActionMode.
 
 Return Value:
 
-- Bool - true if the two IRActionMode values are not equal, false otherwise.
+- Bool - `true` if not equal, otherwise `false`.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    println("op_ne_IRActionMode diff: ${IRActionMode.Continue != IRActionMode.Stop}")
+    println("op_ne_IRActionMode same: ${IRActionMode.Continue != IRActionMode.Continue}")
+}
+```
+
+Output:
+
+```text
+op_ne_IRActionMode diff: true
+op_ne_IRActionMode same: false
+```
 
 ## enum TypeActionMode
 
