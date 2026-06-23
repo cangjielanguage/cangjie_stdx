@@ -641,7 +641,7 @@ unsafe func encryptOAEP(
             throw CryptoException("Set rsa padding type error.")
         }
 
-        var ret = keysOAEPSetting(ctx.ptr, lablePtr.value, getDigest(hash), getDigest(mgfHash))
+        var ret = keysOAEPSetting(ctx.ptr, lablePtr.value, label.size, getDigest(hash), getDigest(mgfHash))
         if (ret == -1) {
             throw CryptoException("Set rsa OAEP option error.")
         }
@@ -725,7 +725,7 @@ unsafe func decryptOAEP(
         if (ret <= 0) {
             throw CryptoException("Set rsa padding type error.")
         }
-        ret = keysOAEPSetting(ctx.ptr, lablePtr.value, getDigest(hash), getDigest(mgfHash))
+        ret = keysOAEPSetting(ctx.ptr, lablePtr.value, label.size, getDigest(hash), getDigest(mgfHash))
         if (ret == -1) {
             throw CryptoException("Set rsa OAEP option error.")
         }

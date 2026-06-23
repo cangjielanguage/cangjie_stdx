@@ -23,7 +23,7 @@
 #define KEY_BUFFER_SIZE 65536
 
 extern int32_t DYN_CJ_KEYS_OAEPSetting(
-    EVP_PKEY_CTX* ctx, const char* label, const EVP_MD* md, const EVP_MD* mgf, DynMsg* dynMsg)
+    EVP_PKEY_CTX* ctx, const unsigned char* label, int64_t labelLen, const EVP_MD* md, const EVP_MD* mgf, DynMsg* dynMsg)
 {
     if (DYN_EVP_PKEY_CTX_set_rsa_oaep_md(ctx, md, dynMsg) <= 0 ||
         DYN_EVP_PKEY_CTX_set_rsa_mgf1_md(ctx, mgf, dynMsg) <= 0) {
@@ -31,7 +31,7 @@ extern int32_t DYN_CJ_KEYS_OAEPSetting(
     }
 
     // if label is NULL, or length is 0, EVP_PKEY_CTX_set0_rsa_oaep_label would clear the original label in ctx
-    if (NULL == label || strlen(label) == 0) {
+    if (NULL == label || labelLen == 0) {
         // a bug in openssl3 (https://github.com/openssl/openssl/issues/21288)
         // EVP_PKEY_CTX_set0_rsa_oaep_label behavior wrong when accept NULL
         // a walkaround fix, pLabel will be freed in EVP_PKEY_CTX_set0_rsa_oaep_label
@@ -48,7 +48,6 @@ extern int32_t DYN_CJ_KEYS_OAEPSetting(
         return CJKEYS_OK;
     }
 
-    size_t labelLen = strlen(label);
     if (labelLen > INT32_MAX) {
         return CJKEYS_FAIL;
     }
@@ -57,11 +56,8 @@ extern int32_t DYN_CJ_KEYS_OAEPSetting(
     if (!labelSsl) {
         return CJKEYS_FAIL;
     }
-
-    if (DYN_OPENSSL_strlcpy(labelSsl, label, labelLen + 1, dynMsg) != labelLen) {
-        DYN_CRYPTO_free(labelSsl, dynMsg);
-        return CJKEYS_FAIL;
-    }
+    memcpy(labelSsl, label, labelLen);
+    labelSsl[labelLen] = '\0';
 
     if (DYN_EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, labelSsl, (int)(labelLen), dynMsg) <= 0) {
         DYN_CRYPTO_free(labelSsl, dynMsg);
