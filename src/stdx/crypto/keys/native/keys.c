@@ -166,6 +166,14 @@ static EVP_PKEY* DecodePrivateKey(const void* keyBody, long keySize, ExceptionDa
         X509HandleError(exception,
             "Failed to load private key, it's either corrupted, password is wrong or the format is unsupported",
             dynMsg);
+        return NULL;
+    }
+    if (dataptr != (const unsigned char*)keyBody + keySize) {
+        DYN_EVP_PKEY_free(pkey, dynMsg);
+        X509HandleError(exception,
+            "Failed to load private key, it's either corrupted, password is wrong or the format is unsupported",
+            dynMsg);
+        return NULL;
     }
     return pkey;
 }
@@ -558,6 +566,12 @@ extern int CJX509DescribePublicKey(const void* keyBody, size_t length, Exception
             exception, "Failed to load public key, it's either corrupted, or the format is unsupported", dynMsg);
         return 0;
     }
+    if (dataptr != (const unsigned char*)keyBody + length) {
+        DYN_X509_PUBKEY_free(xpKey, dynMsg);
+        X509HandleError(
+            exception, "Failed to load public key, it's either corrupted, or the format is unsupported", dynMsg);
+        return 0;
+    }
     DYN_X509_PUBKEY_free(xpKey, dynMsg);
     return 1;
 }
@@ -580,6 +594,12 @@ extern int CJX509DescribeDHParameters(const void* keyBody, size_t length, Except
     const unsigned char* dataptr = (const unsigned char*)keyBody;
     EVP_PKEY* xpKey = DYN_d2i_KeyParams(EVP_PKEY_DH, NULL, &dataptr, (long)length, dynMsg);
     if (xpKey == NULL) {
+        X509HandleError(
+            exception, "Failed to load DH Parameters, it's either corrupted, or the format is unsupported", dynMsg);
+        return 0;
+    }
+    if (dataptr != (const unsigned char*)keyBody + length) {
+        DYN_EVP_PKEY_free(xpKey, dynMsg);
         X509HandleError(
             exception, "Failed to load DH Parameters, it's either corrupted, or the format is unsupported", dynMsg);
         return 0;

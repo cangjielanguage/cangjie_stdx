@@ -379,6 +379,10 @@ func loadPrivateKey(id: Int32, der: Array<Byte>) {
             if (pkey.isNull()) {
                 throw CryptoException("Load private key error.")
             }
+            if (readPtr.read().toUIntNative() != derHandle.pointer.toUIntNative() + UIntNative(der.size)) {
+                keyFree(pkey)
+                throw CryptoException("Load private key error.")
+            }
             if (!keyTypeCheck(id, pkey)) {
                 keyFree(pkey)
                 throw CryptoException("Private key type error.")
@@ -405,6 +409,10 @@ func loadPublicKey(id: Int32, der: Array<Byte>) {
         try {
             pkey = d2Pubkey(ppkey, readPtr, der.size)
             if (pkey.isNull()) {
+                throw CryptoException("Load PublicKey error.")
+            }
+            if (readPtr.read().toUIntNative() != derHandle.pointer.toUIntNative() + UIntNative(der.size)) {
+                keyFree(pkey)
                 throw CryptoException("Load PublicKey error.")
             }
             if (!keyTypeCheck(id, pkey)) {
