@@ -15,6 +15,15 @@ public interface LogValue {
     func writeTo(w: LogWriter): Unit
 }
 
+func writeLogObject<V>(w: LogWriter, values: Iterable<(String, V)>): Unit where V <: LogValue {
+    w.startObject()
+    for ((k, v) in values) {
+        w.writeKey(k)
+        w.writeValue(v)
+    }
+    w.endObject()
+}
+
 extend Int64 <: LogValue {
     public func writeTo(w: LogWriter): Unit {
         w.writeInt(this)
@@ -69,23 +78,13 @@ extend<T> Array<T> <: LogValue where T <: LogValue {
 
 extend<V> HashMap<String, V> <: LogValue where V <: LogValue {
     public func writeTo(w: LogWriter): Unit {
-        w.startObject()
-        for ((k, v) in this) {
-            w.writeKey(k)
-            w.writeValue(v)
-        }
-        w.endObject()
+        writeLogObject(w, this)
     }
 }
 
 extend<V> TreeMap<String, V> <: LogValue where V <: LogValue {
     public func writeTo(w: LogWriter): Unit {
-        w.startObject()
-        for ((k, v) in this) {
-            w.writeKey(k)
-            w.writeValue(v)
-        }
-        w.endObject()
+        writeLogObject(w, this)
     }
 }
 
