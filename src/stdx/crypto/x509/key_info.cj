@@ -11,6 +11,26 @@ package stdx.crypto.x509
 import stdx.crypto.common.*
 import stdx.crypto.keys.*
 
+func encodePublicKeyToPem(key: PublicKey): PemEntry {
+    PemEntry(PemEntry.LABEL_PUBLIC_KEY, key.encodeToDer())
+}
+
+func decodePublicKeyFromDer(blob: DerBlob): PublicKey {
+    GeneralPublicKey.decodeDer(blob)
+}
+
+func decodePublicKeyFromPem(text: String): PublicKey {
+    for (entry in Pem.decode(text)) {
+        if (isPublicKey(entry)) {
+            if (let Some(v) <- entry.body) {
+                return decodePublicKeyFromDer(v)
+            }
+        }
+    }
+
+    throw X509Exception("No ${PemEntry.LABEL_PUBLIC_KEY} entry found in PEM file.")
+}
+
 class CertPublicKey <: PublicKey {
     CertPublicKey(private let blob: X509Blob) {}
 
@@ -23,7 +43,7 @@ class CertPublicKey <: PublicKey {
      * @throws X509Exception if failed to encode
      */
     public func encodeToPem(): PemEntry {
-        PemEntry(PemEntry.LABEL_PUBLIC_KEY, encodeToDer())
+        encodePublicKeyToPem(this)
     }
 
     /**
@@ -31,7 +51,7 @@ class CertPublicKey <: PublicKey {
      * @throws X509Exception if failed to decode
      */
     public static func decodeDer(blob: DerBlob): PublicKey {
-        GeneralPublicKey.decodeDer(blob)
+        decodePublicKeyFromDer(blob)
     }
 
     /**
@@ -39,15 +59,7 @@ class CertPublicKey <: PublicKey {
      * @throws X509Exception if failed to parse or decode key or there are no public keys in the PEM
      */
     public static func decodeFromPem(text: String): PublicKey {
-        for (entry in Pem.decode(text)) {
-            if (isPublicKey(entry)) {
-                if (let Some(v) <- entry.body) {
-                    return decodeDer(v)
-                }
-            }
-        }
-
-        throw X509Exception("No ${PemEntry.LABEL_PUBLIC_KEY} entry found in PEM file.")
+        decodePublicKeyFromPem(text)
     }
 
     public override func toString(): String {
@@ -67,7 +79,7 @@ class CertRequestPublicKey <: PublicKey {
      * @throws X509Exception if failed to encode
      */
     public func encodeToPem(): PemEntry {
-        PemEntry(PemEntry.LABEL_PUBLIC_KEY, encodeToDer())
+        encodePublicKeyToPem(this)
     }
 
     /**
@@ -75,7 +87,7 @@ class CertRequestPublicKey <: PublicKey {
      * @throws X509Exception if failed to decode
      */
     public static func decodeDer(blob: DerBlob): PublicKey {
-        GeneralPublicKey.decodeDer(blob)
+        decodePublicKeyFromDer(blob)
     }
 
     /**
@@ -83,15 +95,7 @@ class CertRequestPublicKey <: PublicKey {
      * @throws X509Exception if failed to parse or decode key or there are no public keys in the PEM
      */
     public static func decodeFromPem(text: String): PublicKey {
-        for (entry in Pem.decode(text)) {
-            if (isPublicKey(entry)) {
-                if (let Some(v) <- entry.body) {
-                    return decodeDer(v)
-                }
-            }
-        }
-
-        throw X509Exception("No ${PemEntry.LABEL_PUBLIC_KEY} entry found in PEM file.")
+        decodePublicKeyFromPem(text)
     }
 
     public override func toString(): String {

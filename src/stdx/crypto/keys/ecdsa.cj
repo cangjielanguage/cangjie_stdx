@@ -57,7 +57,7 @@ public class ECDSAPrivateKey <: PrivateKey {
 
     public func encodeToDer(password!: ?String): DerBlob {
         var blob: DerBlob = encodeToDer()
-        match (password) {
+        return match (password) {
             case Some(password) => try {
                 var key = GeneralPrivateKey.decodeDer(blob)
                 key.encodeToDer(password: password) // route to GeneralPrivateKey::encodeToDer
@@ -262,8 +262,8 @@ func verify(ctx: EVPKEYCTX, data: Array<Byte>, sig: Array<Byte>) {
             }
             result = verify(ctx.ptr, sigHandle.pointer, UIntNative(sig.size), dataHandle.pointer, UIntNative(data.size))
         } finally {
-            releaseArrayRawData(sigHandle)
             releaseArrayRawData(dataHandle)
+            releaseArrayRawData(sigHandle)
         }
         if (result != 1) {
             return false
