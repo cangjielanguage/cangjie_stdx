@@ -158,11 +158,11 @@ public class Tar {
                         }
                     }
                 case TarEntryType.Symlink =>
-                    checkSymbolicLinkTarget(entry.linkName, destAbsoluteDir)
+                    checkSymbolicLinkTarget(entry.linkName, entryPath, destAbsoluteDir)
                     SymbolicLink.create(entryPath, to: Path(entry.linkName))
                 case TarEntryType.HardLink =>
-                    checkHardLinkTarget(entry.linkName, destAbsoluteDir)
-                    HardLink.create(entryPath, to: Path(entry.linkName))
+                    let hardLinkTarget = checkHardLinkTarget(entry.linkName, destAbsoluteDir)
+                    HardLink.create(entryPath, to: hardLinkTarget)
                 case _ => continue
             }
             if (entry.entryType != TarEntryType.Symlink) {
@@ -171,17 +171,20 @@ public class Tar {
         }
     }
 
-    private static func checkSymbolicLinkTarget(linkName: String, destDir: Path) {
+    private static func checkSymbolicLinkTarget(linkName: String, linkPath: Path, destDir: Path) {
         var linkTarget = Path(linkName)
         if (linkTarget.isRelative()) {
-            linkTarget = destDir.join(linkTarget).normalize()
+            let linkParent = linkPath.parent
+            if (!linkParent.isEmpty()) {
+                linkTarget = linkParent.join(linkTarget).normalize()
+            }
         }
         if (!isPathWithinDirectory(linkTarget, destDir)) {
             throw TarException("Symlink points outside target dir.")
         }
     }
 
-    private static func checkHardLinkTarget(linkName: String, destDir: Path) {
+    private static func checkHardLinkTarget(linkName: String, destDir: Path): Path {
         var linkTarget = Path(linkName)
         if (linkTarget.isRelative()) {
             linkTarget = destDir.join(linkTarget).normalize()
@@ -191,6 +194,7 @@ public class Tar {
         if (!isPathWithinDirectory(linkTarget, destDir)) {
             throw TarException("Hardlink points outside target dir.")
         }
+        return linkTarget
     }
 
     /**
