@@ -381,7 +381,7 @@ public class SM4 <: BlockCipher {
                     if (outlen2Ptr.value.read() > 0) {
                         decryptedData.add(all: writebuff[..Int64(outlen2Ptr.value.read())])
                     }
-                    output.write(unsafe { decryptedData.getRawArray() })
+                    output.write(unsafe { decryptedData.getRawArray()[..decryptedData.size] })
                 } else {
                     do {
                         outlenPtr.value.write(0)
