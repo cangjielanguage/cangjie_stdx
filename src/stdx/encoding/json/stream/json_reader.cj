@@ -710,8 +710,20 @@ public class JsonReader {
     }
 
     func skipArray() {
+        skipSymmetrySegment(start: b'[', end: b']')
+    }
+
+    func skipObject() {
+        skipSymmetrySegment(start: b'{', end: b'}')
+    }
+
+    func skipSymmetrySegment(start!: Byte, end!: Byte) {
         let depth = stacks.depth
-        startArray()
+        if (start == b'[') {
+            startArray()
+        } else {
+            startObject()
+        }
         var inString = false
         while (true) {
             let nextByte = readNext()
@@ -738,6 +750,9 @@ public class JsonReader {
                     if (stacks.top == JsonStateStack.JSON_OBJECT) {
                         stacks.pop()
                         if (stacks.depth == depth) {
+                            if (nextByte == end) {
+                                return
+                            }
                             throw IllegalStateException("Failed to skip.")
                         }
                         continue
@@ -750,57 +765,9 @@ public class JsonReader {
                     if (stacks.top == JsonStateStack.JSON_ARRAY) {
                         stacks.pop()
                         if (stacks.depth == depth) {
-                            return
-                        }
-                        continue
-                    }
-                    throw IllegalStateException("Failed to skip.")
-                case _ => ()
-            }
-        }
-    }
-
-    func skipObject() {
-        let depth = stacks.depth
-        startObject()
-        var inString = false
-        while (true) {
-            let nextByte = readNext()
-            match (nextByte) {
-                case b'\\' =>
-                    if (inString) {
-                        readNext()
-                        continue
-                    }
-                    throw IllegalStateException("Characters not expected: '\\'.")
-                case b'\"' => inString = !inString
-                case b'{' =>
-                    if (!inString) {
-                        stacks.put(JsonStateStack.JSON_OBJECT)
-                    }
-                case b'[' =>
-                    if (!inString) {
-                        stacks.put(JsonStateStack.JSON_ARRAY)
-                    }
-                case b'}' =>
-                    if (inString) {
-                        continue
-                    }
-                    if (stacks.top == JsonStateStack.JSON_OBJECT) {
-                        stacks.pop()
-                        if (stacks.depth == depth) {
-                            return
-                        }
-                        continue
-                    }
-                    throw IllegalStateException("Failed to skip.")
-                case b']' =>
-                    if (inString) {
-                        continue
-                    }
-                    if (stacks.top == JsonStateStack.JSON_ARRAY) {
-                        stacks.pop()
-                        if (stacks.depth == depth) {
+                            if (nextByte == end) {
+                                return
+                            }
                             throw IllegalStateException("Failed to skip.")
                         }
                         continue
