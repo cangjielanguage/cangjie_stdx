@@ -84,6 +84,7 @@ public class SM3 <: Digest {
         unsafe {
             if (!sm3Ctx.isNull()) {
                 mdCtxFree(sm3Ctx)
+                sm3Ctx = CPointer<Unit>()
             }
             sm3Ctx = mdCtxNew()
             if (sm3Ctx.isNull()) {
