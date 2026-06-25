@@ -174,6 +174,10 @@ public class WebSocket {
             case 127 =>
                 let extendedPayloadLength = Array<UInt8>(8, repeat: 0)
                 readExact(extendedPayloadLength, "extended payload length")
+                if ((extendedPayloadLength[0] & 0x80) != 0) {
+                    failTheWebSocketConnection(WebSocketStatusCode.PROTOCOL_ERROR,
+                        "the most significant bit of extended payload length must be 0")
+                }
                 frame.payloadLength = toInt64(extendedPayloadLength)
             case _ => frame.payloadLength = Int64(frame.payloadLen)
         }
@@ -938,7 +942,7 @@ func toInt64(bytes: Array<UInt8>): Int64 {
         int = int << 8
         int = int | Int64(byte)
     }
-    return int & 0X7FFF_FFFF_FFFF_FFFF
+    return int
 }
 
 func toUInt16(bytes: Array<UInt8>): UInt16 {
