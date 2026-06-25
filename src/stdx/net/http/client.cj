@@ -685,6 +685,7 @@ public class Client { // cjlint-ignore !G.ENU.01
         headers.del("proxy-authorization")
         headers.del("www-authenticate")
         headers.del("cookie2")
+        headers.del("cookie")
     }
 
     private func removeSensitiveHeaders(headers: HttpHeaders): Unit {
