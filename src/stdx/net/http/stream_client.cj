@@ -229,9 +229,6 @@ class ClientStream {
             if (let Some(query) <- req.url.query) {
                 path += "?${query}"
             }
-            if (let Some(fragment) <- req.url.fragment) {
-                path += "#${fragment}"
-            }
         }
         headers.add((":authority", authority))
         headers.add((":method", req.method))

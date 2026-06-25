@@ -876,10 +876,6 @@ class ConnNode <: BodyProviderConn {
                 requestTarget.append("?")
                 requestTarget.append(query)
             }
-            if (let Some(fragment) <- request.url.fragment) {
-                requestTarget.append("#")
-                requestTarget.append(fragment)
-            }
         }
         return requestTarget
     }
