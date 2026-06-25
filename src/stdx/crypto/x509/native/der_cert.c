@@ -180,12 +180,24 @@ extern void DYN_CJKeyFree(void* key, DynMsg* dynMsg)
 
 extern void* DYN_CJGetPubKeyPtr(const unsigned char** data, long length, DynMsg* dynMsg)
 {
-    return (void*)DYN_d2i_PUBKEY(NULL, data, length, dynMsg);
+    const unsigned char* start = *data;
+    EVP_PKEY* key = DYN_d2i_PUBKEY(NULL, data, length, dynMsg);
+    if (key != NULL && *data != start + length) {
+        DYN_EVP_PKEY_free(key, dynMsg);
+        return NULL;
+    }
+    return (void*)key;
 }
 
 extern void* DYN_CJGetPriKeyPtr(const unsigned char** data, long length, DynMsg* dynMsg)
 {
-    return (void*)DYN_d2i_AutoPrivateKey(NULL, data, length, dynMsg);
+    const unsigned char* start = *data;
+    EVP_PKEY* key = DYN_d2i_AutoPrivateKey(NULL, data, length, dynMsg);
+    if (key != NULL && *data != start + length) {
+        DYN_EVP_PKEY_free(key, dynMsg);
+        return NULL;
+    }
+    return (void*)key;
 }
 
 extern int DYN_CJGetCertLen(void* cert, unsigned char** out, DynMsg* dynMsg)
@@ -228,9 +240,13 @@ static void StoreResultByType(
         GENERAL_NAME* name = DYN_OPENSSL_sk_value((void*)subjectAltNames, i, dynMsg);
         if (name->type == type) {
             size_t len = (size_t)(unsigned int)DYN_ASN1_STRING_length(name->d.dNSName, dynMsg);
-            result->buffer[index].size = len;
-            result->buffer[index++].buffer =
+            result->buffer[index].size = 0;
+            result->buffer[index].buffer =
                 (uint8_t*)DataClone(DYN_ASN1_STRING_get0_data(name->d.dNSName, dynMsg), len);
+            if (result->buffer[index].buffer != NULL) {
+                result->buffer[index].size = len;
+            }
+            index++;
         }
     }
 }
@@ -256,9 +272,13 @@ static void StoreIPResult(GENERAL_NAMES* subjectAltNames, struct ByteArrayResult
         GENERAL_NAME* name = DYN_OPENSSL_sk_value((void*)subjectAltNames, i, dynMsg);
         if (name->type == GEN_IPADD) {
             size_t len = (size_t)(unsigned int)DYN_ASN1_STRING_length(name->d.iPAddress, dynMsg);
-            result->buffer[index].size = len;
-            result->buffer[index++].buffer =
+            result->buffer[index].size = 0;
+            result->buffer[index].buffer =
                 (uint8_t*)DataClone(DYN_ASN1_STRING_get0_data(name->d.iPAddress, dynMsg), len);
+            if (result->buffer[index].buffer != NULL) {
+                result->buffer[index].size = len;
+            }
+            index++;
         }
     }
 }
@@ -655,7 +675,13 @@ extern int DYN_CJX509ReqSign(void* req, void* pkey, void* md, DynMsg* dynMsg)
 
 extern void* DYN_CJGetNamePtr(const unsigned char** data, long length, DynMsg* dynMsg)
 {
-    return (void*)DYN_d2i_X509_NAME(NULL, data, length, dynMsg);
+    const unsigned char* start = *data;
+    X509_NAME* name = DYN_d2i_X509_NAME(NULL, data, length, dynMsg);
+    if (name != NULL && *data != start + length) {
+        DYN_X509_NAME_free(name, dynMsg);
+        return NULL;
+    }
+    return (void*)name;
 }
 
 extern int DYN_CJGetNameDer(void* name, unsigned char** out, DynMsg* dynMsg)

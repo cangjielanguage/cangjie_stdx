@@ -233,7 +233,7 @@ public class SM4 <: BlockCipher {
         unsafe {
             var tag: Array<Byte> = Array<Byte>(tagSize, repeat: 0)
             var readbuff = Array<Byte>(SM4_BUFFER_SIZE, repeat: 0)
-            var writebuff = Array<Byte>(SM4_BUFFER_SIZE, repeat: 0)
+            var writebuff = Array<Byte>(SM4_BUFFER_SIZE + SM4_BLOCK_SIZE, repeat: 0)
             var inBlock: CPointerHandle<Byte> = acquireArrayRawData(readbuff)
             var outBlock: CPointerHandle<Byte> = acquireArrayRawData(writebuff)
             var aadM: CPointerHandle<Byte> = acquireArrayRawData(aad.clone())
@@ -296,7 +296,7 @@ public class SM4 <: BlockCipher {
     public func decrypt(input: InputStream, output: OutputStream): Unit {
         unsafe {
             var readbuff = Array<Byte>(SM4_BUFFER_SIZE, repeat: 0)
-            var writebuff = Array<Byte>(SM4_BUFFER_SIZE, repeat: 0)
+            var writebuff = Array<Byte>(SM4_BUFFER_SIZE + SM4_BLOCK_SIZE, repeat: 0)
             var inBlock: CPointerHandle<Byte> = acquireArrayRawData(readbuff)
             var outBlock: CPointerHandle<Byte> = acquireArrayRawData(writebuff)
             var keyM: CPointerHandle<Byte> = acquireArrayRawData(key.clone())
@@ -381,7 +381,7 @@ public class SM4 <: BlockCipher {
                     if (outlen2Ptr.value.read() > 0) {
                         decryptedData.add(all: writebuff[..Int64(outlen2Ptr.value.read())])
                     }
-                    output.write(unsafe { decryptedData.getRawArray() })
+                    output.write(unsafe { decryptedData.getRawArray()[..decryptedData.size] })
                 } else {
                     do {
                         outlenPtr.value.write(0)

@@ -172,7 +172,7 @@ foreign func DYN_EVP_PKEY_CTX_set_signature_md(ctx: CPointer<UInt64>, md: CPoint
 foreign func DYN_EVP_PKEY_CTX_set_rsa_pss_saltlen(ctx: CPointer<UInt64>, saltlen: Int32, msg: CPointer<DynMsg>): Int32
 
 // OAEP option setting
-foreign func DYN_CJ_KEYS_OAEPSetting(ctx: CPointer<UInt64>, label: CString, md: CPointer<UInt64>,
+foreign func DYN_CJ_KEYS_OAEPSetting(ctx: CPointer<UInt64>, label: CString, labelLen: Int64, md: CPointer<UInt64>,
     mgf1: CPointer<UInt64>, msg: CPointer<DynMsg>): Int32
 
 foreign func MallocDynMsg(): CPointer<DynMsg>
@@ -207,9 +207,9 @@ struct BIGNUM {
     var flags: Int32 = 0
 }
 
-func keysOAEPSetting(ctx: CPointer<UInt64>, label: CString, md: CPointer<UInt64>, mgf1: CPointer<UInt64>): Int32 {
+func keysOAEPSetting(ctx: CPointer<UInt64>, label: CString, labelLen: Int64, md: CPointer<UInt64>, mgf1: CPointer<UInt64>): Int32 {
     let dynMsgPtr = generateDynMsg()
-    let res = unsafe { DYN_CJ_KEYS_OAEPSetting(ctx, label, md, mgf1, dynMsgPtr) }
+    let res = unsafe { DYN_CJ_KEYS_OAEPSetting(ctx, label, labelLen, md, mgf1, dynMsgPtr) }
     checkError(dynMsgPtr)
     return res
 }

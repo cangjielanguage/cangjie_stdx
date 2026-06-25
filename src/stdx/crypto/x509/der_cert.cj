@@ -335,7 +335,11 @@ func cloneAndFreeX509Result(data: CPointer<ByteArrayResult>): Array<Array<Byte>>
             i =>
             let byteRes = unsafe { buffer.read(i) }
             let byteBuf = byteRes.buffer
-            Array<Byte>(Int64(byteRes.size)) {j => unsafe { byteBuf.read(j) }}
+            if (byteBuf.isNull()) {
+                []
+            } else {
+                Array<Byte>(Int64(byteRes.size)) {j => unsafe { byteBuf.read(j) }}
+            }
         }
     } else {
         Array<Array<Byte>>()
@@ -360,7 +364,11 @@ func cloneStrAndFreeX509Result(data: CPointer<ByteArrayResult>): Array<String> {
             i =>
             let byteRes = unsafe { buffer.read(i) }
             let byteBuf = byteRes.buffer
-            String.fromUtf8(Array<Byte>(Int64(byteRes.size)) {j => unsafe { byteBuf.read(j) }})
+            if (byteBuf.isNull()) {
+                ""
+            } else {
+                String.fromUtf8(Array<Byte>(Int64(byteRes.size)) {j => unsafe { byteBuf.read(j) }})
+            }
         }
     } else {
         Array<String>()
