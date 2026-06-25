@@ -226,11 +226,8 @@ class ClientStream {
             path = ASTERISK
         } else {
             path = canonicalPath(req.url.path)
-            if (let Some(query) <- req.url.query) {
+            if (let Some(query) <- req.url.query && !query.isEmpty()) {
                 path += "?${query}"
-            }
-            if (let Some(fragment) <- req.url.fragment) {
-                path += "#${fragment}"
             }
         }
         headers.add((":authority", authority))
