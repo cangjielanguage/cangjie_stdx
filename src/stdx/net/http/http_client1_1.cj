@@ -872,7 +872,7 @@ class ConnNode <: BodyProviderConn {
         // absolute-path ["?" query]
         } else {
             requestTarget.append(canonicalPath(request.url.path))
-            if (let Some(query) <- request.url.query) {
+            if (let Some(query) <- request.url.query && !query.isEmpty()) {
                 requestTarget.append("?")
                 requestTarget.append(query)
             }
