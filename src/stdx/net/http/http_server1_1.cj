@@ -785,6 +785,9 @@ class HttpEngineConn1 <: HttpEngineConn & BodyProviderConn {
             httpLogInfo(logger, "[HttpEngineConn1#checkResponse] the body should be empty")
             contentLength = 0
             headers.set("content-length", "0")
+            headers.del("transfer-encoding")
+            response.trailers.reset()
+            chunked = false
         }
 
         if (logger.enabled(LogLevel.DEBUG)) {
