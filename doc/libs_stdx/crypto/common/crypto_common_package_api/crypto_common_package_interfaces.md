@@ -499,8 +499,8 @@ static func decodeFromPem(text: String): PublicKey
 
 ```cangjie
 public interface RandomGenerator {
-    public func nextBits(bits: UInt64): UInt64
-    public func nextBytes(bytes: Array<Byte>): Unit
+    func nextBits(bits: UInt64): UInt64
+    func nextBytes(bytes: Array<Byte>): Unit
 }
 ```
 
@@ -509,7 +509,7 @@ public interface RandomGenerator {
 ### func nextBits(UInt64)
 
 ```cangjie
-public func nextBits(bits: UInt64): UInt64
+func nextBits(bits: UInt64): UInt64
 ```
 
 功能：生成一个指定位长的随机整数。
@@ -525,7 +525,7 @@ public func nextBits(bits: UInt64): UInt64
 ### func nextBytes(Array\<Byte>)
 
 ```cangjie
-public func nextBytes(bytes: Array<Byte>): Unit
+func nextBytes(bytes: Array<Byte>): Unit
 ```
 
 功能：生成随机数替换入参数组中的每个元素。

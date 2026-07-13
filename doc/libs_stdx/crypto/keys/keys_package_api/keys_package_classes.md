@@ -247,7 +247,7 @@ main() {
 ### func encodeToDer()
 
 ```cangjie
-public override func encodeToDer(): DerBlob
+public func encodeToDer(): DerBlob
 ```
 
 功能：将私钥编码为 DER 格式。
@@ -652,7 +652,7 @@ main() {
 ### func encodeToDer()
 
 ```cangjie
-public override func encodeToDer(): DerBlob
+public func encodeToDer(): DerBlob
 ```
 
 功能：将公钥编码为 DER 格式。
@@ -843,7 +843,7 @@ public class GeneralPrivateKey <: PrivateKey
 ### static func decodeDer(DerBlob)
 
 ```cangjie
-static func decodeDer(encoded: DerBlob): PrivateKey
+public static func decodeDer(encoded: DerBlob): PrivateKey
 ```
 
 功能：将私钥从 DER 格式解码。
@@ -900,7 +900,7 @@ main() {
 ### static func decodeDer(DerBlob, ?String)
 
 ```cangjie
-static func decodeDer(encoded: DerBlob, password!: ?String): PrivateKey
+public static func decodeDer(encoded: DerBlob, password!: ?String): PrivateKey
 ```
 
 功能：将 DER 格式的私钥解密解码成 [PrivateKey](../../common/crypto_common_package_api/crypto_common_package_interfaces.md#interface-privatekey) 对象，密码为 None 时则不解密。
@@ -959,7 +959,7 @@ main() {
 ### static func decodeFromPem(String)
 
 ```cangjie
-static func decodeFromPem(text: String): PrivateKey
+public static func decodeFromPem(text: String): PrivateKey
 ```
 
 功能：将私钥从 PEM 格式解码。
@@ -1013,7 +1013,7 @@ main() {
 ### static func decodeFromPem(String, ?String)
 
 ```cangjie
-static func decodeFromPem(text: String, password!: ?String): PrivateKey
+public static func decodeFromPem(text: String, password!: ?String): PrivateKey
 ```
 
 功能：将 PEM 格式的私钥解密解码成 [PrivateKey](../../common/crypto_common_package_api/crypto_common_package_interfaces.md#interface-privatekey) 对象，密码为 None 时则不解密。
@@ -1069,7 +1069,7 @@ main() {
 ### func encodeToDer()
 
 ```cangjie
-func encodeToDer(): DerBlob
+public func encodeToDer(): DerBlob
 ```
 
 功能：将私钥编码成 DER 格式。
@@ -1125,7 +1125,7 @@ DER数据大小: 1217
 ### func encodeToDer(?String)
 
 ```cangjie
-func encodeToDer(password!: ?String): DerBlob
+public func encodeToDer(password!: ?String): DerBlob
 ```
 
 功能：将私钥加密编码成 DER 格式，密码为 None 时则不加密。
@@ -1185,7 +1185,7 @@ DER数据大小: 1354
 ### func encodeToPem()
 
 ```cangjie
-func encodeToPem(): PemEntry
+public func encodeToPem(): PemEntry
 ```
 
 功能：将私钥编码成 PEM 格式。
@@ -1238,7 +1238,7 @@ PEM标签: PRIVATE KEY
 ### func encodeToPem(?String)
 
 ```cangjie
-func encodeToPem(password!: ?String): PemEntry
+public func encodeToPem(password!: ?String): PemEntry
 ```
 
 功能：将私钥加密编码成 PEM 格式，密码为 None 时则不加密。
@@ -1358,7 +1358,7 @@ public class GeneralPublicKey <: PublicKey
 ### static func decodeDer(DerBlob)
 
 ```cangjie
-static func decodeDer(encoded: DerBlob): PublicKey
+public static func decodeDer(encoded: DerBlob): PublicKey
 ```
 
 功能：将公钥从 DER 格式解码。
@@ -1417,7 +1417,7 @@ main() {
 ### static func decodeFromPem(String)
 
 ```cangjie
-static func decodeFromPem(text: String): PublicKey
+public static func decodeFromPem(text: String): PublicKey
 ```
 
 功能：将公钥从 PEM 格式解码。
@@ -1473,7 +1473,7 @@ main() {
 ### func encodeToDer()
 
 ```cangjie
-func encodeToDer(): DerBlob
+public override func encodeToDer(): DerBlob
 ```
 
 功能：将公钥编码成 DER 格式。
@@ -1529,7 +1529,7 @@ DER数据大小: 294
 ### func encodeToPem()
 
 ```cangjie
-func encodeToPem(): PemEntry
+public func encodeToPem(): PemEntry
 ```
 
 功能：将公钥编码为 PEM 格式。
@@ -1584,7 +1584,7 @@ PEM标签: PUBLIC KEY
 ### func toString()
 
 ```cangjie
-public func toString(): String
+public override func toString(): String
 ```
 
 功能：转换为字符串格式。
@@ -1637,7 +1637,7 @@ main() {
 ## class RSAPrivateKey
 
 ```cangjie
-public class RSAPrivateKey <: PrivateKey{
+public class RSAPrivateKey <: PrivateKey {
     public init(bits: Int32)
     public init(bits: Int32, e: BigInt)
 }
@@ -1988,7 +1988,7 @@ main() {
 ### func encodeToDer()
 
 ```cangjie
-public override func encodeToDer(): DerBlob
+public func encodeToDer(): DerBlob
 ```
 
 功能：将私钥编码为 DER 格式。
@@ -2394,7 +2394,7 @@ main() {
 ### func encodeToDer()
 
 ```cangjie
-public override func encodeToDer(): DerBlob
+public func encodeToDer(): DerBlob
 ```
 
 功能：将公钥编码为 DER 格式。

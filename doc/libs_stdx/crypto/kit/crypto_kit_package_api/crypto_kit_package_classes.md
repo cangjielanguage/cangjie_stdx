@@ -19,7 +19,7 @@ public class DefaultCryptoKit <: CryptoKit
 ### func certificateFromDer(DerBlob)
 
 ```cangjie
-func certificateFromDer(encoded: DerBlob): Certificate
+public func certificateFromDer(encoded: DerBlob): Certificate
 ```
 
 功能：将证书从 DER 格式解码。
@@ -85,7 +85,7 @@ main() {
 ### func certificateFromPem(String)
 
 ```cangjie
-func certificateFromPem(text: String): Array<Certificate>
+public func certificateFromPem(text: String): Array<Certificate>
 ```
 
 功能：将证书从 PEM 格式解码。
@@ -151,7 +151,7 @@ main() {
 ### func dhParametersFromDer(DerBlob)
 
 ```cangjie
-func dhParametersFromDer(encoded: DerBlob): DHParameters
+public func dhParametersFromDer(encoded: DerBlob): DHParameters
 ```
 
 功能：将 DH 密钥参数从 DER 格式解码。
@@ -214,7 +214,7 @@ DH参数DER解码成功
 ### func dhParametersFromPem(String)
 
 ```cangjie
-func dhParametersFromPem(text: String): DHParameters
+public func dhParametersFromPem(text: String): DHParameters
 ```
 
 功能：将 DH 密钥参数从 PEM 格式解码。
@@ -276,7 +276,7 @@ DH参数PEM解码成功
 ### func getRandomGen()
 
 ```cangjie
-func getRandomGen(): RandomGenerator
+public func getRandomGen(): RandomGenerator
 ```
 
 功能：获取随机数生成器。
@@ -315,7 +315,7 @@ main() {
 ### func privateKeyFromDer(DerBlob)
 
 ```cangjie
-func privateKeyFromDer(encoded: DerBlob): PrivateKey
+public func privateKeyFromDer(encoded: DerBlob): PrivateKey
 ```
 
 功能：将私钥从 DER 格式解码。
@@ -379,7 +379,7 @@ main() {
 ### func privateKeyFromDer(DerBlob, ?String)
 
 ```cangjie
-func privateKeyFromDer(encoded: DerBlob, password!: ?String): PrivateKey
+public func privateKeyFromDer(encoded: DerBlob, password!: ?String): PrivateKey
 ```
 
 功能：将私钥从 DER 格式解密解码。密码为 None 时则不解密。
@@ -445,7 +445,7 @@ main() {
 ### func privateKeyFromPem(String)
 
 ```cangjie
-func privateKeyFromPem(text: String): PrivateKey
+public func privateKeyFromPem(text: String): PrivateKey
 ```
 
 功能：将私钥从 PEM 格式解码。
@@ -507,7 +507,7 @@ main() {
 ### func privateKeyFromPem(String, ?String)
 
 ```cangjie
-func privateKeyFromPem(text: String, password!: ?String): PrivateKey
+public func privateKeyFromPem(text: String, password!: ?String): PrivateKey
 ```
 
 功能：将私钥从 PEM 格式解密解码。密码为 `None` 时则不解密。
@@ -572,7 +572,7 @@ main() {
 ### func publicKeyFromDer(DerBlob)
 
 ```cangjie
-func publicKeyFromDer(encoded: DerBlob): PublicKey
+public func publicKeyFromDer(encoded: DerBlob): PublicKey
 ```
 
 功能：将公钥从 DER 格式解码。
@@ -639,7 +639,7 @@ main() {
 ### func publicKeyFromPem(String)
 
 ```cangjie
-func publicKeyFromPem(text: String): PublicKey
+public func publicKeyFromPem(text: String): PublicKey
 ```
 
 功能：将公钥从 PEM 格式解码。
