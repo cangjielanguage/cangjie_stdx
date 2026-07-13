@@ -15,7 +15,7 @@ public class GeneralDHParameters <: DHParameters
 ### static func decodeDer(DerBlob)
 
 ```cangjie
-static func decodeDer(encoded: DerBlob): DHParameters
+public static func decodeDer(encoded: DerBlob): DHParameters
 ```
 
 功能：将 DH 密钥参数从 DER 格式解码。
@@ -77,7 +77,7 @@ DH参数DER解码成功
 ### static func decodeFromPem(String)
 
 ```cangjie
-static func decodeFromPem(text: String): DHParameters
+public static func decodeFromPem(text: String): DHParameters
 ```
 
 功能：将 DH 密钥参数从 PEM 格式解码。
@@ -133,7 +133,7 @@ DH参数PEM解码成功
 ### func encodeToDer()
 
 ```cangjie
-func encodeToDer(): DerBlob
+public override func encodeToDer(): DerBlob
 ```
 
 功能：将 DH 密钥参数编码为 DER 格式。
@@ -187,7 +187,7 @@ DER数据大小: 138
 ### func encodeToPem()
 
 ```cangjie
-func encodeToPem(): PemEntry
+public func encodeToPem(): PemEntry
 ```
 
 功能：将 DH 密钥参数编码为 PEM 格式。

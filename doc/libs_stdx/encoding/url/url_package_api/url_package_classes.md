@@ -900,7 +900,7 @@ URL created: https://example.com/path
 ### static func decode(String)
 
 ```cangjie
-static func decode(url: String): String
+public static func decode(url: String): String
 ```
 
 功能：对经过 `URL` 编码（也就是 `%` 编码）的字符串进行解码操作，将编码后的字符串还原成原始的字符串。
@@ -945,7 +945,7 @@ URL decode: Hello %26 World! %
 ### static func decodeComponent(String)
 
 ```cangjie
-static func decodeComponent(component: String): String
+public static func decodeComponent(component: String): String
 ```
 
 功能：对经过 `URL` 编码（也就是 `%` 编码）的字符串进行解码操作，将编码后的字符串还原成原始的字符串。
@@ -983,7 +983,7 @@ URL decodeComponent: Hello & World! %
 ### static func encode(String)
 
 ```cangjie
-static func encode(url: String): String
+public static func encode(url: String): String
 ```
 
 功能：对普通字符串进行 `URL` 编码（也称为 `%` 编码）。`URL` 编码的目的是将字符串中的特殊字符、非 `ASCII` 字符等转换为符合 `URL` 规范的格式，以确保这些字符串能在 `URL` 中安全地传输和使用。
@@ -1032,7 +1032,7 @@ URL encode: Hello%20&%20World!
 ### static func encodeComponent(String)
 
 ```cangjie
-static func encodeComponent(component: String): String
+public static func encodeComponent(component: String): String
 ```
 
 功能：对普通字符串进行 `URL` 编码（也称为 `%` 编码）。`URL` 编码的目的是将字符串中的特殊字符、非 `ASCII` 字符等转换为符合 `URL` 规范的格式，以确保这些字符串能在 `URL` 中安全地传输和使用。

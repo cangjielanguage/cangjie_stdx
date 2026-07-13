@@ -502,6 +502,16 @@ Function: Gets the entry type of the current entry.
 
 Type: [TarEntryType](tar_package_enums.md#enum-tarentrytype)
 
+### prop linkName
+
+```cangjie
+public prop linkName: String
+```
+
+Function: Gets the link name of the current entry.
+
+Type: String
+
 ### prop gid
 
 ```cangjie
@@ -531,6 +541,16 @@ public prop modificationTime: DateTime
 Function: Gets the last modification time of the current entry.
 
 Type: DateTime
+
+### prop checksum
+
+```cangjie
+public prop checksum: Int32
+```
+
+Function: Gets the checksum of the current entry.
+
+Type: Int32
 
 ### prop name
 

@@ -365,7 +365,7 @@ Exceptions:
 ### static func decode(String): String
 
 ```cangjie
-static func decode(url: String): String
+public static func decode(url: String): String
 ```
 
 Function: Perform decoding on a URL-encoded (that is, percent-encoded) string to restore the encoded string to its original form, without decoding the reserved characters.
@@ -387,7 +387,7 @@ Returns:
 ### static func decodeComponent(String): String
 
 ```cangjie
-static func decodeComponent(component: String): String
+public static func decodeComponent(component: String): String
 ```
 
 Function: It performs a decoding operation on a URL-encoded (also known as percent-encoded) string, restoring the encoded string to its original form.
@@ -403,7 +403,7 @@ Returns:
 ### static func encode(String): String
 
 ```cangjie
-static func encode(url: String): String
+public static func encode(url: String): String
 ```
 
 Function: Perform URL encoding (also referred to as percent-encoding) on regular strings. The purpose of URL encoding is to convert special characters, non-ASCII characters, and other such characters in the string into a format that complies with URL specifications, thereby ensuring these strings can be safely transmitted and used within a URL.
@@ -429,7 +429,7 @@ Returns:
 ### static func encodeComponent(String): String
 
 ```cangjie
-static func encodeComponent(component: String): String
+public static func encodeComponent(component: String): String
 ```
 
 Function: Perform URL encoding (also known as percent-encoding) on regular strings. The purpose of URL encoding is to convert special characters, non-ASCII characters, and other such characters in the string into a format that complies with URL specifications, thereby ensuring these strings can be safely transmitted and used within a URL.

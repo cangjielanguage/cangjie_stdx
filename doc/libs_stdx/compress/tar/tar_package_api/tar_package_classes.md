@@ -645,7 +645,7 @@ Entry user name: yourName
 ### init(Path)
 
 ```cangjie
-public init(path: Path)
+protected init(path: Path)
 ```
 
 功能：从文件、目录、软链接构造一个 tar 文件条目。
@@ -683,7 +683,7 @@ main(): Unit {
 ### init(String)
 
 ```cangjie
-public init(path: String)
+protected init(path: String)
 ```
 
 功能：从文件、目录、软链接构造一个 tar 文件条目。
@@ -1421,6 +1421,46 @@ main(): Unit {
 条目类型: TarEntryType.RegularFile
 ```
 
+### prop linkName
+
+```cangjie
+public prop linkName: String
+```
+
+功能：获取当前条目的链接名称。
+
+类型：String
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.compress.tar.*
+import std.fs.*
+
+main(): Unit {
+    // 创建测试文件
+    let testFile = Path("./test.txt")
+    File.writeTo(testFile, "Hello, Tar!".toArray())
+
+    // 创建一个 TarEntry 实例 (使用 PaxTarEntry，因为 TarEntry 是抽象类)
+    var entry: TarEntry = PaxTarEntry(testFile)
+
+    // 获取 linkName 属性
+    let linkName = entry.linkName
+    println("链接名称: ${linkName}")
+
+    // 清理测试文件
+    removeIfExists(testFile)
+}
+```
+
+运行结果：
+
+```text
+链接名称: .
+```
+
 ### prop gid
 
 ```cangjie
@@ -1539,6 +1579,46 @@ main(): Unit {
 
 ```text
 最后修改时间: 2025-12-23T03:20:02Z
+```
+
+### prop checksum
+
+```cangjie
+public prop checksum: Int32
+```
+
+功能：获取当前条目的校验和。
+
+类型：Int32
+
+示例：
+
+<!-- verfiy -->
+```cangjie
+import stdx.compress.tar.*
+import std.fs.*
+
+main(): Unit {
+    // 创建测试文件
+    let testFile = Path("./test.txt")
+    File.writeTo(testFile, "Hello, Tar!".toArray())
+
+    // 创建一个 TarEntry 实例 (使用 PaxTarEntry，因为 TarEntry 是抽象类)
+    var entry: TarEntry = PaxTarEntry(testFile)
+
+    // 获取 checksum 属性
+    let checksum = entry.checksum
+    println("校验和: ${checksum}")
+
+    // 清理测试文件
+    removeIfExists(testFile)
+}
+```
+
+运行结果：
+
+```text
+校验和: 0
 ```
 
 ### prop name
@@ -2886,8 +2966,8 @@ UstarTarEntry written to stream successfully
 
 ```cangjie
 public class V7TarEntry <: TarEntry {
-    public init(filePath: String)
-    public init(filePath: Path)
+    public init(path: String)
+    public init(path: Path)
 }
 ```
 
@@ -2900,18 +2980,18 @@ public class V7TarEntry <: TarEntry {
 ### init(Path)
 
 ```cangjie
-public init(filePath: Path)
+public init(path: Path)
 ```
 
 功能：从文件、目录、软链接构造一个 V7 tar 文件条目。
 
 参数：
 
-- filePath: Path - 文件、目录、软链接的路径。
+- path: Path - 文件、目录、软链接的路径。
 
 异常：
 
-- [TarException](tar_package_exceptions.md#class-tarexception) - 如果 filePath 参数指定的目标不存在或不是文件、目录、软链接，则抛出异常。
+- [TarException](tar_package_exceptions.md#class-tarexception) - 如果 path 参数指定的目标不存在或不是文件、目录、软链接，则抛出异常。
 
 - FSException - 如果读取目标信息或创建目标文件流失败，则抛出异常。
 
@@ -2950,18 +3030,18 @@ Entry size: 11
 ### init(String)
 
 ```cangjie
-public init(filePath: String)
+public init(path: String)
 ```
 
 功能：从文件、目录、软链接构造一个 V7 tar 文件条目。
 
 参数：
 
-- filePath: String - 文件、目录、软链接的路径。
+- path: String - 文件、目录、软链接的路径。
 
 异常：
 
-- [TarException](tar_package_exceptions.md#class-tarexception) - 如果 filePath 参数指定的目标不存在或不是文件、目录、软链接，则抛出异常。
+- [TarException](tar_package_exceptions.md#class-tarexception) - 如果 path 参数指定的目标不存在或不是文件、目录、软链接，则抛出异常。
 
 - FSException - 如果读取目标信息或创建目标文件流失败，则抛出异常。
 
