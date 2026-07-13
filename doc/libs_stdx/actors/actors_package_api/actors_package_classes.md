@@ -146,7 +146,7 @@ Some(42)
 
 ```cangjie
 public class SequentialDispatcher {
-  public init(enableReceiverPriorty!: Bool)
+  public init(enableReceiverPriority!: Bool = false)
 }
 ```
 
@@ -157,14 +157,14 @@ public class SequentialDispatcher {
 ### init(Bool)
 
 ```cangjie
-public init(enableReceiverPriorty!: Bool)
+public init(enableReceiverPriority!: Bool = false)
 ```
 
-功能：创建一个 SequentialDispatcher 实例并启动 SequentialDispatcher 的线程来处理用户提交的闭包。
+功能：创建一个 SequentialDispatcher 实例并启动 SequentialDispatcher 的线程来处理用户提交的闭包。`enableReceiverPriority` 的默认值为 `false`，以保证未显式启用优先级时闭包按照提交顺序执行。
 
 参数：
 
-- enableReceiverPriorty!: Bool - 设置为 true 时提供提供优先值功能，让优先值高的闭包优先执行。
+- enableReceiverPriority!: Bool - 设置为 true 时提供提供优先值功能，让优先值高的闭包优先执行。
 
 ### func post\<T>(() -> T, Int64)
 
@@ -172,7 +172,7 @@ public init(enableReceiverPriorty!: Bool)
 public func post<T>(task: () -> T, priority!: Int64 = 5): ActorFuture<T>
 ```
 
-功能：将一个闭包提交给 dispatcher，该闭包将在 dispatcher 线程上排队并执行。此方法返回一个 [ActorFuture\<T>](actors_package_classes.md#class-actorfuture)，表示闭包的待定结果。如果这个 dispatcher 在构建时如果设置 enableReceiverPriorty 为 true，优先值高的闭包会优先执行；如果设置 enableReceiverPriorty 为 false 时，priority 值将不起作用。
+功能：将一个闭包提交给 dispatcher，该闭包将在 dispatcher 线程上排队并执行。此方法返回一个 [ActorFuture\<T>](actors_package_classes.md#class-actorfuture)，表示闭包的待定结果。如果这个 dispatcher 在构建时如果设置 enableReceiverPriority 为 true，优先值高的闭包会优先执行；如果设置 enableReceiverPriority 为 false 时，priority 值将不起作用。
 
 参数：
 

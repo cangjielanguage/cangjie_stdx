@@ -146,7 +146,7 @@ Some(42)
 
 ```cangjie
 public class SequentialDispatcher {
-  public init(enableReceiverPriorty!: Bool)
+  public init(enableReceiverPriority!: Bool = false)
 }
 ```
 
@@ -157,14 +157,14 @@ Typically, users do not need to use this class directly. Instead, they should us
 ### init(Bool)
 
 ```cangjie
-public init(enableReceiverPriorty!: Bool)
+public init(enableReceiverPriority!: Bool = false)
 ```
 
-Function: Creates a `SequentialDispatcher` instance and starts a thread for the `SequentialDispatcher` to handle the closures submitted by the user.
+Function: Creates a `SequentialDispatcher` instance and starts a thread for the `SequentialDispatcher` to handle the closures submitted by the user. The default value of `enableReceiverPriority` is `false`, ensuring that closures are executed in submission order unless priority scheduling is explicitly enabled.
 
 Parameters:
 
-- enableReceiverPriorty!: Bool - When set to `true`, it enables the priority feature, allowing closures with higher priority to be executed first.
+- enableReceiverPriority!: Bool - When set to `true`, it enables the priority feature, allowing closures with higher priority to be executed first.
 
 ### func post\<T>(() -> T, Int64)
 
