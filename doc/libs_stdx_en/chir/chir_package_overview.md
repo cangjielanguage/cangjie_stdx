@@ -81,7 +81,7 @@ The **chir** (Cangjie High-level IR) package provides the type system and CHIR d
 | [GetInstantiateValue](./chir_package_api/chir_package_classes.md#class-getinstantiatevalue) | Expression to retrieve generic function instantiation value. |
 | [GetRTTI](./chir_package_api/chir_package_classes.md#class-getrtti) | Expression to retrieve runtime type information. |
 | [GetRTTIStatic](./chir_package_api/chir_package_classes.md#class-getrttistatic) | Expression to statically retrieve runtime type information. |
-| [GlobalValue](./chir_package_api/chir_package_classes.md#class-globalvalue) | Sealed abstract base for global values; provides `destroySelf()` to destroy a function or global variable. |
+| [GlobalValue](./chir_package_api/chir_package_classes.md#class-globalvalue) | Sealed abstract base for global values; provides [`destroySelf()`](./chir_package_api/chir_package_classes.md#func-destroyself) to destroy a function or global variable. |
 | [GlobalVar](./chir_package_api/chir_package_classes.md#class-globalvar) | Global variable definition in CHIR. |
 | [GoTo](./chir_package_api/chir_package_classes.md#class-goto) | Unconditional jump terminator expression. |
 | [InstanceOf](./chir_package_api/chir_package_classes.md#class-instanceof) | Type check expression. |

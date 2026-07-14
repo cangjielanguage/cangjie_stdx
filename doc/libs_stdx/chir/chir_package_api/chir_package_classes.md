@@ -9137,13 +9137,17 @@ main() {
 fn_appendExpr: 1
 ```
 
-### func destroySelf()
+### func destroySelf(Bool)
 
 ```cangjie
-public func destroySelf(): Unit
+public func destroySelf(removeFromOwner!: Bool = true): Unit
 ```
 
-功能：销毁自身并解除所有引用关系；销毁后该基本块从所属 BlockGroup 的 `blocks` 列表中移除，内部 `kind` 标记为 `Invalid`。
+功能：销毁自身及其包含的全部表达式，并解除相关引用关系；内部 `kind` 标记为 `Invalid`。
+
+参数：
+
+- removeFromOwner!: Bool - 是否从所属 BlockGroup 的 `blocks` 列表中移除自身，默认为 `true`。级联销毁时由上层自行清空列表时可传 `false`。
 
 示例：
 
@@ -9449,13 +9453,17 @@ main() {
 fn_appendBlock: 2
 ```
 
-### func destroySelf()
+### func destroySelf(Bool)
 
 ```cangjie
-public func destroySelf(): Unit
+public func destroySelf(removeFromOwner!: Bool = true): Unit
 ```
 
-功能：销毁自身及下属基本块，并从所属函数或 lambda 中移除引用。
+功能：销毁自身及下属基本块，并解除相关归属关系；内部 `kind` 标记为 `Invalid`。
+
+参数：
+
+- removeFromOwner!: Bool - 是否从所属函数的 `body` 或 lambda 表达式的 blockGroups 中移除自身，默认为 `true`。级联销毁时由上层自行清理引用时可传 `false`。
 
 示例：
 
@@ -9916,7 +9924,7 @@ op_eq_FloatLiteral: true
 sealed abstract class GlobalValue <: Value & Equatable<GlobalValue> {}
 ```
 
-功能：包级全局值（函数与全局变量）的抽象基类，提供所属包名、源码名、声明父类型、特性列表、自定义注解实例，以及访问级别、静态/常量/外部链接等属性标记的查询与设置能力。
+功能：包级全局值（函数与全局变量）的抽象基类，提供所属包名、源码名、声明父类型、特性列表、自定义注解实例，以及访问级别、静态/常量/外部链接等属性标记的查询与设置能力；并提供 [`destroySelf()`](#func-destroyself) 用于销毁函数或全局变量。
 
 父类型：
 
@@ -10097,6 +10105,47 @@ main() {
 prop_srcCodeName: f
 ```
 
+### func destroySelf()
+
+```cangjie
+public func destroySelf(): Unit
+```
+
+功能：销毁该全局值。若已无效则直接返回；否则根据实际类型执行下列清理，并将内部 `kind` 标记为 `Invalid`：
+
+- [Function](#class-function)：若存在 `declaredParent`，则从父类型的 `methods`（以及匹配的 `instanceVarInitFunc`）中移除自身；若存在函数体则销毁函数体，并清空参数、返回值与泛型形参。
+- [GlobalVar](#class-globalvar)：若存在 `declaredParent`，则从父类型的 `staticVars` 中移除自身；若初始化器为函数则销毁该函数，并清空初始化器。
+
+> **说明：**
+>
+> 不会从 [Package](#class-package) 的 `functions` / `globalVars` 列表中移除条目，调用方需另行处理。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    println("fn_body_before: ${f.body.isSome()}")
+    f.destroySelf()
+    println("fn_body_after: ${f.body.isNone()}")
+    println("fn_invalid: ${!f.isFunction()}")
+    println("pkg_fn_count: ${pkg.functions.size}")
+}
+```
+
+运行结果：
+
+```text
+fn_body_before: true
+fn_body_after: true
+fn_invalid: true
+pkg_fn_count: 1
+```
 ### func isCompilerAdd()
 
 ```cangjie
@@ -12818,13 +12867,17 @@ main() {
 prop_topLevelFunc: true
 ```
 
-### func destroySelf()
+### func destroySelf(Bool)
 
 ```cangjie
-public func destroySelf(): Unit
+public func destroySelf(removeFromOwner!: Bool = true): Unit
 ```
 
-功能：销毁该表达式，解除其与操作数、所属基本块及附属基本块组之间的使用/归属关系。
+功能：销毁该表达式，解除其与操作数、所属基本块及附属基本块组之间的使用/归属关系；内部 `kind` 标记为 `Invalid`。
+
+参数：
+
+- removeFromOwner!: Bool - 是否从所属基本块的 `exprs` 列表中移除自身，默认为 `true`。级联销毁时由上层自行清空列表时可传 `false`。
 
 示例：
 

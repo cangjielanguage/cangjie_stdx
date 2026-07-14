@@ -9137,13 +9137,17 @@ Output:
 fn_appendExpr: 1
 ```
 
-### func destroySelf()
+### func destroySelf(Bool)
 
 ```cangjie
-public func destroySelf(): Unit
+public func destroySelf(removeFromOwner!: Bool = true): Unit
 ```
 
-Function: Destroys itself and removes all reference relationships; after destruction, the basic block is removed from the owning BlockGroup's `blocks` list, and its internal `kind` is marked as `Invalid`.
+Function: Destroys this block and all contained expressions, and detaches related reference relationships; marks the internal `kind` as `Invalid`.
+
+Parameters:
+
+- removeFromOwner!: Bool - Whether to remove this block from the owning BlockGroup's `blocks` list. Defaults to `true`. Pass `false` when the owner clears the list itself during cascading destruction.
 
 Example:
 
@@ -9449,13 +9453,17 @@ Output:
 fn_appendBlock: 2
 ```
 
-### func destroySelf()
+### func destroySelf(Bool)
 
 ```cangjie
-public func destroySelf(): Unit
+public func destroySelf(removeFromOwner!: Bool = true): Unit
 ```
 
-Function: Destroys itself and its subordinate basic blocks, and removes references from the owning function or lambda.
+Function: Destroys this block group and all contained blocks, and detaches related ownership relationships; marks the internal `kind` as `Invalid`.
+
+Parameters:
+
+- removeFromOwner!: Bool - Whether to detach this block group from its owner (clear `Function.body` or remove it from a lambda expression's blockGroups). Defaults to `true`. Pass `false` when the owner clears the reference itself during cascading destruction.
 
 Example:
 
@@ -9916,7 +9924,7 @@ op_eq_FloatLiteral: true
 sealed abstract class GlobalValue <: Value & Equatable<GlobalValue> {}
 ```
 
-Function: Abstract base class of package-level global values (functions and global variables). Provides source/package name, declared parent type, feature list, custom annotation instances, and query/set capabilities for access level, static/const/external-linkage attributes.
+Function: Abstract base class of package-level global values (functions and global variables). Provides source/package name, declared parent type, feature list, custom annotation instances, and query/set capabilities for access level, static/const/external-linkage attributes; also provides [`destroySelf()`](#func-destroyself) to destroy a function or global variable.
 
 Parent Types:
 
@@ -10097,6 +10105,47 @@ Output:
 prop_srcCodeName: f
 ```
 
+### func destroySelf()
+
+```cangjie
+public func destroySelf(): Unit
+```
+
+Function: Destroys this global value. Returns immediately if it is already invalid; otherwise performs the following cleanup based on the concrete type and marks the internal `kind` as `Invalid`:
+
+- [Function](#class-function): If `declaredParent` is present, removes itself from the parent's `methods` (and matching `instanceVarInitFunc` if any). If a function body exists, destroys the body, then clears parameters, return value, and generic type parameters.
+- [GlobalVar](#class-globalvar): If `declaredParent` is present, removes itself from the parent's `staticVars`. If the initializer is a function, destroys that function, then clears the initializer.
+
+> **Note:**
+>
+> Does not remove entries from [Package](#class-package) `functions` / `globalVars` lists; callers must update those lists separately.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    println("fn_body_before: ${f.body.isSome()}")
+    f.destroySelf()
+    println("fn_body_after: ${f.body.isNone()}")
+    println("fn_invalid: ${!f.isFunction()}")
+    println("pkg_fn_count: ${pkg.functions.size}")
+}
+```
+
+Output:
+
+```text
+fn_body_before: true
+fn_body_after: true
+fn_invalid: true
+pkg_fn_count: 1
+```
 ### func isCompilerAdd()
 
 ```cangjie
@@ -12820,13 +12869,17 @@ Output:
 prop_topLevelFunc: true
 ```
 
-### func destroySelf()
+### func destroySelf(Bool)
 
 ```cangjie
-public func destroySelf(): Unit
+public func destroySelf(removeFromOwner!: Bool = true): Unit
 ```
 
-Function: Destroys this expression, detaching all use/ownership relations with its operands, owning block and attached block groups.
+Function: Destroys this expression, detaching all use/ownership relations with its operands, owning block and attached block groups; marks the internal `kind` as `Invalid`.
+
+Parameters:
+
+- removeFromOwner!: Bool - Whether to remove this expression from the owning block's `exprs` list. Defaults to `true`. Pass `false` when the owner clears the list itself during cascading destruction.
 
 Example:
 

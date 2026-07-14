@@ -333,16 +333,21 @@ public class Block <: Value & Equatable<Block> {
     }
 
     /**
-     * Performs the public behavior of `destroySelf`.
-     * @return The `Unit` result.
+     * Destroys this block, all contained expressions, and detaches ownership/use relations.
+     * @param removeFromOwner Whether to remove this block from its owning BlockGroup's
+     *        `blocks` list. Defaults to `true`. Pass `false` when the owner clears its
+     *        list itself during cascading destruction.
      */
-    public func destroySelf(): Unit {
+    public func destroySelf(removeFromOwner!: Bool = true): Unit {
         for (expr in _exprs) {
-            expr.destroySelf()
+            expr.destroySelf(removeFromOwner: false)
         }
+        _exprs.clear()
         _predecessors.clear()
         _exceptions = None
-        _owner._blocks.removeIf({ bb => bb == this })
+        if (removeFromOwner) {
+            _owner._blocks.removeIf({ bb => bb == this })
+        }
         _kind = ValueKind.Invalid
     }
 
@@ -467,21 +472,26 @@ public class BlockGroup <: Value & Equatable<BlockGroup> {
     }
 
     /**
-     * Performs the public behavior of `destroySelf`.
-     * @return The `Unit` result.
+     * Destroys this block group and all contained blocks, and detaches ownership relations.
+     * @param removeFromOwner Whether to detach this block group from its owner (clear
+     *        `Function.body` or remove from a lambda expression's `_blockGroups`).
+     *        Defaults to `true`. Pass `false` when the owner clears its reference itself
+     *        during cascading destruction.
      */
-    public func destroySelf(): Unit {
+    public func destroySelf(removeFromOwner!: Bool = true): Unit {
         for (block in _blocks) {
-            block.destroySelf()
+            block.destroySelf(removeFromOwner: false)
         }
         _blocks.clear()
         _entryBlock = None
-        if (let Some(f) <- (_owner as Function)) {
-            f._body = None
-        } else if (let Some(lv) <- (_owner as LocalVar)) {
-            lv.expr._blockGroups.removeIf({ bg => bg == this })
-        } else {
-            throw CHIRException("Invalid owner: ${_owner.toString()}")
+        if (removeFromOwner) {
+            if (let Some(f) <- (_owner as Function)) {
+                f._body = None
+            } else if (let Some(lv) <- (_owner as LocalVar)) {
+                lv.expr._blockGroups.removeIf({ bg => bg == this })
+            } else {
+                throw CHIRException("Invalid owner: ${_owner.toString()}")
+            }
         }
         _kind = ValueKind.Invalid
     }
@@ -764,8 +774,10 @@ sealed abstract class GlobalValue <: Value & Equatable<GlobalValue> {
                 parent._staticVars.removeIf({ v => v == gv })
                 _declaredParent = None
             }
-            if (let Some(initFunc) <- (gv._initializer as Function)) {
-                initFunc.destroySelf()
+            if (let Some(initVal) <- gv._initializer) {
+                if (let Some(initFunc) <- (initVal as Function)) {
+                    initFunc.destroySelf()
+                }
             }
             gv._initializer = None
         }

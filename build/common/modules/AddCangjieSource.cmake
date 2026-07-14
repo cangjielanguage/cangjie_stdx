@@ -88,9 +88,12 @@ function(add_cangjie_macro_library_in_local target_name)
 
     if(NOT ("${CANGJIELIB_MODULE_NAME}" STREQUAL ""))
         set(output_full_name "${CMAKE_BINARY_DIR}/${output_dir}/lib-macro_${CANGJIELIB_MODULE_NAME}.${CANGJIELIB_PACKAGE_NAME}")
+        set(_macro_cjo_name "${CANGJIELIB_MODULE_NAME}.${CANGJIELIB_PACKAGE_NAME}.cjo")
     else()
         set(output_full_name "${CMAKE_BINARY_DIR}/${output_dir}/lib-macro_${CANGJIELIB_PACKAGE_NAME}")
+        set(_macro_cjo_name "${CANGJIELIB_PACKAGE_NAME}.cjo")
     endif()
+    set(output_cjo_full_name "${CMAKE_BINARY_DIR}/${output_dir}/${_macro_cjo_name}")
 
     set(COMPILE_CMD
         ${cangjie_compiler_tool}
@@ -192,6 +195,8 @@ execute_process(
             COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_plugin_manager_dylib}" "${CMAKE_CURRENT_BINARY_DIR}/"
             COMMAND ${CMAKE_COMMAND} -P ${_macro_rpath_runner}
             COMMAND ${CMAKE_COMMAND} -P ${_copy_macro_runner}
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_CURRENT_BINARY_DIR}/${_macro_cjo_name} ${output_cjo_full_name}
             DEPENDS ${resolved_depends} ${source_files} ${CANGJIELIB_SOURCE_DIR}
                 ${_macro_rpath_runner} ${_copy_macro_runner}
             COMMENT "Generating ${target_name}")
@@ -202,6 +207,8 @@ execute_process(
             COMMAND ${CMAKE_COMMAND} -E env "CANGJIE_PATH=${CMAKE_BINARY_DIR}/modules/${output_cj_lib_dir}"  "LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib"
                     ${COMPILE_CMD}
             COMMAND ${CMAKE_COMMAND} -P ${_copy_macro_runner}
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_CURRENT_BINARY_DIR}/${_macro_cjo_name} ${output_cjo_full_name}
             DEPENDS ${resolved_depends} ${source_files} ${CANGJIELIB_SOURCE_DIR} ${_copy_macro_runner}
             COMMENT "Generating ${target_name}")
     endif()
@@ -225,6 +232,10 @@ execute_process(
         install(FILES ${output_full_name}
             DESTINATION ${_macro_install_lib_dir}/static/stdx
             RENAME ${_macro_install_name})
+        install(FILES ${output_cjo_full_name}
+            DESTINATION ${_macro_install_lib_dir}/dynamic/stdx)
+        install(FILES ${output_cjo_full_name}
+            DESTINATION ${_macro_install_lib_dir}/static/stdx)
     endif()
 endfunction()
 

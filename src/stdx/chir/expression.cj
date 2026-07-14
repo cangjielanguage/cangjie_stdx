@@ -652,17 +652,22 @@ sealed abstract class Expression <: Base & ToString & Hashable & Equatable<Expre
 
     /**
      * Destroys this expression and detaches all ownership/use relations.
+     * @param removeFromOwner Whether to remove this expression from its owning block's
+     *        `exprs` list. Defaults to `true`. Pass `false` when the owner clears its
+     *        list itself during cascading destruction.
      */
-    public func destroySelf(): Unit {
+    public func destroySelf(removeFromOwner!: Bool = true): Unit {
         for (op in _operands) {
             op._users.removeIf({ e => e == this })
         }
         _operands.clear()
         for (blockGroup in _blockGroups) {
-            blockGroup.destroySelf()
+            blockGroup.destroySelf(removeFromOwner: false)
         }
         _blockGroups.clear()
-        owner._exprs.removeIf({ e => e == this })
+        if (removeFromOwner) {
+            owner._exprs.removeIf({ e => e == this })
+        }
         _kind = ExprKind.Invalid
     }
 
