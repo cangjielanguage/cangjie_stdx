@@ -97,12 +97,12 @@ class Inflate {
             if (ret != ZLIB_OK && ret != ZLIB_STREAM_END) {
                 throw ZlibException(ret)
             }
-            let zlibStream: ZlibStream = zlibStreamCPtr.read()
-            let nextAvailIn: Int64 = Int64(zlibStream.availIn)
+            let nextAvailIn: Int64 = Int64(CJ_ZlibStreamGetAvailIn(zlibStreamCPtr))
+            let nextAvailOut: Int64 = Int64(CJ_ZlibStreamGetAvailOut(zlibStreamCPtr))
             inBufOffset += availIn - nextAvailIn
             availIn = nextAvailIn
             finished = ret == ZLIB_STREAM_END
-            return outBufSize - Int64(zlibStream.availOut)
+            return outBufSize - nextAvailOut
         }
     }
 

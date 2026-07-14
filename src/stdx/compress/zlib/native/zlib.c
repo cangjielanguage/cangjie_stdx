@@ -40,6 +40,16 @@ extern void CJ_SetOutput(Bytef* nextOut, uInt availOut, z_stream* zlibStream)
     zlibStream->avail_out = availOut;
 }
 
+extern uInt CJ_ZlibStreamGetAvailIn(const z_stream* zlibStream)
+{
+    return zlibStream->avail_in;
+}
+
+extern uInt CJ_ZlibStreamGetAvailOut(const z_stream* zlibStream)
+{
+    return zlibStream->avail_out;
+}
+
 extern void CJ_FreeZlibStream(z_stream* zlibStream)
 {
     if (zlibStream != NULL) {
