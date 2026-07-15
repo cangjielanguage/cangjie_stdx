@@ -652,17 +652,22 @@ sealed abstract class Expression <: Base & ToString & Hashable & Equatable<Expre
 
     /**
      * Destroys this expression and detaches all ownership/use relations.
+     * @param removeFromOwner Whether to remove this expression from its owning block's
+     *        `exprs` list. Defaults to `true`. Pass `false` when the owner clears its
+     *        list itself during cascading destruction.
      */
-    public func destroySelf(): Unit {
+    public func destroySelf(removeFromOwner!: Bool = true): Unit {
         for (op in _operands) {
             op._users.removeIf({ e => e == this })
         }
         _operands.clear()
         for (blockGroup in _blockGroups) {
-            blockGroup.destroySelf()
+            blockGroup.destroySelf(removeFromOwner: false)
         }
         _blockGroups.clear()
-        owner._exprs.removeIf({ e => e == this })
+        if (removeFromOwner) {
+            owner._exprs.removeIf({ e => e == this })
+        }
         _kind = ExprKind.Invalid
     }
 
@@ -3313,6 +3318,17 @@ public class StoreElementByName <: Expression & Equatable<StoreElementByName> {
         }
     }
 
+    /**
+     * Gets the `srcValue` property.
+     * @type { Value }
+     */
+    public prop srcValue: Value {
+        get() {
+            assert(operands.size == 2, "StoreElementByName: op is not set")
+            return operands[0]
+        }
+    }
+
     internal init(val: Value, location: Value, fieldNames: ArrayList<String>) {
         super(ExprKind.StoreElementByName, ArrayList<Value>([val, location]))
         this._fieldNames = fieldNames.clone()
@@ -3355,6 +3371,17 @@ public class StoreElementRef <: Expression & Equatable<StoreElementRef> {
     public prop path: Array<UInt64> {
         get() {
             return _path.toArray()
+        }
+    }
+
+    /**
+     * Gets the `srcValue` property.
+     * @type { Value }
+     */
+    public prop srcValue: Value {
+        get() {
+            assert(operands.size == 2, "StoreElementRef: op is not set")
+            return operands[0]
         }
     }
 

@@ -145,7 +145,9 @@ public class DebugLocation <: ToString {
             return String.empty
         }
         let result = StringBuilder()
+        result.append("loc: \"")
         result.append(filePath.fileName)
+        result.append("\"")
         result.append(start.toString())
         if (!_scopeInfo.isEmpty()) {
             var scopeStr = ArrayList<String>()

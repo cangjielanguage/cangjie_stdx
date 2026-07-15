@@ -40,7 +40,6 @@ class MyPlugin <: CHIRPluginBase {
 
 main() {
     let pkg = Package("demo", AccessLevel.Public)
-    pkg.dump()
     let (data, length) = serializePackage(pkg)
     PluginManager.registerCHIRPlugin({ => MyPlugin() })
     unsafe {
@@ -55,9 +54,6 @@ main() {
 Output:
 
 ```text
-package: demo
-packageAccessLevel: public
-
 length: 56
 success: true
 ```
@@ -96,7 +92,6 @@ class MyPlugin <: CHIRPluginBase {
 
 main() {
     let pkg = Package("demo", AccessLevel.Public)
-    pkg.dump()
     let (data, length) = serializePackage(pkg)
     PluginManager.registerCHIRPlugin({ => MyPlugin() })
     unsafe {
@@ -110,9 +105,6 @@ main() {
 Output:
 
 ```text
-package: demo
-packageAccessLevel: public
-
 length: 56
 ```
 
@@ -142,7 +134,6 @@ class MyPlugin <: CHIRPluginBase {
 
 main() {
     let pkg = Package("demo", AccessLevel.Public)
-    pkg.dump()
     let (data, length) = serializePackage(pkg)
     PluginManager.registerCHIRPlugin({ => MyPlugin() })
     unsafe {
@@ -156,8 +147,5 @@ main() {
 Output:
 
 ```text
-package: demo
-packageAccessLevel: public
-
 success: true
 ```

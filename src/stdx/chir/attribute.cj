@@ -251,10 +251,6 @@ internal struct AttributeInfo <: ToString {
         this._attributesInfo = attrs
     }
 
-    internal func clone(): AttributeInfo {
-        return AttributeInfo(_attributesInfo)
-    }
-
     /**
      * Set an attribute to enabled or disabled
      */

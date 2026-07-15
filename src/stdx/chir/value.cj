@@ -333,16 +333,21 @@ public class Block <: Value & Equatable<Block> {
     }
 
     /**
-     * Performs the public behavior of `destroySelf`.
-     * @return The `Unit` result.
+     * Destroys this block, all contained expressions, and detaches ownership/use relations.
+     * @param removeFromOwner Whether to remove this block from its owning BlockGroup's
+     *        `blocks` list. Defaults to `true`. Pass `false` when the owner clears its
+     *        list itself during cascading destruction.
      */
-    public func destroySelf(): Unit {
+    public func destroySelf(removeFromOwner!: Bool = true): Unit {
         for (expr in _exprs) {
-            expr.destroySelf()
+            expr.destroySelf(removeFromOwner: false)
         }
+        _exprs.clear()
         _predecessors.clear()
         _exceptions = None
-        _owner._blocks.removeIf({ bb => bb == this })
+        if (removeFromOwner) {
+            _owner._blocks.removeIf({ bb => bb == this })
+        }
         _kind = ValueKind.Invalid
     }
 
@@ -467,21 +472,26 @@ public class BlockGroup <: Value & Equatable<BlockGroup> {
     }
 
     /**
-     * Performs the public behavior of `destroySelf`.
-     * @return The `Unit` result.
+     * Destroys this block group and all contained blocks, and detaches ownership relations.
+     * @param removeFromOwner Whether to detach this block group from its owner (clear
+     *        `Function.body` or remove from a lambda expression's `_blockGroups`).
+     *        Defaults to `true`. Pass `false` when the owner clears its reference itself
+     *        during cascading destruction.
      */
-    public func destroySelf(): Unit {
+    public func destroySelf(removeFromOwner!: Bool = true): Unit {
         for (block in _blocks) {
-            block.destroySelf()
+            block.destroySelf(removeFromOwner: false)
         }
         _blocks.clear()
         _entryBlock = None
-        if (let Some(f) <- (_owner as Function)) {
-            f._body = None
-        } else if (let Some(lv) <- (_owner as LocalVar)) {
-            lv.expr._blockGroups.removeIf({ bg => bg == this })
-        } else {
-            throw CHIRException("Invalid owner: ${_owner.toString()}")
+        if (removeFromOwner) {
+            if (let Some(f) <- (_owner as Function)) {
+                f._body = None
+            } else if (let Some(lv) <- (_owner as LocalVar)) {
+                lv.expr._blockGroups.removeIf({ bg => bg == this })
+            } else {
+                throw CHIRException("Invalid owner: ${_owner.toString()}")
+            }
         }
         _kind = ValueKind.Invalid
     }
@@ -732,6 +742,46 @@ sealed abstract class GlobalValue <: Value & Equatable<GlobalValue> {
      */
     public func setStatic(enable: Bool): Unit {
         _attributes.setAttr(Attribute.Static, enable)
+    }
+
+    /**
+     * Destroys this global value and removes it from its declared parent when present.
+     *
+     * For functions, also destroys the function body when present. For global variables,
+     * destroys the initializer function when present, then clears the initializer reference.
+     * Package-level lists are not updated; callers remove entries from `Package` separately.
+     */
+    public func destroySelf(): Unit {
+        if (isInvalid()) {
+            return
+        }
+        if (let Some(f) <- (this as Function)) {
+            if (let Some(parent) <- _declaredParent) {
+                parent._methods.removeIf({ m => m == f })
+                if (let Some(varInitFunc) <- parent._instanceVarInitFunc && varInitFunc == f) {
+                    parent._instanceVarInitFunc = None
+                }
+                _declaredParent = None
+            }
+            if (let Some(body) <- f._body) {
+                body.destroySelf()
+            }
+            f._parameters.clear()
+            f._retValue = None
+            f._genericTypeParams.clear()
+        } else if (let Some(gv) <- (this as GlobalVar)) {
+            if (let Some(parent) <- _declaredParent) {
+                parent._staticVars.removeIf({ v => v == gv })
+                _declaredParent = None
+            }
+            if (let Some(initVal) <- gv._initializer) {
+                if (let Some(initFunc) <- (initVal as Function)) {
+                    initFunc.destroySelf()
+                }
+            }
+            gv._initializer = None
+        }
+        _kind = ValueKind.Invalid
     }
 
     protected override func calculateHashCode(): Int64 {

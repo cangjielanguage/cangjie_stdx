@@ -206,7 +206,7 @@ internal class DebugLocationInfoForWarning <: CHIRAnno<DebugLocation> {
     }
 
     public func toString(): String {
-        return "warning loc: " + v.toString()
+        return "warning " + v.toString()
     }
 }
 

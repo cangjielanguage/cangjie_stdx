@@ -8,6 +8,10 @@ public abstract class CHIRPluginBase <: PluginBase
 
 功能：CHIR 插件的抽象基类，所有 CHIR 插件均需继承此类并实现 `run` 方法。
 
+> **说明：**
+>
+> 不建议直接继承 `CHIRPluginBase` 类型，建议使用 [CHIRPlugin](#macro-chirplugin) 宏实现插件的功能
+
 父类型：
 
 - PluginBase
@@ -149,6 +153,10 @@ public class PluginManager
 
 功能：插件管理器，提供插件注册功能。
 
+> **说明：**
+>
+> 不建议手动使用 `PluginManager` 类型实现插件注册的功能，建议使用 [CHIRPlugin](#macro-chirplugin) 宏实现
+
 ### static func registerCHIRPlugin(() -> CHIRPluginBase)
 
 ```cangjie
@@ -205,13 +213,12 @@ public macro CHIRPlugin(input: Tokens): Tokens
 
 <!-- verify -->
 ```cangjie
-import stdx.plugin.manager.*
+import stdx.plugin.*
 import stdx.chir.*
 
 @CHIRPlugin
 class MyPlugin {
-    public init() {}
-    public open func run(pkg: Package): Bool {
+    public override func run(pkg: Package): Bool {
         println("Macro plugin processed: ${pkg.name}")
         return true
     }
@@ -240,6 +247,10 @@ result: true
 
 功能：对 CHIR 包二进制数据依次执行所有已注册的 CHIR 插件。
 
+> **说明：**
+>
+> 不建议手动使用 `executeCHIRPlugins` 函数实现执行插件的功能，建议使用 [CHIRPlugin](#macro-chirplugin) 宏实现
+
 参数：
 
 - data: CPointer\<UInt8> - CHIR 包的二进制数据指针。
@@ -267,7 +278,6 @@ class MyPlugin <: CHIRPluginBase {
 
 main() {
     let pkg = Package("demo", AccessLevel.Public)
-    pkg.dump()
     let (data, length) = serializePackage(pkg)
     PluginManager.registerCHIRPlugin({ => MyPlugin() })
     unsafe {
@@ -282,9 +292,6 @@ main() {
 运行结果：
 
 ```text
-package: demo
-packageAccessLevel: public
-
 success: true
 length: 56
 ```
