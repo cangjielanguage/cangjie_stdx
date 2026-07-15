@@ -14,8 +14,57 @@
  */
 package stdx.compress.zlib
 
+@When[os == "Windows" || arch == "arm"]
 @C
-struct ZlibStream {}
+struct ZlibStream {
+    var nextIn: CPointer<UInt8>
+    var availIn: UInt32
+    var totalIn: UInt32
+    var nextOut: CPointer<UInt8>
+    var availOut: UInt32
+    var totalOut: UInt32
+    init(
+        nextIn!: CPointer<UInt8>,
+        availIn!: UInt32,
+        totalIn!: UInt32,
+        nextOut!: CPointer<UInt8>,
+        availOut!: UInt32,
+        totalOut!: UInt32
+    ) {
+        this.nextIn = nextIn
+        this.availIn = availIn
+        this.totalIn = totalIn
+        this.nextOut = nextOut
+        this.availOut = availOut
+        this.totalOut = totalOut
+    }
+}
+
+@When[os != "Windows" && arch != "arm"]
+@C
+struct ZlibStream {
+    var nextIn: CPointer<UInt8>
+    var availIn: UInt32
+    var totalIn: UInt64
+    var nextOut: CPointer<UInt8>
+    var availOut: UInt32
+    var totalOut: UInt64
+    init(
+        nextIn!: CPointer<UInt8>,
+        availIn!: UInt32,
+        totalIn!: UInt64,
+        nextOut!: CPointer<UInt8>,
+        availOut!: UInt32,
+        totalOut!: UInt64
+    ) {
+        this.nextIn = nextIn
+        this.availIn = availIn
+        this.totalIn = totalIn
+        this.nextOut = nextOut
+        this.availOut = availOut
+        this.totalOut = totalOut
+    }
+}
 
 @FastNative
 foreign func CJ_CreateZlibStream(): CPointer<ZlibStream>
@@ -25,12 +74,6 @@ foreign func CJ_SetInput(nextIn: CPointer<UInt8>, availIn: UInt32, zlibStream: C
 
 @FastNative
 foreign func CJ_SetOutput(nextOut: CPointer<UInt8>, availOut: UInt32, zlibStream: CPointer<ZlibStream>): Unit
-
-@FastNative
-foreign func CJ_ZlibStreamGetAvailIn(zlibStream: CPointer<ZlibStream>): UInt32
-
-@FastNative
-foreign func CJ_ZlibStreamGetAvailOut(zlibStream: CPointer<ZlibStream>): UInt32
 
 @FastNative
 foreign func CJ_FreeZlibStream(zlibStream: CPointer<ZlibStream>): Unit

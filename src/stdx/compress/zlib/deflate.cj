@@ -109,12 +109,12 @@ class Deflate {
             if (ret != ZLIB_OK && ret != ZLIB_STREAM_END) {
                 throw ZlibException(ret)
             }
-            let nextAvailIn: Int64 = Int64(CJ_ZlibStreamGetAvailIn(zlibStreamCPtr))
-            let nextAvailOut: Int64 = Int64(CJ_ZlibStreamGetAvailOut(zlibStreamCPtr))
+            var zlibStream: ZlibStream = zlibStreamCPtr.read()
+            var nextAvailIn: Int64 = Int64(zlibStream.availIn)
             inBufOffset += availIn - nextAvailIn
             availIn = nextAvailIn
             finished = ret == ZLIB_STREAM_END
-            return outBufSize - nextAvailOut
+            return outBufSize - Int64(zlibStream.availOut)
         }
     }
 
