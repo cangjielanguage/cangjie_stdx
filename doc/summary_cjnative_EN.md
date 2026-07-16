@@ -8,8 +8,6 @@
     - [Classes](libs_stdx_en/aspect_cj/aspect_cj_package_api/aspect_cj_package_classes.md)
     - [Tutorial Examples]()
         - [aspect_cj Usage](libs_stdx_en/aspect_cj/aspect_cj_samples/aspect_cj_sample.md)
-- [stdx.aspect_cj.plugins.weave_aspects](libs_stdx_en/aspect_cj/plugins/weave_aspects/weave_aspects_package_overview.md)
-    - [Classes](libs_stdx_en/aspect_cj/plugins/weave_aspects/weave_aspects_package_api/weave_aspects_package_classes.md)
 - [stdx.chir](libs_stdx_en/chir/chir_package_overview.md)
     - [Classes](libs_stdx_en/chir/chir_package_api/chir_package_classes.md)
     - [Enums](libs_stdx_en/chir/chir_package_api/chir_package_enums.md)

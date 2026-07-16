@@ -17,7 +17,7 @@ import stdx.chir.*
 import stdx.plugin.*
 
 @CHIRPlugin
-public class WeaveAspects {
+class WeaveAspects {
     var processInfos = ArrayList<OutputInfo>()
     var pkgInitFuncMangledNames = HashMap<String, String>()
 
