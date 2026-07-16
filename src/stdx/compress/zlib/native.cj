@@ -14,7 +14,7 @@
  */
 package stdx.compress.zlib
 
-@When[os == "Windows"]
+@When[os == "Windows" || arch == "arm"]
 @C
 struct ZlibStream {
     var nextIn: CPointer<UInt8>
@@ -40,7 +40,7 @@ struct ZlibStream {
     }
 }
 
-@When[os != "Windows"]
+@When[os != "Windows" && arch != "arm"]
 @C
 struct ZlibStream {
     var nextIn: CPointer<UInt8>
