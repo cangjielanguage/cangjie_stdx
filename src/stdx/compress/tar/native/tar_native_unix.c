@@ -65,7 +65,7 @@ extern char *CJ_TAR_GetUserName(const char *path) {
     }
     struct passwd *pw = getpwuid(st.st_uid);
     if (!pw) {
-        return NULL;
+        return "";
     }
     return pw->pw_name;
 }
@@ -80,7 +80,7 @@ extern char *CJ_TAR_GetGroupName(const char *path) {
     }
     struct group *gr = getgrgid(st.st_gid);
     if (!gr) {
-        return NULL;
+        return "";
     }
     return gr->gr_name;
 }
