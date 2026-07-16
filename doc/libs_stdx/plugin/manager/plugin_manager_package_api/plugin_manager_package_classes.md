@@ -1,16 +1,62 @@
 # 类
 
+## class PluginBase
+
+```cangjie
+sealed abstract class PluginBase {}
+```
+
+功能：插件基类，为所有插件提供名称管理能力。该类为 `sealed`（不可在包外继承），构造器为 `internal`（不可在包外实例化），请通过其公开子类 [CHIRPluginBase](#class-chirpluginbase) 使用插件功能。
+
+### prop name
+
+```cangjie
+public prop name: String
+```
+
+功能：获取插件名称。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.plugin.manager.*
+import stdx.chir.*
+
+class MyPlugin <: CHIRPluginBase {
+    public init() {
+        super("MyPlugin")
+    }
+    public open func run(pkg: Package): Bool {
+        return true
+    }
+}
+
+main() {
+    let plugin = MyPlugin()
+    println(plugin.name)
+}
+```
+
+运行结果：
+
+```text
+MyPlugin
+```
+
 ## class CHIRPluginBase
 
 ```cangjie
-public abstract class CHIRPluginBase <: PluginBase
+public abstract class CHIRPluginBase <: PluginBase {
+    public init(name: String)
+}
 ```
 
 功能：CHIR 插件的抽象基类，所有 CHIR 插件均需继承此类并实现 `run` 方法。
 
 > **说明：**
 >
-> 不建议直接继承 `CHIRPluginBase` 类型，建议使用 [CHIRPlugin](#macro-chirplugin) 宏实现插件的功能
+> 不建议直接继承 `CHIRPluginBase` 类型，建议使用 [CHIRPlugin](../../plugin_package_api/plugin_package_macros.md) 宏实现插件的功能
 
 父类型：
 
@@ -18,7 +64,7 @@ public abstract class CHIRPluginBase <: PluginBase
 
 > **说明：**
 >
-> `PluginBase` 为内部类型，不可直接使用；`CHIRPluginBase` 是公开的插件基类入口。
+> `PluginBase` 的构造器为 `internal`，不可在包外直接实例化；请通过 `CHIRPluginBase` 使用。详见 [PluginBase](#class-pluginbase)。
 
 ### init(String)
 
@@ -45,42 +91,6 @@ class MyPlugin <: CHIRPluginBase {
     }
     public open func run(pkg: Package): Bool {
         println("Running plugin: ${name}")
-        return true
-    }
-}
-
-main() {
-    let plugin = MyPlugin()
-    println(plugin.name)
-}
-```
-
-运行结果：
-
-```text
-MyPlugin
-```
-
-### prop name
-
-```cangjie
-public prop name: String
-```
-
-功能：获取插件名称。
-
-示例：
-
-<!-- verify -->
-```cangjie
-import stdx.plugin.manager.*
-import stdx.chir.*
-
-class MyPlugin <: CHIRPluginBase {
-    public init() {
-        super("MyPlugin")
-    }
-    public open func run(pkg: Package): Bool {
         return true
     }
 }
@@ -148,14 +158,14 @@ result: true
 ## class PluginManager
 
 ```cangjie
-public class PluginManager
+public class PluginManager {}
 ```
 
 功能：插件管理器，提供插件注册功能。
 
 > **说明：**
 >
-> 不建议手动使用 `PluginManager` 类型实现插件注册的功能，建议使用 [CHIRPlugin](#macro-chirplugin) 宏实现
+> 不建议手动使用 `PluginManager` 类型实现插件注册的功能，建议使用 [CHIRPlugin](../../plugin_package_api/plugin_package_macros.md) 宏实现
 
 ### static func registerCHIRPlugin(() -> CHIRPluginBase)
 
@@ -197,59 +207,17 @@ main() {
 Plugin registered
 ```
 
-## macro CHIRPlugin
+## func executeCHIRPlugins(CPointer\<UInt8>, Int64)
 
 ```cangjie
-public macro CHIRPlugin(input: Tokens): Tokens
-```
-
-功能：CHIR 插件注册宏，将一个类声明自动转换为 CHIRPluginBase 子类并注册到 PluginManager。使用此宏标注的类将自动继承 CHIRPluginBase 并通过 PluginManager.registerCHIRPlugin 注册。
-
-> **注意：**
->
-> 使用 `@CHIRPlugin` 宏标注的类不要手动继承 `CHIRPluginBase`，否则会在运行时抛出异常。宏会自动处理继承和注册逻辑。
-
-示例：
-
-<!-- verify -->
-```cangjie
-import stdx.plugin.*
-import stdx.chir.*
-
-@CHIRPlugin
-class MyPlugin {
-    public override func run(pkg: Package): Bool {
-        println("Macro plugin processed: ${pkg.name}")
-        return true
-    }
-}
-
-main() {
-    let pkg = Package("demo", AccessLevel.Public)
-    let plugin = MyPlugin()
-    let result = plugin.run(pkg)
-    println("result: ${result}")
-}
-```
-
-运行结果：
-
-```text
-Macro plugin processed: demo
-result: true
-```
-
-## func executeCHIRPlugins
-
-```cangjie
-@C public func executeCHIRPlugins(data: CPointer<UInt8>, length: Int64): PluginResult
+public func executeCHIRPlugins(data: CPointer<UInt8>, length: Int64): PluginResult
 ```
 
 功能：对 CHIR 包二进制数据依次执行所有已注册的 CHIR 插件。
 
 > **说明：**
 >
-> 不建议手动使用 `executeCHIRPlugins` 函数实现执行插件的功能，建议使用 [CHIRPlugin](#macro-chirplugin) 宏实现
+> 不建议手动使用 `executeCHIRPlugins` 函数实现执行插件的功能，建议使用 [CHIRPlugin](../../plugin_package_api/plugin_package_macros.md) 宏实现
 
 参数：
 

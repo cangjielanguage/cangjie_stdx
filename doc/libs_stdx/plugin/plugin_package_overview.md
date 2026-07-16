@@ -6,37 +6,16 @@
 
 ## 功能介绍
 
-plugin 包提供 CHIR 插件的注册、管理与执行机制，包括：
+plugin 包提供 CHIR 插件的注册机制：
 
-- **插件基类**（`CHIRPluginBase`）：所有 CHIR 插件的抽象基类，子类需实现 `run` 方法；
-- **插件管理器**（`PluginManager`）：提供 CHIR 插件的注册功能；
-- **插件注册宏**（`CHIRPlugin`）：自动将类声明转换为 CHIRPluginBase 子类并注册；
-- **插件执行**（`executeCHIRPlugins`）：对 CHIR 包二进制数据依次执行所有已注册插件；
-- **执行结果**（`PluginResult`）：包含处理后的数据、长度及成功状态。
+- **插件注册宏**（`CHIRPlugin`）：自动将类声明转换为 CHIRPluginBase 子类并注册到 PluginManager。
+
+> 插件管理与执行相关 API 位于 [stdx.plugin.manager](./manager/plugin_manager_package_overview.md) 子包中。
 
 ## API 列表
-
-### 类
-
-| 类名 | 功能 |
-| --- | --- |
-| [CHIRPluginBase](./plugin_package_api/plugin_package_classes.md#class-chirpluginbase) | CHIR 插件的抽象基类。 |
-| [PluginManager](./plugin_package_api/plugin_package_classes.md#class-pluginmanager) | 插件管理器，提供插件注册功能。 |
-
-### 顶层函数
-
-| 函数名 | 功能 |
-| --- | --- |
-| [executeCHIRPlugins](./plugin_package_api/plugin_package_classes.md#func-executechirplugins) | 对 CHIR 包数据执行所有已注册插件。 |
 
 ### 宏
 
 | 宏名 | 功能 |
 | --- | --- |
-| [CHIRPlugin](./plugin_package_api/plugin_package_classes.md#macro-chirplugin) | CHIR 插件注册宏。 |
-
-### 结构体
-
-| 结构体名 | 功能 |
-| --- | --- |
-| [PluginResult](./plugin_package_api/plugin_package_structs.md#struct-pluginresult) | CHIR 插件执行结果。 |
+| [CHIRPlugin](./plugin_package_api/plugin_package_macros.md) | CHIR 插件注册宏。 |

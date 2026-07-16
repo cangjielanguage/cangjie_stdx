@@ -4,7 +4,7 @@
 
 ```cangjie
 public class InsertAtEntry {
-    public const init(packageName!: String, className!: String, methodName!: String, isStatic!: Bool, funcTypeStr!: String, recursive!: Bool)
+    public const init(packageName!: String, className!: String, methodName!: String, isStatic!: Bool, recursive!: Bool, funcTypeStr!: String)
 }
 ```
 
@@ -14,10 +14,10 @@ Example:
 
 See the [InsertAtEntry example tutorial](../aspect_cj_samples/aspect_cj_sample.md#insertatentry-entry-instrumentation-example) for the end-to-end workflow.
 
-### const init(String, String, String, Bool, String, Bool)
+### const init(String, String, String, Bool, Bool, String)
 
 ```cangjie
-public const init(packageName!: String, className!: String, methodName!: String, isStatic!: Bool, funcTypeStr!: String, recursive!: Bool)
+public const init(packageName!: String, className!: String, methodName!: String, isStatic!: Bool, recursive!: Bool, funcTypeStr!: String)
 ```
 
 Function: Creates an [InsertAtEntry](aspect_cj_package_classes.md#class-insertatentry) object.
@@ -32,14 +32,14 @@ Parameters:
 - className!: String - For member functions, specifies the class name; for global functions, leave empty;
 - methodName!: String - The name of the target function, e.g., "foo";
 - isStatic!: Bool - Indicates whether the target function is a static member function;
-- funcTypeStr!: String - The type signature string of the target function (without spaces). For custom types, the package name must be included and separated by `.`. Does not include the implicit this parameter type. Example: "(Int64,std.core.Object)->Unit";
 - recursive!: Bool - For member functions, indicates whether to weave into override versions in subclasses; otherwise, this field should be false.
+- funcTypeStr!: String - The type signature string of the target function (without spaces). For custom types, the package name must be included and separated by `.`. Does not include the implicit this parameter type. Example: "(Int64,std.core.Object)->Unit";
 
 ## class InsertAtExit
 
 ```cangjie
 public class InsertAtExit {
-    public const init(packageName!: String, className!: String, methodName!: String, isStatic!: Bool, funcTypeStr!: String, recursive!: Bool)
+    public const init(packageName!: String, className!: String, methodName!: String, isStatic!: Bool, recursive!: Bool, funcTypeStr!: String)
 }
 ```
 
@@ -49,10 +49,10 @@ Example:
 
 See the [InsertAtExit example tutorial](../aspect_cj_samples/aspect_cj_sample.md#insertatexit-exit-instrumentation-example) for the end-to-end workflow.
 
-### const init(String, String, String, Bool, String, Bool)
+### const init(String, String, String, Bool, Bool, String)
 
 ```cangjie
-public const init(packageName!: String, className!: String, methodName!: String, isStatic!: Bool, funcTypeStr!: String, recursive!: Bool)
+public const init(packageName!: String, className!: String, methodName!: String, isStatic!: Bool, recursive!: Bool, funcTypeStr!: String)
 ```
 
 Function: Creates an [InsertAtExit](aspect_cj_package_classes.md#class-insertatexit) object.
@@ -67,8 +67,8 @@ Parameters:
 - className!: String - For member functions, specifies the class name; for global functions, leave empty;
 - methodName!: String - The name of the target function, e.g., "foo";
 - isStatic!: Bool - Indicates whether the target function is a static member function;
-- funcTypeStr!: String - The type signature string of the target function (without spaces). For custom types, the package name must be included and separated by `.`. Does not include the implicit this parameter type. Example: "(Int64,std.core.Object)->Unit";
 - recursive!: Bool - For member functions, indicates whether to weave into override versions in subclasses; otherwise, this field should be false.
+- funcTypeStr!: String - The type signature string of the target function (without spaces). For custom types, the package name must be included and separated by `.`. Does not include the implicit this parameter type. Example: "(Int64,std.core.Object)->Unit";
 
 ## class ReplaceFuncBody
 
