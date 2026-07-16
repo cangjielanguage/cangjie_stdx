@@ -6,7 +6,7 @@
  * See https://cangjie-lang.cn/pages/LICENSE for license information.
  */
 
-package stdx.aspect_cj.plugins.wave_aspects
+package stdx.aspect_cj.plugins.weave_aspects
 
 import std.collection.*
 import std.convert.*
@@ -17,7 +17,7 @@ import stdx.chir.*
 import stdx.plugin.*
 
 @CHIRPlugin
-public class WaveAspects {
+public class WeaveAspects {
     var processInfos = ArrayList<OutputInfo>()
     var pkgInitFuncMangledNames = HashMap<String, String>()
 

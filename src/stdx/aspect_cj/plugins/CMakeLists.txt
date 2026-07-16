@@ -6,4 +6,4 @@
 # See https://cangjie-lang.cn/pages/LICENSE for license information.
 
 add_subdirectory(collect_aspects)
-add_subdirectory(wave_aspects)
+add_subdirectory(weave_aspects)

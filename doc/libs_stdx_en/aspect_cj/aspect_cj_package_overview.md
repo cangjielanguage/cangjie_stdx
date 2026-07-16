@@ -6,7 +6,7 @@
 
 ## Feature Description
 
-The `stdx.aspect_cj` package provides annotations for Aspect-Oriented Programming (AOP) in Cangjie. When used in conjunction with the libstdx.collect_aspects and libstdx.wave_aspects compilation plugins, it enables function instrumentation (before/after) and implementation replacement.
+The `stdx.aspect_cj` package provides annotations for Aspect-Oriented Programming (AOP) in Cangjie. When used in conjunction with the libstdx.collect_aspects and libstdx.weave_aspects compilation plugins, it enables function instrumentation (before/after) and implementation replacement.
 
 ## API List
 
@@ -55,8 +55,8 @@ The `stdx.aspect_cj` package provides annotations for Aspect-Oriented Programmin
 To fully implement AOP functionality, in addition to using the aforementioned annotation classes to define aspects, two compilation plugins are required:
 
 - libstdx.collect_aspects.so(.dll/.dylib)
-- libstdx.wave_aspects.so(.dll/.dylib)
+- libstdx.weave_aspects.so(.dll/.dylib)
 
 These compilation plugins are provided as dynamic libraries in stdx.aspect_cj, with different versions for different platforms.
 
-First, use libstdx.collect_aspects to collect all aspect and join point information during compilation. Then use libstdx.wave_aspects for secondary compilation to weave the collected aspects into the join points.
+First, use libstdx.collect_aspects to collect all aspect and join point information during compilation. Then use libstdx.weave_aspects for secondary compilation to weave the collected aspects into the join points.

@@ -80,7 +80,7 @@ set(COLLECT_ASPECTS_DEPENDENCIES
     cangjie${BACKEND_TYPE}PluginMacro
     cangjie${BACKEND_TYPE}PluginManager)
 
-set(WAVE_ASPECTS_DEPENDENCIES
+set(WEAVE_ASPECTS_DEPENDENCIES
     cangjie${BACKEND_TYPE}Chir
     cangjie${BACKEND_TYPE}AspectCj
     cangjie${BACKEND_TYPE}PluginMacro
