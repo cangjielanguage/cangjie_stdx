@@ -854,24 +854,24 @@ if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CANGJIE_BUILD_WITHOUT_CHIR AND NOT CANGJI
             OBJECTS ${output_cj_object_dir}/stdx/aspect_cj.plugins.collect_aspects.o)
 
         add_cangjie_library(
-            cangjie${BACKEND_TYPE}WaveAspects
+            cangjie${BACKEND_TYPE}WeaveAspects
             NO_SUB_PKG
             IS_STDXLIB
             IS_PACKAGE
             IS_CJNATIVE_BACKEND
-            PACKAGE_NAME "aspect_cj.plugins.wave_aspects"
+            PACKAGE_NAME "aspect_cj.plugins.weave_aspects"
             MODULE_NAME "stdx"
-            SOURCES ${WAVE_ASPECTS_SRCS}
-            SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/aspect_cj/plugins/wave_aspects
-            DEPENDS ${WAVE_ASPECTS_DEPENDENCIES}
+            SOURCES ${WEAVE_ASPECTS_SRCS}
+            SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/aspect_cj/plugins/weave_aspects
+            DEPENDS ${WEAVE_ASPECTS_DEPENDENCIES}
             COMPILE_LINK_LIBS ${_plugin_macro_compile_link})
 
         make_cangjie_lib(
-            wave_aspects IS_SHARED
-            DEPENDS cangjie${BACKEND_TYPE}WaveAspects
+            weave_aspects IS_SHARED
+            DEPENDS cangjie${BACKEND_TYPE}WeaveAspects
             CANGJIE_STDX_LIB_DEPENDS chir aspect_cj plugin.manager
             CANGJIE_STD_LIB_LINK std-core std-collection std-fs std-convert std-io
-            OBJECTS ${output_cj_object_dir}/stdx/aspect_cj.plugins.wave_aspects.o)
+            OBJECTS ${output_cj_object_dir}/stdx/aspect_cj.plugins.weave_aspects.o)
     endif()
 endif()
 

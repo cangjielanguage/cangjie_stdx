@@ -6,7 +6,7 @@
 
 ## 功能介绍
 
-`stdx.aspect_cj` 包提供了仓颉中面向切面编程（Aspect Oriented Programming, AOP）的相关注解，配合 libstdx.collect_aspects 和 libstdx.wave_aspects 两个编译插件使用，可以对函数进行前后插桩以及替换实现。
+`stdx.aspect_cj` 包提供了仓颉中面向切面编程（Aspect Oriented Programming, AOP）的相关注解，配合 libstdx.collect_aspects 和 libstdx.weave_aspects 两个编译插件使用，可以对函数进行前后插桩以及替换实现。
 
 ## API 列表
 
@@ -55,8 +55,8 @@
 要实现 AOP 的完整功能，除了使用上述的注解类来定义切面，还需要两个编译插件：
 
 - libstdx.collect_aspects.so(.dll/.dylib)
-- libstdx.wave_aspects.so(.dll/.dylib)
+- libstdx.weave_aspects.so(.dll/.dylib)
 
 这两个编译插件以动态库的形式在 stdx.aspect_cj 中提供，不同平台提供不同版本。
 
-应先使用 libstdx.collect_aspects，在编译时收集所有切面、连接点信息；再使用 libstdx.wave_aspects 进行二次编译，把之前收集的切面织入到连接点。
+应先使用 libstdx.collect_aspects，在编译时收集所有切面、连接点信息；再使用 libstdx.weave_aspects 进行二次编译，把之前收集的切面织入到连接点。

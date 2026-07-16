@@ -5,6 +5,6 @@
 #
 # See https://cangjie-lang.cn/pages/LICENSE for license information.
 
-set(WAVE_ASPECTS_SRCS
-    wave_aspects.cj
+set(WEAVE_ASPECTS_SRCS
+    weave_aspects.cj
     CACHE INTERNAL "")

@@ -188,7 +188,7 @@ class CollectAspects {
                 return false
             }
             if (f.packageName != packageName || getFuncOuterTypeName(f) != className) {
-                printError("${f.srcCodeName}: Don't wave an instance method into another instance method with different `this` type.")
+                printError("${f.srcCodeName}: Don't weave an instance method into another instance method with different `this` type.")
                 return false
             }
         }
@@ -233,7 +233,7 @@ class CollectAspects {
         rightParenthesisIndex = aspectFuncTypeStr.lastIndexOf(")").getOrThrow()
         let funcType2 = aspectFuncTypeStr[0..rightParenthesisIndex + 1]  // remove return type
         if (funcType1 != funcType2) {
-            printError("The aspect function ${f.srcCodeName} has different FuncType with the waved.")
+            printError("The aspect function ${f.srcCodeName} has different FuncType with the woven.")
             return false
         }
         return true
@@ -275,7 +275,7 @@ class CollectAspects {
         let aspectFuncTypeStr = FuncType.get(aspectParamsType, f.funcType.returnType).toString()
         let wovenFuncTypeStr = wovenFunc[0].ty.toString()
         if (aspectFuncTypeStr != wovenFuncTypeStr) {
-            printError("The aspect function ${f.srcCodeName} has different FuncType with the waved.")
+            printError("The aspect function ${f.srcCodeName} has different FuncType with the woven.")
             return false
         }
         return true
