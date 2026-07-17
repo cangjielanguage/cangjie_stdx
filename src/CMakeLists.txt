@@ -44,7 +44,7 @@ execute_process(
 set(BACKEND)
 set(version_number)
 if(cjc_result EQUAL 0)
-    string(REGEX MATCH "Cangjie Compiler: (([0-9]+\\.[0-9]+\\.[0-9]+)(-[a-z]+\\.[0-9]+)?) \\(cjnative\\)" first_match_cjnative "${cjc_output}")
+    string(REGEX MATCH "Cangjie Compiler: (([0-9]+\\.[0-9]+\\.[0-9]+)(-[a-z0-9]+(\\.[a-z0-9]+)*)?) \\(cjnative\\)" first_match_cjnative "${cjc_output}")
     if(first_match_cjnative)
         set(version_number "${CMAKE_MATCH_1}")
         set(BACKEND "cjnative")
