@@ -9,25 +9,27 @@
 import stdx.encoding.url.*
 
 main(): Int64 {
-    // 调用 URL 静态函数 parse 解析网址获得名为 url 的对象 
-    var url = URL.parse(
-        "http://www.example.com:80/path%E4%BB%93%E9%A2%89?key=value%E4%BB%93%E9%A2%89#%E4%BD%A0%E5%A5%BD")
+    // 调用 URL.parse 解析 URL 字符串
+    let urlString = "http://www.example.com:80/path%E4%BB%93%E9%A2%89?key=value%E4%BB%93%E9%A2%89#%E4%BD%A0%E5%A5%BD"
+    let url = URL.parse(urlString)
 
-    // 打印 url 的组件属性 
-    println("url.scheme = ${url.scheme}")
-    println("url.opaque = ${url.opaque}")
-    println("url.userInfo = ${url.userInfo}")
-    println("url.rawUserInfo = ${url.rawUserInfo}")
-    println("url.host = ${url.host}")
-    println("url.hostName = ${url.hostName}")
-    println("url.port = ${url.port}")
-    println("url.path = ${url.path}")
-    println("url.rawPath = ${url.rawPath}")
-    println("url.query = ${url.query.getOrThrow()}")
-    println("url.rawQuery = ${url.rawQuery.getOrThrow()}")
-    println("url.fragment = ${url.fragment.getOrThrow()}")
-    println("url.rawfragment = ${url.rawFragment.getOrThrow()}")
-    println("url = ${url}")
+    // 打印 URL 的各个组件（已解码）
+    println("协议 (scheme): ${url.scheme}")
+    println("主机 (host): ${url.host}")
+    println("主机名 (hostName): ${url.hostName}")
+    println("端口 (port): ${url.port}")
+    println("路径 (path): ${url.path}")
+    println("查询参数 (query): ${url.query.getOrThrow()}")
+    println("片段 (fragment): ${url.fragment.getOrThrow()}")
+
+    // 打印原始（未解码）的组件
+    println("\n原始路径 (rawPath): ${url.rawPath}")
+    println("原始查询参数 (rawQuery): ${url.rawQuery.getOrThrow()}")
+    println("原始片段 (rawFragment): ${url.rawFragment.getOrThrow()}")
+
+    // 打印完整的 URL
+    println("\n完整 URL: ${url}")
+
     return 0
 }
 ```
@@ -35,18 +37,17 @@ main(): Int64 {
 运行结果：
 
 ```text
-url.scheme = http
-url.opaque = 
-url.userInfo = 
-url.rawUserInfo = 
-url.host = www.example.com:80
-url.hostName = www.example.com
-url.port = 80
-url.path = /path仓颉
-url.rawPath = /path%E4%BB%93%E9%A2%89
-url.query = key=value仓颉
-url.rawQuery = key=value%E4%BB%93%E9%A2%89
-url.fragment = 你好
-url.rawfragment = %E4%BD%A0%E5%A5%BD
-url = http://www.example.com:80/path%E4%BB%93%E9%A2%89?key=value%E4%BB%93%E9%A2%89#%E4%BD%A0%E5%A5%BD
+协议 (scheme): http
+主机 (host): www.example.com:80
+主机名 (hostName): www.example.com
+端口 (port): 80
+路径 (path): /path仓颉
+查询参数 (query): key=value仓颉
+片段 (fragment): 你好
+
+原始路径 (rawPath): /path%E4%BB%93%E9%A2%89
+原始查询参数 (rawQuery): key=value%E4%BB%93%E9%A2%89
+原始片段 (rawFragment): %E4%BD%A0%E5%A5%BD
+
+完整 URL: http://www.example.com:80/path%E4%BB%93%E9%A2%89?key=value%E4%BB%93%E9%A2%89#%E4%BD%A0%E5%A5%BD
 ```

@@ -8,66 +8,55 @@
 ```cangjie
 import stdx.compress.zlib.*
 import stdx.net.http.*
-import stdx.net.tls.*
-import std.collection.*
+import stdx.log.*
 import std.io.*
-import std.sync.*
+import std.collection.*
+
+let server = ServerBuilder().addr("127.0.0.1").port(0).build()
 
 main() {
-    // 1. 启动服务器监听
-    let port = startServer()
+    // 启动服务器
+    spawn {
+        startServer()
+    }
+    sleep(Duration.second) // 等待服务器启动
 
-    // 2. 构造http请求
+    // 构建 HTTP 请求，声明客户端支持 gzip 压缩
     let request = HttpRequestBuilder()
         .get()
-        .url("http://127.0.0.1:${port}/hello")
+        .url("http://127.0.0.1:${server.port}/hello")
         .header("Accept-Encoding", "gzip")
         .build()
 
-    // 3. 发送 http 请求并获取响应
+    // 发送请求并获取响应
     let client = ClientBuilder().build()
-    let rsp = client.send(request)
+    let response = client.send(request)
 
-    // 4. 使用 gzip 解压 body
-    let body = DecompressInputStream(rsp.body, wrap: GzipFormat)
-    println("Rsp body: ${String.fromUtf8(readToEnd(body))}")
+    // 使用 gzip 解压响应体
+    let decompressedBody = DecompressInputStream(response.body, wrap: GzipFormat)
+    println("Rsp body: ${StringReader(decompressedBody).readToEnd()}")
 
-    0
+    client.close()
+    server.close()
 }
 
-func startServer(): UInt16 {
-    let server = ServerBuilder().addr("127.0.0.1").port(0).build()
+func startServer(): Unit {
     server.distributor.register("/hello") {
         ctx =>
-            // 1. 设置响应头
+            // 设置响应头，声明使用 chunked 传输编码和 gzip 内容编码
             ctx.responseBuilder.header("Transfer-Encoding", "chunked")
             ctx.responseBuilder.header("Content-Encoding", "gzip")
 
-            // 2. 获取 body 输入流
+            // 准备原始响应体数据
             let rawBody = ByteBuffer()
             "hello gzip".toArray() |> rawBody.write
 
-            // 3. 使用 gzip 压缩输入流
-            let body = CompressInputStream(rawBody, wrap: GzipFormat)
-            ctx.responseBuilder.body(body)
+            // 使用 gzip 压缩输入流作为响应体
+            let compressedBody = CompressInputStream(rawBody, wrap: GzipFormat)
+            ctx.responseBuilder.body(compressedBody)
     }
-    let serverOn = SyncCounter(1)
-    server.afterBind({=> serverOn.dec()})
-
-    spawn {server.serve()}
-    serverOn.waitUntilZero()
-    return server.port
-}
-
-func readToEnd(input: InputStream): Array<Byte> {
-    let buf = Array<Byte>(200, repeat: 0)
-    let result = ArrayList<Byte>()
-    var len = input.read(buf)
-    while (len > 0) {
-        result.add(all: buf[0..len])
-        len = input.read(buf)
-    }
-    return result.toArray()
+    server.logger.level = LogLevel.OFF
+    server.serve()
 }
 ```
 

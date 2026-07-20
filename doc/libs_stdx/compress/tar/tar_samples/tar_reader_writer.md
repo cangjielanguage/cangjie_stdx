@@ -10,79 +10,80 @@ import std.io.*
 
 main() {
     let originalFile = Path("./tgz_src.txt")
-    let archiveFile = Path("./archive.tar")
+    let tarFile = Path("./archive.tar")
     let extractedFile = Path("./tgz_dst.txt")
-    let size = 1024 * 1024
+    let fileSize = 1024 * 1024
 
-    createFile(originalFile, size)
+    // 创建测试文件
+    createFile(originalFile, fileSize)
 
-    let tgzSize = archive(originalFile, archiveFile)
-    if (tgzSize > 0) {
-        println("Pack(.tar) size: ${tgzSize}")
-    } else {
-        println("Failed to pack .tar!")
-    }
+    // 归档文件到 tar 包
+    let tarSize = archiveFile(originalFile, tarFile)
+    println("归档成功，tar 文件大小: ${tarSize} 字节")
 
-    let extractedBytes = extract(archiveFile, extractedFile)
-    if (extractedBytes > 0) {
-        println("Unpacked bytes: ${extractedBytes}")
-    } else {
-        println("Failed to unpack .tar!")
-    }
+    // 从 tar 包提取文件
+    let extractedSize = extractFile(tarFile, extractedFile)
+    println("提取成功，解压文件大小: ${extractedSize} 字节")
 
+    // 验证文件内容一致性
     if (compareFile(originalFile, extractedFile)) {
-        println("success")
+        println("验证成功：文件内容一致")
     } else {
-        println("failed")
+        println("验证失败：文件内容不一致")
     }
 
+    // 清理测试文件
     remove(originalFile)
-    remove(archiveFile)
+    remove(tarFile)
     remove(extractedFile)
     return 0
 }
 
-func archive(srcFileName: Path, tarFileName: Path): Int64 {
-    try (outFile: File = File(tarFileName, Write)) {
-        var tar = TarWriter(outFile)
-
-        tar.write(srcFileName, entryName: srcFileName.fileName)
-        tar.finish()
-
+// 归档单个文件到 tar 包
+func archiveFile(srcFile: Path, tarFile: Path): Int64 {
+    try (outFile: File = File(tarFile, Write)) {
+        var writer = TarWriter(outFile)
+        // 写入文件条目，使用文件名作为条目名
+        writer.write(srcFile, entryName: srcFile.fileName)
+        writer.finish()
         return outFile.length
     }
     return 0
 }
 
-func extract(tarFileName: Path, destFileName: Path): Int64 {
-    var written: Int64 = 0
-    try (inFile: File = File(tarFileName, Read), outFile: File = File(destFileName, Write)) {
+// 从 tar 包提取文件
+func extractFile(tarFile: Path, destFile: Path): Int64 {
+    var writtenBytes: Int64 = 0
+    try (inFile: File = File(tarFile, Read), outFile: File = File(destFile, Write)) {
         var reader = TarReader(inFile)
         for (entry in reader) {
+            // 只处理普通文件
             if (entry.entryType == TarEntryType.RegularFile) {
-                if (let Some(data) <- entry.stream) {
-                    written = copy(data, to: outFile)
+                if (let Some(stream) <- entry.stream) {
+                    writtenBytes = copy(stream, to: outFile)
                     break
                 }
             }
         }
     }
-    return written
+    return writtenBytes
 }
 
+// 创建指定大小的测试文件
 func createFile(file: Path, size: Int64) {
     File.writeTo(file, Array<Byte>(size, {i => UInt8(i % 256)}))
 }
 
-func compareFile(fileName1: Path, fileName2: Path): Bool {
-    return File.readFrom(fileName1) == File.readFrom(fileName2)
+// 比较两个文件内容是否相同
+func compareFile(file1: Path, file2: Path): Bool {
+    return File.readFrom(file1) == File.readFrom(file2)
 }
 ```
 
 运行结果：
 
 ```text
-Pack(.tar) size: 1050112
-Unpacked bytes: 1048576
-success
+归档成功，tar 文件大小: 1050112 字节
+提取成功，解压文件大小: 1048576 字节
+验证成功：文件内容一致
 ```

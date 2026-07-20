@@ -55,7 +55,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 从 DerBlob 解码DH参数
-    let dhBlob = DerBlob(readToEnd(File(dhDer, Read)))
+    let dhBlob = DerBlob(File.readFrom(dhDer))
     let dhParams = GeneralDHParameters.decodeDer(dhBlob)
     println("DH参数DER解码成功")
     println("解码后类型: ${dhParams}")
@@ -110,7 +110,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 读取PEM格式的DH参数内容
-    let pemContent = String.fromUtf8(readToEnd(File(dhPem, Read)))
+    let pemContent = String.fromUtf8(File.readFrom(dhPem))
 
     // 从 PEM 字符串解码DH参数
     let dhParams = GeneralDHParameters.decodeFromPem(pemContent)
@@ -163,7 +163,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 读取PEM格式的DH参数内容并解码
-    let pemContent = String.fromUtf8(readToEnd(File(dhPem, Read)))
+    let pemContent = String.fromUtf8(File.readFrom(dhPem))
     let dhParams = GeneralDHParameters.decodeFromPem(pemContent)
 
     // 将DH参数编码为DER格式
@@ -216,7 +216,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 读取PEM格式的DH参数内容并解码
-    let pemContent = String.fromUtf8(readToEnd(File(dhPem, Read)))
+    let pemContent = String.fromUtf8(File.readFrom(dhPem))
     let dhParams = GeneralDHParameters.decodeFromPem(pemContent)
 
     // 将DH参数编码为PEM格式
@@ -269,7 +269,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 读取PEM格式的DH参数内容并解码
-    let pemContent = String.fromUtf8(readToEnd(File(dhPem, Read)))
+    let pemContent = String.fromUtf8(File.readFrom(dhPem))
     let dhParams = GeneralDHParameters.decodeFromPem(pemContent)
 
     // 获取DH参数的字符串表示
@@ -878,16 +878,16 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 读取根证书
-    let rootCertContent = String.fromUtf8(readToEnd(File(rootCertPem, Read)))
+    let rootCertContent = String.fromUtf8(File.readFrom(rootCertPem))
     let rootCerts = X509Certificate.decodeFromPem(rootCertContent)
     let rootCert = rootCerts[0]
 
     // 读取根私钥
-    let rootKeyContent = String.fromUtf8(readToEnd(File(rootKeyPem, Read)))
+    let rootKeyContent = String.fromUtf8(File.readFrom(rootKeyPem))
     let rootPrivateKey = GeneralPrivateKey.decodeFromPem(rootKeyContent)
 
     // 读取CA私钥
-    let caKeyContent = String.fromUtf8(readToEnd(File(caKeyPem, Read)))
+    let caKeyContent = String.fromUtf8(File.readFrom(caKeyPem))
     let caKey = RSAPrivateKey.decodeFromPem(caKeyContent)
 
     // 获取CA的公钥

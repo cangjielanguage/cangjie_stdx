@@ -1,6 +1,6 @@
 # 接口
 
-## interface Serializable
+## interface Serializable\<T>
 
 ```cangjie
 public interface Serializable<T> {
@@ -21,11 +21,11 @@ static func deserialize(dm: DataModel): T
 
 > **说明：**
 >
-> 支持实现 [Serializable](serialization_package_interfaces.md#interface-serializable) 的类型包括:
+> 支持实现 [Serializable](serialization_package_interfaces.md#interface-serializablet) 的类型包括:
 >
 > - 基本数据类型：整数类型、浮点类型、布尔类型、字符类型、字符串类型。
 > - Collection 类型：Array、ArrayList、HashSet、HashMap、Option。
-> - 用户自定义的实现了 [Serializable](serialization_package_interfaces.md#interface-serializable)\<T> 的类型。
+> - 用户自定义的实现了 [Serializable](serialization_package_interfaces.md#interface-serializablet)\<T> 的类型。
 
 参数：
 
@@ -57,11 +57,11 @@ func serialize(): DataModel
 extend Bool <: Serializable<Bool>
 ```
 
-功能：为 Bool 类型实现 [Serializable](#interface-serializable) 接口。
+功能：为 Bool 类型实现 [Serializable](#interface-serializablet) 接口。
 
 父类型：
 
-- [Serializable](#interface-serializable)\<Bool>
+- [Serializable](#interface-serializablet)\<Bool>
 
 #### static func deserialize(DataModel)
 
@@ -138,11 +138,11 @@ main() {
 extend Float16 <: Serializable<Float16>
 ```
 
-功能：为 Float16 类型实现 [Serializable](#interface-serializable) 接口。
+功能：为 Float16 类型实现 [Serializable](#interface-serializablet) 接口。
 
 父类型：
 
-- [Serializable](#interface-serializable)\<Float16>
+- [Serializable](#interface-serializablet)\<Float16>
 
 #### static func deserialize(DataModel)
 
@@ -219,11 +219,11 @@ main() {
 extend Float32 <: Serializable<Float32>
 ```
 
-功能：为 Float32 类型实现 [Serializable](#interface-serializable) 接口。
+功能：为 Float32 类型实现 [Serializable](#interface-serializablet) 接口。
 
 父类型：
 
-- [Serializable](#interface-serializable)\<Float32>
+- [Serializable](#interface-serializablet)\<Float32>
 
 #### static func deserialize(DataModel)
 
@@ -300,11 +300,11 @@ main() {
 extend Float64 <: Serializable<Float64>
 ```
 
-功能：为 Float64 类型实现 [Serializable](#interface-serializable) 接口。
+功能：为 Float64 类型实现 [Serializable](#interface-serializablet) 接口。
 
 父类型：
 
-- [Serializable](#interface-serializable)\<Float64>
+- [Serializable](#interface-serializablet)\<Float64>
 
 #### static func deserialize(DataModel)
 
@@ -381,11 +381,11 @@ main() {
 extend Int16 <: Serializable<Int16>
 ```
 
-功能：为 Int16 类型实现 [Serializable](#interface-serializable) 接口。
+功能：为 Int16 类型实现 [Serializable](#interface-serializablet) 接口。
 
 父类型：
 
-- [Serializable](#interface-serializable)\<Int16>
+- [Serializable](#interface-serializablet)\<Int16>
 
 #### static func deserialize(DataModel)
 
@@ -462,11 +462,11 @@ main() {
 extend Int32 <: Serializable<Int32>
 ```
 
-功能：为 Int32 类型实现 [Serializable](#interface-serializable) 接口。
+功能：为 Int32 类型实现 [Serializable](#interface-serializablet) 接口。
 
 父类型：
 
-- [Serializable](#interface-serializable)\<Int32>
+- [Serializable](#interface-serializablet)\<Int32>
 
 #### static func deserialize(DataModel)
 
@@ -543,11 +543,11 @@ main() {
 extend Int64 <: Serializable<Int64>
 ```
 
-功能：为 Int64 类型实现 [Serializable](#interface-serializable) 接口。
+功能：为 Int64 类型实现 [Serializable](#interface-serializablet) 接口。
 
 父类型：
 
-- [Serializable](#interface-serializable)\<Int64>
+- [Serializable](#interface-serializablet)\<Int64>
 
 #### static func deserialize(DataModel)
 
@@ -624,11 +624,11 @@ main() {
 extend Int8 <: Serializable<Int8>
 ```
 
-功能：为 Int8 类型实现 [Serializable](#interface-serializable) 接口。
+功能：为 Int8 类型实现 [Serializable](#interface-serializablet) 接口。
 
 父类型：
 
-- [Serializable](#interface-serializable)\<Int8>
+- [Serializable](#interface-serializablet)\<Int8>
 
 #### static func deserialize(DataModel)
 
@@ -705,11 +705,11 @@ main() {
 extend Rune <: Serializable<Rune>
 ```
 
-功能：为 Rune 类型实现 [Serializable](#interface-serializable) 接口。
+功能：为 Rune 类型实现 [Serializable](#interface-serializablet) 接口。
 
 父类型：
 
-- [Serializable](#interface-serializable)\<Rune>
+- [Serializable](#interface-serializablet)\<Rune>
 
 #### static func deserialize(DataModel)
 
@@ -787,11 +787,11 @@ main() {
 extend String <: Serializable<String>
 ```
 
-功能：为 String 类型实现 [Serializable](#interface-serializable) 接口。
+功能：为 String 类型实现 [Serializable](#interface-serializablet) 接口。
 
 父类型：
 
-- [Serializable](#interface-serializable)\<String>
+- [Serializable](#interface-serializablet)\<String>
 
 #### static func deserialize(DataModel)
 
@@ -868,11 +868,11 @@ main() {
 extend UInt16 <: Serializable<UInt16>
 ```
 
-功能：为 UInt16 类型实现 [Serializable](#interface-serializable) 接口。
+功能：为 UInt16 类型实现 [Serializable](#interface-serializablet) 接口。
 
 父类型：
 
-- [Serializable](#interface-serializable)\<UInt16>
+- [Serializable](#interface-serializablet)\<UInt16>
 
 #### static func deserialize(DataModel)
 
@@ -949,11 +949,11 @@ main() {
 extend UInt32 <: Serializable<UInt32>
 ```
 
-功能：为 UInt32 类型实现 [Serializable](#interface-serializable) 接口。
+功能：为 UInt32 类型实现 [Serializable](#interface-serializablet) 接口。
 
 父类型：
 
-- [Serializable](#interface-serializable)\<UInt32>
+- [Serializable](#interface-serializablet)\<UInt32>
 
 #### static func deserialize(DataModel)
 
@@ -1030,11 +1030,11 @@ main() {
 extend UInt64 <: Serializable<UInt64>
 ```
 
-功能：为 UInt64 类型实现 [Serializable](#interface-serializable) 接口。
+功能：为 UInt64 类型实现 [Serializable](#interface-serializablet) 接口。
 
 父类型：
 
-- [Serializable](#interface-serializable)\<UInt64>
+- [Serializable](#interface-serializablet)\<UInt64>
 
 #### static func deserialize(DataModel)
 
@@ -1111,11 +1111,11 @@ main() {
 extend UInt8 <: Serializable<UInt8>
 ```
 
-功能：为 UInt8 类型实现 [Serializable](#interface-serializable) 接口。
+功能：为 UInt8 类型实现 [Serializable](#interface-serializablet) 接口。
 
 父类型：
 
-- [Serializable](#interface-serializable)\<UInt8>
+- [Serializable](#interface-serializablet)\<UInt8>
 
 #### static func deserialize(DataModel)
 
@@ -1192,11 +1192,11 @@ main() {
 extend<K, V> HashMap<K, V> <: Serializable<HashMap<K, V>> where K <: Serializable<K> & Hashable & Equatable<K>, V <: Serializable<V>
 ```
 
-功能：为 HashMap\<K, V> 类型实现 [Serializable](#interface-serializable)\<HashMap\<K, V>> 接口。
+功能：为 HashMap\<K, V> 类型实现 [Serializable](#interface-serializablet)\<HashMap\<K, V>> 接口。
 
 父类型：
 
-- [Serializable](#interface-serializable)\<HashMap\<K, V>>
+- [Serializable](#interface-serializablet)\<HashMap\<K, V>>
 
 #### static func deserialize(DataModel)
 
@@ -1284,11 +1284,11 @@ main() {
 extend<T> Array<T> <: Serializable<Array<T>> where T <: Serializable<T>
 ```
 
-功能：为 Array\<T> 类型实现 [Serializable](#interface-serializable)\<Array\<T>> 接口。
+功能：为 Array\<T> 类型实现 [Serializable](#interface-serializablet)\<Array\<T>> 接口。
 
 父类型：
 
-- [Serializable](#interface-serializable)\<Array\<T>>
+- [Serializable](#interface-serializablet)\<Array\<T>>
 
 #### static func deserialize(DataModel)
 
@@ -1366,11 +1366,11 @@ main() {
 extend<T> ArrayList<T> <: Serializable<ArrayList<T>> where T <: Serializable<T>
 ```
 
-功能：为 ArrayList\<T> 类型实现 [Serializable](#interface-serializable)\<ArrayList\<T>> 接口。
+功能：为 ArrayList\<T> 类型实现 [Serializable](#interface-serializablet)\<ArrayList\<T>> 接口。
 
 父类型：
 
-- [Serializable](#interface-serializable)\<ArrayList\<T>>
+- [Serializable](#interface-serializablet)\<ArrayList\<T>>
 
 #### static func deserialize(DataModel)
 
@@ -1450,11 +1450,11 @@ main() {
 extend<T> HashSet<T> <: Serializable<HashSet<T>> where T <: Serializable<T> & Hashable & Equatable<T>
 ```
 
-功能：为 HashSet\<T> 类型实现 [Serializable](#interface-serializable)\<HashSet\<T>> 接口。
+功能：为 HashSet\<T> 类型实现 [Serializable](#interface-serializablet)\<HashSet\<T>> 接口。
 
 父类型：
 
-- [Serializable](#interface-serializable)\<HashSet\<T>>
+- [Serializable](#interface-serializablet)\<HashSet\<T>>
 
 #### static func deserialize(DataModel)
 
@@ -1534,11 +1534,11 @@ main() {
 extend<T> Option<T> <: Serializable<Option<T>> where T <: Serializable<T>
 ```
 
-功能：为 Option\<T> 类型实现 [Serializable](#interface-serializable)\<Option\<T>> 接口。
+功能：为 Option\<T> 类型实现 [Serializable](#interface-serializablet)\<Option\<T>> 接口。
 
 父类型：
 
-- [Serializable](#interface-serializable)\<Option\<T>>
+- [Serializable](#interface-serializablet)\<Option\<T>>
 
 #### static func deserialize(DataModel)
 

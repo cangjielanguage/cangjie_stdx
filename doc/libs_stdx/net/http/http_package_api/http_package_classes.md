@@ -2816,14 +2816,14 @@ main(): Unit {
     executeWithOutput("sh", ["-c", clientSignCmd])
 
     // 读取根证书PEM
-    let pem = String.fromUtf8(readToEnd(File(rootCrt, OpenMode.Read)))
+    let pem = String.fromUtf8(File.readFrom(rootCrt))
 
     // 启动服务器
     spawn {
         =>
             // 对服务器证书以及私钥进行解析 
-            let pemString = String.fromUtf8(readToEnd(File(serverCrt, OpenMode.Read)))
-            let keyString = String.fromUtf8(readToEnd(File(serverKey, OpenMode.Read)))
+            let pemString = String.fromUtf8(File.readFrom(serverCrt))
+            let keyString = String.fromUtf8(File.readFrom(serverKey))
 
             let certificate = X509Certificate.decodeFromPem(pemString)
             let privateKey = GeneralPrivateKey.decodeFromPem(keyString)
@@ -2850,8 +2850,8 @@ main(): Unit {
 
     // 客户端配置
     var config = TlsClientConfig()
-    let clientPem = String.fromUtf8(readToEnd(File(clientCrt, OpenMode.Read)))
-    let clientKeyStr = String.fromUtf8(readToEnd(File(clientKey, OpenMode.Read)))
+    let clientPem = String.fromUtf8(File.readFrom(clientCrt))
+    let clientKeyStr = String.fromUtf8(File.readFrom(clientKey))
     let clientPriKey = GeneralPrivateKey.decodeFromPem(clientKeyStr)
 
     // 设置客户端证书和私钥
@@ -3731,9 +3731,16 @@ main(): Unit {
     // 发送GET请求
     let resp = client.get("http://127.0.0.1:8080/index")
 
-    // 必须先读取完 body 内容，trailers 才会被填充
+    // 循环调用直到返回 0，trailers 才会被填充
     let buffer = Array<Byte>(1024, repeat: 0)
-    let bytesRead = resp.body.read(buffer)
+    var bytesRead = 0
+    while (true) {
+        let len = resp.body.read(buffer[bytesRead..])
+        if (len == 0) {
+            break
+        }
+        bytesRead += len
+    }
     let bodyContent = String.fromUtf8(buffer[0..bytesRead])
     println("先读取完响应body, trailers 才会被填充: ${bodyContent}")
 
@@ -6124,14 +6131,14 @@ main(): Unit {
     executeWithOutput("sh", ["-c", clientSignCmd])
 
     // 读取根证书PEM
-    let pem = String.fromUtf8(readToEnd(File(rootCrt, OpenMode.Read)))
+    let pem = String.fromUtf8(File.readFrom(rootCrt))
 
     // 启动服务器
     spawn {
         =>
             // 对服务器证书以及私钥进行解析 
-            let pemString = String.fromUtf8(readToEnd(File(serverCrt, OpenMode.Read)))
-            let keyString = String.fromUtf8(readToEnd(File(serverKey, OpenMode.Read)))
+            let pemString = String.fromUtf8(File.readFrom(serverCrt))
+            let keyString = String.fromUtf8(File.readFrom(serverKey))
 
             let certificate = X509Certificate.decodeFromPem(pemString)
             let privateKey = GeneralPrivateKey.decodeFromPem(keyString)
@@ -6179,8 +6186,8 @@ main(): Unit {
 
     // 客户端配置
     var config = TlsClientConfig()
-    let clientPem = String.fromUtf8(readToEnd(File(clientCrt, OpenMode.Read)))
-    let clientKeyStr = String.fromUtf8(readToEnd(File(clientKey, OpenMode.Read)))
+    let clientPem = String.fromUtf8(File.readFrom(clientCrt))
+    let clientKeyStr = String.fromUtf8(File.readFrom(clientKey))
     let clientPriKey = GeneralPrivateKey.decodeFromPem(clientKeyStr)
     // 设置客户端证书和私钥
     config.certificate = (X509Certificate.decodeFromPem(clientPem).map({c => c}), clientPriKey)
@@ -6322,14 +6329,14 @@ main(): Unit {
     executeWithOutput("sh", ["-c", clientSignCmd])
 
     // 读取根证书PEM
-    let pem = String.fromUtf8(readToEnd(File(rootCrt, OpenMode.Read)))
+    let pem = String.fromUtf8(File.readFrom(rootCrt))
 
     // 启动服务器
     spawn {
         =>
             // 对服务器证书以及私钥进行解析 
-            let pemString = String.fromUtf8(readToEnd(File(serverCrt, OpenMode.Read)))
-            let keyString = String.fromUtf8(readToEnd(File(serverKey, OpenMode.Read)))
+            let pemString = String.fromUtf8(File.readFrom(serverCrt))
+            let keyString = String.fromUtf8(File.readFrom(serverKey))
 
             let certificate = X509Certificate.decodeFromPem(pemString)
             let privateKey = GeneralPrivateKey.decodeFromPem(keyString)
@@ -6365,8 +6372,8 @@ main(): Unit {
 
     // 客户端配置
     var config = TlsClientConfig()
-    let clientPem = String.fromUtf8(readToEnd(File(clientCrt, OpenMode.Read)))
-    let clientKeyStr = String.fromUtf8(readToEnd(File(clientKey, OpenMode.Read)))
+    let clientPem = String.fromUtf8(File.readFrom(clientCrt))
+    let clientKeyStr = String.fromUtf8(File.readFrom(clientKey))
     let clientPriKey = GeneralPrivateKey.decodeFromPem(clientKeyStr)
     // 设置客户端证书和私钥
     config.certificate = (X509Certificate.decodeFromPem(clientPem).map({c => c}), clientPriKey)
@@ -7944,11 +7951,11 @@ main(): Unit {
     executeWithOutput("sh", ["-c", clientSignCmd])
 
     // 读取根证书PEM
-    let pem = String.fromUtf8(readToEnd(File(rootCrt, OpenMode.Read)))
+    let pem = String.fromUtf8(File.readFrom(rootCrt))
 
     // 对服务器证书以及私钥进行解析 
-    let pemString = String.fromUtf8(readToEnd(File(serverCrt, OpenMode.Read)))
-    let keyString = String.fromUtf8(readToEnd(File(serverKey, OpenMode.Read)))
+    let pemString = String.fromUtf8(File.readFrom(serverCrt))
+    let keyString = String.fromUtf8(File.readFrom(serverKey))
 
     let certificate = X509Certificate.decodeFromPem(pemString)
     let privateKey = GeneralPrivateKey.decodeFromPem(keyString)
@@ -7979,8 +7986,8 @@ main(): Unit {
     // 第一步：使用旧根证书进行验证（预期成功）
     println("=== 第一步：使用旧根证书验证 ===")
     var config1 = TlsClientConfig()
-    let clientPem1 = String.fromUtf8(readToEnd(File(clientCrt, OpenMode.Read)))
-    let clientKeyStr1 = String.fromUtf8(readToEnd(File(clientKey, OpenMode.Read)))
+    let clientPem1 = String.fromUtf8(File.readFrom(clientCrt))
+    let clientKeyStr1 = String.fromUtf8(File.readFrom(clientKey))
     let clientPriKey1 = GeneralPrivateKey.decodeFromPem(clientKeyStr1)
 
     // 设置客户端证书和私钥（旧根证书签发）
@@ -8011,7 +8018,7 @@ main(): Unit {
     // 方式1：使用文件路径方式
     server.updateCA(newRootCrt)
     // 方式2：使用证书数组方式（与上面等效，二选一即可）
-    // let newRootPem = String.fromUtf8(readToEnd(File(newRootCrt, OpenMode.Read)))
+    // let newRootPem = String.fromUtf8(File.readFrom(newRootCrt))
     // server.updateCA(X509Certificate.decodeFromPem(newRootPem).map({c => c}))
     println("服务器 CA 证书已更新为新根证书")
 
@@ -8144,11 +8151,11 @@ main(): Unit {
     executeWithOutput("sh", ["-c", clientSignCmd])
 
     // 读取根证书PEM
-    let pem = String.fromUtf8(readToEnd(File(rootCrt, OpenMode.Read)))
+    let pem = String.fromUtf8(File.readFrom(rootCrt))
 
     // 对服务器证书以及私钥进行解析 
-    let pemString = String.fromUtf8(readToEnd(File(serverCrt, OpenMode.Read)))
-    let keyString = String.fromUtf8(readToEnd(File(serverKey, OpenMode.Read)))
+    let pemString = String.fromUtf8(File.readFrom(serverCrt))
+    let keyString = String.fromUtf8(File.readFrom(serverKey))
 
     let certificate = X509Certificate.decodeFromPem(pemString)
     let privateKey = GeneralPrivateKey.decodeFromPem(keyString)
@@ -8178,8 +8185,8 @@ main(): Unit {
     // 第一步：使用旧服务器证书进行连接（预期成功）
     println("=== 第一步：使用旧服务器证书连接 ===")
     var config1 = TlsClientConfig()
-    let clientPem1 = String.fromUtf8(readToEnd(File(clientCrt, OpenMode.Read)))
-    let clientKeyStr1 = String.fromUtf8(readToEnd(File(clientKey, OpenMode.Read)))
+    let clientPem1 = String.fromUtf8(File.readFrom(clientCrt))
+    let clientKeyStr1 = String.fromUtf8(File.readFrom(clientKey))
     let clientPriKey1 = GeneralPrivateKey.decodeFromPem(clientKeyStr1)
 
     // 设置客户端证书和私钥
@@ -8217,8 +8224,8 @@ main(): Unit {
     // 方式1：使用文件路径方式（推荐，更简单）
     server.updateCert(newServerCrt, newServerKey)
     // 方式2：使用证书对象和私钥对象方式（与上面等效，二选一即可）
-    // let newServerPem = String.fromUtf8(readToEnd(File(newServerCrt, OpenMode.Read)))
-    // let newServerKeyStr = String.fromUtf8(readToEnd(File(newServerKey, OpenMode.Read)))
+    // let newServerPem = String.fromUtf8(File.readFrom(newServerCrt))
+    // let newServerKeyStr = String.fromUtf8(File.readFrom(newServerKey))
     // let newServerCert = X509Certificate.decodeFromPem(newServerPem)
     // let newServerPrivateKey = GeneralPrivateKey.decodeFromPem(newServerKeyStr)
     // server.updateCert(newServerCert.map({c => c}), newServerPrivateKey)
@@ -9341,6 +9348,9 @@ main(): Unit {
     let headers = HttpHeaders()
     headers.add("X-Client-Id", "demo-client")
 
+    // 设置 Origin 请求头，服务端可用于验证来源
+    headers.add("Origin", "http://127.0.0.1:8080")
+
     // 执行 WebSocket 握手升级。客户端提供支持的子协议列表
     // 服务端从中选择第一个匹配的（此处为 "chat"）
     let (clientWs, respHeaders) = WebSocket.upgradeFromClient(
@@ -9381,6 +9391,7 @@ func WebSocketHandler(ctx: HttpContext): Unit {
     // userFunc: 自定义处理函数，可读取请求头并设置响应头
     let serverWs = WebSocket.upgradeFromServer(
         ctx,
+        origins: ArrayList<String>(["http://127.0.0.1:8080"]),
         subProtocols: ArrayList<String>(["chat", "json", "xml"]),
         userFunc: {
             req =>
@@ -9632,6 +9643,7 @@ public func writePingFrame(byteArray: Array<UInt8>): Unit
 import stdx.net.http.*
 import stdx.encoding.url.*
 import stdx.log.*
+import std.collection.*
 import stdx.crypto.kit.*
 
 let server = ServerBuilder().addr("127.0.0.1").port(8080).build()
@@ -9650,7 +9662,9 @@ main(): Unit {
     // 客户端连接
     let client = ClientBuilder().build()
     let url = URL.parse("ws://127.0.0.1:8080/ping")
-    let (ws, _) = WebSocket.upgradeFromClient(client, url)
+    let headers = HttpHeaders()
+    headers.add("Origin", "http://127.0.0.1:8080")
+    let (ws, _) = WebSocket.upgradeFromClient(client, url, headers: headers)
     client.close()
 
     // 发送 Ping 帧
@@ -9671,7 +9685,8 @@ main(): Unit {
 
 // 服务端处理器：收到 Ping 后回复 Pong
 func PingHandler(ctx: HttpContext): Unit {
-    let serverWs = WebSocket.upgradeFromServer(ctx)
+    // 配置 origins 白名单，接受来自 http://127.0.0.1:8080 的连接
+    let serverWs = WebSocket.upgradeFromServer(ctx, origins: ArrayList<String>(["http://127.0.0.1:8080"]))
 
     // 读取 Ping 帧
     let frame = serverWs.read()

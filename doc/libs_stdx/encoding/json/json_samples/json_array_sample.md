@@ -10,34 +10,44 @@ import stdx.encoding.json.*
 import std.collection.*
 
 main() {
-    var a: JsonValue = JsonNull()
-    var b: JsonValue = JsonBool(true)
-    var c: JsonValue = JsonBool(false)
-    var d: JsonValue = JsonInt(7363)
-    var e: JsonValue = JsonFloat(736423.546)
-    var list: ArrayList<JsonValue> = ArrayList<JsonValue>()
-    var list2: ArrayList<JsonValue> = ArrayList<JsonValue>()
-    var map = JsonObject()
-    var map1 = JsonObject()
-    map1.put("a", JsonString("jjjjjj"))
-    map1.put("b", b)
-    map1.put("c", JsonString("hhhhh"))
-    list2.add(b)
-    list2.add(JsonInt(3333333))
-    list2.add(map1)
-    list2.add(JsonString("sdfghgfasd"))
-    list.add(b)
-    list.add(a)
-    list.add(map)
-    list.add(c)
-    list.add(JsonArray(list2))
-    list.add(d)
-    list.add(JsonString("ddddddd"))
-    list.add(e)
-    var result: JsonValue = JsonArray(list)
-    println("func toString result is:")
+    // 创建不同类型的 JsonValue
+    let nullValue: JsonValue = JsonNull()
+    let boolValue: JsonValue = JsonBool(true)
+    let intValue: JsonValue = JsonInt(7363)
+    let floatValue: JsonValue = JsonFloat(736423.546)
+    let stringValue: JsonValue = JsonString("ddddddd")
+
+    // 创建嵌套的 JsonObject
+    let nestedObject = JsonObject()
+    nestedObject.put("a", JsonString("jjjjjj"))
+    nestedObject.put("b", boolValue)
+    nestedObject.put("c", JsonString("hhhhh"))
+
+    // 创建嵌套的 JsonArray
+    let nestedArray = ArrayList<JsonValue>()
+    nestedArray.add(boolValue)
+    nestedArray.add(JsonInt(3333333))
+    nestedArray.add(nestedObject)
+    nestedArray.add(JsonString("sdfghgfasd"))
+
+    // 创建主 JsonArray
+    let mainArray = ArrayList<JsonValue>()
+    mainArray.add(boolValue)
+    mainArray.add(nullValue)
+    mainArray.add(JsonObject()) // 空对象
+    mainArray.add(JsonBool(false))
+    mainArray.add(JsonArray(nestedArray))
+    mainArray.add(intValue)
+    mainArray.add(stringValue)
+    mainArray.add(floatValue)
+
+    // 构建 JsonArray 并输出
+    let result: JsonValue = JsonArray(mainArray)
+
+    println("紧凑格式:")
     println(result.toString())
-    println("func toJsonString result is:")
+
+    println("\n格式化输出:")
     println(result.toJsonString())
 }
 ```
@@ -45,9 +55,10 @@ main() {
 运行结果：
 
 ```text
-func toString result is:
+紧凑格式:
 [true,null,{},false,[true,3333333,{"a":"jjjjjj","b":true,"c":"hhhhh"},"sdfghgfasd"],7363,"ddddddd",736423.546]
-func toJsonString result is:
+
+格式化输出:
 [
   true,
   null,
@@ -67,5 +78,4 @@ func toJsonString result is:
   "ddddddd",
   736423.546
 ]
-
 ```

@@ -4,7 +4,7 @@
 
 下面是开发仓颉库时，打印日志的示例。
 
-代码如下：
+示例：
 
 <!-- run -->
 
@@ -13,19 +13,26 @@ import stdx.log.*
 import stdx.logger.*
 import std.env.*
 
+// 定义一个数据库连接类
 public class PGConnection {
     let objId: Int64 = 1
     let logger = getGlobalLogger(("name", "PGConnection"))
 
     public func close(): Unit {
+        // 使用 trace 级别记录日志
         logger.trace("driver conn closed", ("id", objId))
     }
 }
 
 main(): Unit {
-    let tl = SimpleLogger(getStdOut())
-    tl.level = LogLevel.TRACE
-    setGlobalLogger(tl)
+    // 创建 SimpleLogger 并设置日志级别
+    let simpleLogger = SimpleLogger(getStdOut())
+    simpleLogger.level = LogLevel.TRACE
+    
+    // 设置为全局日志记录器
+    setGlobalLogger(simpleLogger)
+    
+    // 使用连接类并记录日志
     var conn = PGConnection()
     conn.close()
 }
@@ -39,29 +46,30 @@ main(): Unit {
 
 ## 应用程序开发场景日志打印
 
-下面是 自定义 PasswordFilter 和 TextLogger 日志打印示例。
+下面是自定义 PasswordFilter 和 TextLogger 日志打印示例。
 
-代码如下：
+示例：
 
 <!-- run -->
 
 ```cangjie
 import std.time.*
-import std.io.{OutputStream, ByteBuffer, BufferedOutputStream}
+import std.io.*
 import std.env.*
-import std.fs.*
-import std.collection.{ArrayList, Map, HashMap}
-import std.collection.concurrent.*
+import std.collection.*
 import std.sync.AtomicBool
 import std.time.DateTime
 import stdx.log.*
 
+// 密码过滤器：将密码值替换为 "***"
 public class PasswordFilter <: Logger {
     var _level = LogLevel.INFO
     let processor: Logger
+
     public init(logger: Logger) {
         processor = logger
     }
+
     public mut prop level: LogLevel {
         get() {
             _level
@@ -70,20 +78,22 @@ public class PasswordFilter <: Logger {
             _level = v
         }
     }
+
     public func withAttrs(attrs: Array<Attr>): Logger {
         this
     }
-    // log
+
     public func log(level: LogLevel, message: String, attrs: Array<Attr>): Unit {
         let record: LogRecord = LogRecord(DateTime.now(), level, message, attrs)
         log(record)
     }
-    // lazy
+
     public func log(level: LogLevel, message: () -> String, attrs: Array<Attr>): Unit {
         let record: LogRecord = LogRecord(DateTime.now(), level, message(), attrs)
         log(record)
     }
-    // 根据键值对的名字过滤，将密码值换成 "***"
+
+    // 核心过滤逻辑：将密码字段替换为 "***"
     public func log(record: LogRecord): Unit {
         var attrs = record.attrs.clone()
         for (i in 0..attrs.size) {
@@ -92,52 +102,58 @@ public class PasswordFilter <: Logger {
                 attrs[i] = (attr[0], "***")
             }
         }
-        let r = LogRecord(record.time, record.level, record.message, attrs)
-        processor.log(r)
+        let filteredRecord = LogRecord(record.time, record.level, record.message, attrs)
+        processor.log(filteredRecord)
     }
+
     public func isClosed(): Bool {
         false
     }
-    public func close(): Unit {
-    }
+    public func close(): Unit {}
 }
 
 main() {
-    let o = ByteBuffer()
-    let tl = TextLogger(getStdOut())
-    tl.level = LogLevel.TRACE
-    let l = PasswordFilter(tl)
-    setGlobalLogger(l)
+    // 创建 TextLogger 并设置日志级别
+    let textLogger = TextLogger(getStdOut())
+    textLogger.level = LogLevel.TRACE
+
+    // 用 PasswordFilter 包装 TextLogger
+    let passwordFilter = PasswordFilter(textLogger)
+    setGlobalLogger(passwordFilter)
+
+    // 获取全局日志记录器
     let logger = getGlobalLogger([("name", "main")])
     let user = User()
-    // 普通记录信息日志
+
+    // 记录不同级别的日志
+    // INFO 级别日志，密码会被过滤
     logger.info("Hello, World!", ("k1", [[1, 4], [2, 5], [3]]), ("password", "v22222"))
-    // 记录诊断日志，如果 DEBUG 级别未开启，直接返回，几乎无cost
+
+    // DEBUG 级别日志
     logger.debug("Logging in user ${user.name} with birthday ${user.birthdayCalendar}")
 
-    // lazy 方式记录耗时日志数据
+    // ERROR 级别日志，使用延迟求值
     logger.log(LogLevel.ERROR, "long-running operation msg", ("k1", 100), ("k2", user.birthdayCalendar),
         ("oper", ToStringWrapper({=> "Some long-running operation returned"})))
 
+    // 使用源码位置注解
     logger.log(LogLevel.ERROR, "long-running operation msg", ("sourcePackage", @sourcePackage()),
         ("sourceFile", @sourceFile()), ("sourceLine", @sourceLine()), ("birthdayCalendar", user.birthdayCalendar),
         ("oper", ToStringWrapper({=> "Some long-running operation returned"})))
 
+    // TRACE 级别日志，使用 HashMap
     let m = HashMap<String, String>()
     m.add("k1", "1")
     m.add("k2", "2")
     m.add("k3", "3")
     logger.trace({=> "Some long-running operation returned"}, ("k1", m))
+
     let m2 = HashMap<String, LogValue>()
     m2.add("g1", m)
-
-    // 如果TRACE 级别没有开启，那么lambda表达式不会被执行
     logger.trace({=> "Some long-running operation returned"}, ("k2", m2))
-
-    // Console.stdOut.write(o.bytes())
-    // Console.stdOut.flush()
 }
 
+// 用户类
 public class User {
     public prop name: String {
         get() {
@@ -151,27 +167,28 @@ public class User {
     }
 }
 
+// 延迟求值的 ToString 包装器
 public class ToStringWrapper <: ToString & LogValue {
     let _fn: () -> String
     public init(fn: () -> String) {
         _fn = fn
     }
     public func toString(): String {
-        return _fn()
+        _fn()
     }
     public func writeTo(w: LogWriter): Unit {
         w.writeValue(_fn())
     }
 }
 
+// 自定义文本日志记录器
 public class TextLogger <: Logger {
     let w: TextLogWriter
-    let opts = HashMap<String, String>()
     let _closed = AtomicBool(false)
-    let queue = ConcurrentLinkedQueue<LogRecord>()
     let bo: BufferedOutputStream<OutputStream>
     let _attrs = ArrayList<Attr>()
     var _level = LogLevel.INFO
+
     public init(output: OutputStream) {
         bo = BufferedOutputStream<OutputStream>(output)
         w = TextLogWriter(bo)
@@ -185,6 +202,7 @@ public class TextLogger <: Logger {
             _level = v
         }
     }
+
     public func withAttrs(attrs: Array<Attr>): Logger {
         if (attrs.size > 0) {
             let nl = TextLogger(w.out)
@@ -193,20 +211,22 @@ public class TextLogger <: Logger {
         }
         return this
     }
-    // log
+
     public func log(level: LogLevel, message: String, attrs: Array<Attr>): Unit {
         if (this.enabled(level)) {
             let record: LogRecord = LogRecord(DateTime.now(), level, message, attrs)
             log(record)
         }
     }
-    // lazy
+
     public func log(level: LogLevel, message: () -> String, attrs: Array<Attr>): Unit {
         if (this.enabled(level)) {
             let record: LogRecord = LogRecord(DateTime.now(), level, message(), attrs)
             log(record)
         }
     }
+
+    // 格式化输出日志
     public func log(record: LogRecord): Unit {
         // write time
         w.writeKey("time")
@@ -234,6 +254,7 @@ public class TextLogger <: Logger {
         w.writeString("\n")
         bo.flush()
     }
+
     public func isClosed(): Bool {
         _closed.load()
     }
@@ -245,6 +266,7 @@ public class TextLogger <: Logger {
     }
 }
 
+// 文本日志写入器
 class TextLogWriter <: LogWriter {
     var out: OutputStream
     init(out: OutputStream) {
@@ -315,10 +337,10 @@ class TextLogWriter <: LogWriter {
 运行结果可能如下：
 
 ```text
-time="2024-06-17T14:10:07.1861349Z" level=INFO msg="Hello, World!" k1="[[1, 4], [2, 5], [3]]" password="***"
-time="2024-06-17T14:10:07.1864929Z" level=DEBUG msg="Logging in user foo with birthday 2024-06-17T14:10:07.1864802Z"
-time="2024-06-17T14:10:07.1869579Z" level=ERROR msg="long-running operation msg" k1="100" k2="2024-06-17T14:10:07.186957Z" oper="Some long-running operation returned"
-time="2024-06-17T14:10:07.18742Z" level=ERROR msg="long-running operation msg" sourcePackage="log" sourceFile="main.cj" sourceLine="77" birthdayCalendar="2024-06-17T14:10:07.1874188Z" oper="Some long-running operation returned"
-time="2024-06-17T14:10:07.1879195Z" level=TRACE msg="Some long-running operation returned" k1="[(k1, 1), (k2, 2), (k3, 3)]"
-time="2024-06-17T14:10:07.1881599Z" level=TRACE msg="Some long-running operation returned" k2="{g1="[(k1, 1), (k2, 2), (k3, 3)]"}"
+time="2026-07-14T12:13:02.121809006Z" level=INFO msg="Hello, World!" k1="[[1, 4], [2, 5], [3]]" password="***"
+time="2026-07-14T12:13:02.121921099Z" level=DEBUG msg="Logging in user foo with birthday 2026-07-14T12:13:02.121918326Z" 
+time="2026-07-14T12:13:02.121930263Z" level=ERROR msg="long-running operation msg" k1="100" k2="2026-07-14T12:13:02.121930072Z" oper="Some long-running operation returned"
+time="2026-07-14T12:13:02.121944376Z" level=ERROR msg="long-running operation msg" sourcePackage="default" sourceFile="test01.cj" sourceLine="261" birthdayCalendar="2026-07-14T12:13:02.12194406Z" oper="Some long-running operation returned"
+time="2026-07-14T12:13:02.12197184Z" level=TRACE msg="Some long-running operation returned" k1="[(k1, 1), (k2, 2), (k3, 3)]"
+time="2026-07-14T12:13:02.122015002Z" level=TRACE msg="Some long-running operation returned" k2="{g1="[(k1, 1), (k2, 2), (k3, 3)]"}"
 ```

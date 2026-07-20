@@ -80,7 +80,7 @@ json 文件示例：
 ]
 ```
 
-创建一种被用作测试函数参数的类，该类实现接口 [Serializable](../../../serialization/serialization_package_api/serialization_package_interfaces.md#interface-serializable) 。
+创建一种被用作测试函数参数的类，该类实现接口 [Serializable](../../../serialization/serialization_package_api/serialization_package_interfaces.md#interface-serializablet) 。
 
 <!--compile-->
 ```cangjie
@@ -106,7 +106,7 @@ class User <: Serializable<User> {
 }
 ```
 
-任何实现 [Serializable](../../../serialization/serialization_package_api/serialization_package_interfaces.md#interface-serializable) 的类型都可以用作参数类型，包括默认值：
+任何实现 [Serializable](../../../serialization/serialization_package_api/serialization_package_interfaces.md#interface-serializablet) 的类型都可以用作参数类型，包括默认值：
 
 <!-- code_no_check -->
 ```cangjie
@@ -163,7 +163,7 @@ public func tsv<T>(
 
 在单元测试中，可以通过传入 csv/tsv 文件地址进行参数化测试。
 
-CSV 文件每一行的数据应当被表示成一个 [Serializable](../../../serialization/serialization_package_api/serialization_package_interfaces.md#interface-serializable)\<T> 对象，它的成员名是文件每一列头的值，成员值是 [DataModelString](../../../serialization/serialization_package_api/serialization_package_classes.md#class-datamodelstring) 类型的对应列号上的值。
+CSV 文件每一行的数据应当被表示成一个 [Serializable](../../../serialization/serialization_package_api/serialization_package_interfaces.md#interface-serializablet)\<T> 对象，它的成员名是文件每一列头的值，成员值是 [DataModelString](../../../serialization/serialization_package_api/serialization_package_classes.md#class-datamodelstring) 类型的对应列号上的值。
 
 举例来说，有一个 `testdata.csv` 文件，具有如下内容：
 
@@ -192,7 +192,7 @@ func testUser(user: HashMap<String, String>) {
 }
 ```
 
-第二种方式是将数据表示为 [Serializable](../../../serialization/serialization_package_api/serialization_package_interfaces.md#interface-serializable)\<T> 类型数据，其 String 类型的数据可被反序列化为 [DataModelStruct](../../../serialization/serialization_package_api/serialization_package_classes.md#class-datamodelstruct) 格式对象。
+第二种方式是将数据表示为 [Serializable](../../../serialization/serialization_package_api/serialization_package_interfaces.md#interface-serializablet)\<T> 类型数据，其 String 类型的数据可被反序列化为 [DataModelStruct](../../../serialization/serialization_package_api/serialization_package_classes.md#class-datamodelstruct) 格式对象。
 
 具体示例为：
 

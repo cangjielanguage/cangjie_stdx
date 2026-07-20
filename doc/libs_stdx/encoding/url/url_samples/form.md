@@ -2,7 +2,7 @@
 
 ## Form 的构造与其函数 get 的使用
 
-创建 Form 类，并通过 get 获取 key 对应映射的 value。示例中使用 Form 类的函数 get 获取指定 key = 1 的 value 值 2 。
+创建 Form 类，并通过 get 获取 key 对应映射的 value。
 
 示例：
 
@@ -11,8 +11,12 @@
 import stdx.encoding.url.*
 
 main(): Int64 {
-    var s = Form("1=2&2=3&1=2&&")
-    print(s.get("1").getOrThrow())
+    // 从 URL 编码字符串构造 Form
+    let form = Form("1=2&2=3&1=2&&")
+
+    // 获取 key 为 "1" 的 value 值
+    println("key='1' 的 value: ${form.get("1").getOrThrow()}")
+
     return 0
 }
 ```
@@ -20,12 +24,12 @@ main(): Int64 {
 运行结果：
 
 ```text
-2
+key='1' 的 value: 2
 ```
 
 ## Form 的构造与重复 key 情况下函数 get 的使用
 
-创建 Form 类，并通过 get 获取 key 对应映射的 value。示例中使用 Form 类的函数 get 获取指定 key = 1 的第一个 value 值 %6AD。value 中的 %6A 被解码为 j，因此得到 value 值 jD 。
+创建 Form 类，并通过 get 获取 key 对应映射的 value。当有重复 key 时，get 返回第一个 value。URL 编码的值会自动解码。
 
 示例：
 
@@ -34,9 +38,13 @@ main(): Int64 {
 import stdx.encoding.url.*
 
 main(): Int64 {
-    var s = Form("2=3&1=%6AD&1=2")
-    // 对于 %6A 解码成 j，重复的 key 调用 get 获取第一个 value 值 jD 
-    print(s.get("1").getOrThrow())
+    // 从 URL 编码字符串构造 Form
+    // %6A 会被解码为 'j'
+    let form = Form("2=3&1=%6AD&1=2")
+
+    // 获取重复 key 的第一个 value（自动解码）
+    println("key='1' 的第一个 value: ${form.get("1").getOrThrow()}")
+
     return 0
 }
 ```
@@ -44,12 +52,12 @@ main(): Int64 {
 运行结果：
 
 ```text
-jD
+key='1' 的第一个 value: jD
 ```
 
 ## Form 的构造与其他函数使用
 
-分别调用 add，set，clone，打印输出前后变化。
+分别调用 add，set，clone 函数，展示前后变化。
 
 示例：
 
@@ -58,28 +66,24 @@ jD
 import stdx.encoding.url.*
 
 main(): Int64 {
-    var f = Form()
+    // 创建空的 Form 并添加键值对
+    let form = Form()
+    form.add("k", "v1")
+    form.add("k", "v2")
+    println("添加后，key='k' 的第一个 value: ${form.get("k").getOrThrow()}")
 
-    // 给键 k 增加值 v1 和 v2 
-    f.add("k", "v1")
-    f.add("k", "v2")
+    // 使用 set 设置键值（会覆盖之前的值）
+    form.set("k", "v")
+    println("set 后，key='k' 的 value: ${form.get("k").getOrThrow()}")
 
-    // 调用 get 方法时，获取的是第一个值 
-    println(f.get("k").getOrThrow())
+    // 克隆 Form 并添加新的键值对
+    let clonedForm = form.clone()
+    clonedForm.add("k1", "v1")
+    println("克隆的 Form，key='k1' 的 value: ${clonedForm.get("k1").getOrThrow()}")
 
-    // 设定键 k 的值为 v 
-    f.set("k", "v")
-    println(f.get("k").getOrThrow())
-    let clone_f = f.clone()
+    // 原 Form 没有键 k1，返回默认值
+    println("原 Form，key='k1' 的 value: ${form.get("k1") ?? "kkk"}")
 
-    // 给克隆出来的 clone_f 增加键值对 
-    clone_f.add("k1", "v1")
-
-    // 通过 get 获得值 v1 
-    println(clone_f.get("k1").getOrThrow())
-
-    // 原来的 f 并没有键 k1，所以值是给的默认值 kkk 
-    println(f.get("k1") ?? "kkk")
     return 0
 }
 ```
@@ -87,8 +91,8 @@ main(): Int64 {
 运行结果：
 
 ```text
-v1
-v
-v1
-kkk
+添加后，key='k' 的第一个 value: v1
+set 后，key='k' 的 value: v
+克隆的 Form，key='k1' 的 value: v1
+原 Form，key='k1' 的 value: kkk
 ```

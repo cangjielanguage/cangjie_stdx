@@ -8,22 +8,23 @@ import stdx.encoding.json.stream.{JsonWriter, WriteConfig, JsonSerializable}
 import std.io.ByteBuffer
 
 main() {
-    // 构造 JsonWriter 
+    // 创建 JsonWriter
     let buffer = ByteBuffer()
     let writer = JsonWriter(buffer)
 
-    // 设置 JSON 写格式配置 
-    let fmtCfg = WriteConfig.pretty
-    writer.writeConfig = fmtCfg
+    // 设置 JSON 格式化配置（使用 pretty 格式）
+    let formatConfig = WriteConfig.pretty
+    writer.writeConfig = formatConfig
 
-    // 写 JSON  
-    writer.writeValue(MyObj())
+    // 写入 JSON 数据
+    writer.writeValue(Student())
 
-    // 打印 JSON 序列化字符串 
+    // 输出格式化的 JSON 字符串
     println(String.fromUtf8(buffer.bytes()))
 }
 
-class MyObj <: JsonSerializable {
+// 定义一个类实现 JsonSerializable 接口
+class Student <: JsonSerializable {
     public func toJson(w: JsonWriter): Unit {
         w.startObject()
         w.writeName("Name").writeValue("zhangsan")

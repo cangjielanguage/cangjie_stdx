@@ -7,16 +7,18 @@
 import stdx.encoding.hex.*
 
 main(): Int64 {
-    var arr: Array<Byte> = [65, 66, 94, 97]
-    var str = toHexString(arr)
-    print("${str},")
-    var opArr: Option<Array<Byte>> = fromHexString(str)
-    var arr2: Array<Byte> = match (opArr) {
-        case Some(s) => s
-        case None => Array<Byte>()
-    }
-    for (i in 0..arr2.size) {
-        print("${arr2[i]},")
+    // 准备字节数组
+    let bytes: Array<Byte> = [65, 66, 94, 97] // ASCII: 'A', 'B', '^', 'a'
+
+    // 字节数组转换为十六进制字符串
+    let hexString = toHexString(bytes)
+    println("十六进制字符串: ${hexString}")
+
+    // 十六进制字符串转换回字节数组
+    if (let Some(decodedBytes) <- fromHexString(hexString)) {
+        println("解码成功，字节数组: ${decodedBytes}")
+    } else {
+        println("解码失败")
     }
     return 0
 }
@@ -25,5 +27,6 @@ main(): Int64 {
 运行结果：
 
 ```text
-41425e61,65,66,94,97,
+十六进制字符串: 41425e61
+解码成功，字节数组: [65, 66, 94, 97]
 ```

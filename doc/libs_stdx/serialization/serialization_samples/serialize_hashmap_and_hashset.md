@@ -9,47 +9,56 @@ import stdx.serialization.serialization.*
 import stdx.encoding.json.*
 
 main(): Unit {
-    let s: HashSet<Values> = HashSet<Values>([Values(3), Values(5), Values(7)])
-    let seris: DataModel = s.serialize()
-    println(seris.toJson().toJsonString())
+    // 序列化 HashSet
+    let hashSet: HashSet<DataValue> = HashSet<DataValue>([DataValue(3), DataValue(5), DataValue(7)])
+    let setDataModel: DataModel = hashSet.serialize()
+    println(setDataModel.toJson().toJsonString())
+
     println("===========")
-    let m: HashMap<String, Values> = HashMap<String, Values>([("1", Values(3)), ("2", Values(6)), ("3", Values(9))])
-    let serim: DataModel = m.serialize()
-    print(serim.toJson().toJsonString())
+
+    // 序列化 HashMap
+    let hashMap: HashMap<String, DataValue> = HashMap<String, DataValue>([
+        ("key1", DataValue(3)),
+        ("key2", DataValue(6)),
+        ("key3", DataValue(9))
+    ])
+    let mapDataModel: DataModel = hashMap.serialize()
+    print(mapDataModel.toJson().toJsonString())
 }
 
-class Values <: Hashable & Equatable<Values> & Serializable<Values> {
-    var m_data: Int64
+// 自定义可序列化数据类型
+class DataValue <: Hashable & Equatable<DataValue> & Serializable<DataValue> {
+    var value: Int64
 
-    init(m_data: Int64) {
-        this.m_data = m_data
+    init(value: Int64) {
+        this.value = value
     }
 
     public func hashCode(): Int64 {
-        return this.m_data
+        return this.value
     }
 
-    public operator func ==(right: Values): Bool {
-        return this.m_data == right.m_data
+    public operator func ==(right: DataValue): Bool {
+        return this.value == right.value
     }
 
-    public operator func !=(right: Values): Bool {
-        return this.m_data != right.m_data
+    public operator func !=(right: DataValue): Bool {
+        return this.value != right.value
     }
 
-    /* 实现 Serializable 接口的序列化方法 */
+    // 实现序列化方法
     public func serialize(): DataModel {
-        return DataModelStruct().add(field<Int64>("m_data", m_data))
+        return DataModelStruct().add(field<Int64>("value", value))
     }
 
-    /* 实现反序列化方法 */
-    public static func deserialize(dm: DataModel): Values {
-        let dms: DataModelStruct = match (dm) {
+    // 实现反序列化方法
+    public static func deserialize(dm: DataModel): DataValue {
+        let dataStruct = match (dm) {
             case data: DataModelStruct => data
-            case _ => throw Exception("this data is not DataModelStruct")
+            case _ => throw Exception("数据模型不是 DataModelStruct 类型")
         }
-        let result = Values(0)
-        result.m_data = Int64.deserialize(dms.get("m_data"))
+        let result = DataValue(0)
+        result.value = Int64.deserialize(dataStruct.get("value"))
         return result
     }
 }
@@ -60,25 +69,25 @@ class Values <: Hashable & Equatable<Values> & Serializable<Values> {
 ```text
 [
   {
-    "m_data": 3
+    "value": 3
   },
   {
-    "m_data": 5
+    "value": 5
   },
   {
-    "m_data": 7
+    "value": 7
   }
 ]
 ===========
 {
-  "1": {
-    "m_data": 3
+  "key1": {
+    "value": 3
   },
-  "2": {
-    "m_data": 6
+  "key2": {
+    "value": 6
   },
-  "3": {
-    "m_data": 9
+  "key3": {
+    "value": 9
   }
 }
 ```

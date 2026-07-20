@@ -104,10 +104,10 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 获取证书和私钥内容
-    let serverCrtContent = String.fromUtf8(readToEnd(File(serverCrt, Read)))
+    let serverCrtContent = String.fromUtf8(File.readFrom(serverCrt))
     let serverCertificate = X509Certificate.decodeFromPem(serverCrtContent)
 
-    let serverKeyContent = String.fromUtf8(readToEnd(File(serverKey, Read)))
+    let serverKeyContent = String.fromUtf8(File.readFrom(serverKey))
     let serverPrivateKey = GeneralPrivateKey.decodeFromPem(serverKeyContent)
 
     // 创建 TLS 服务器配置
@@ -228,7 +228,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 获取证书
-    let serverCrtContent = String.fromUtf8(readToEnd(File(serverCrt, Read)))
+    let serverCrtContent = String.fromUtf8(File.readFrom(serverCrt))
     let serverCertificate = X509Certificate.decodeFromPem(serverCrtContent)
 
     let config = KeylessTlsServerConfig(serverCertificate, keylessSignFunc)
@@ -296,7 +296,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 获取证书
-    let serverCrtContent = String.fromUtf8(readToEnd(File(serverCrt, Read)))
+    let serverCrtContent = String.fromUtf8(File.readFrom(serverCrt))
     let serverCertificate = X509Certificate.decodeFromPem(serverCrtContent)
 
     let config = KeylessTlsServerConfig(serverCertificate, keylessSignFunc)
@@ -355,7 +355,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 获取证书
-    let serverCrtContent = String.fromUtf8(readToEnd(File(serverCrt, Read)))
+    let serverCrtContent = String.fromUtf8(File.readFrom(serverCrt))
     let serverCertificate = X509Certificate.decodeFromPem(serverCrtContent)
 
     let config = KeylessTlsServerConfig(serverCertificate, keylessSignFunc)
@@ -404,7 +404,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 获取证书
-    let serverCrtContent = String.fromUtf8(readToEnd(File(serverCrt, Read)))
+    let serverCrtContent = String.fromUtf8(File.readFrom(serverCrt))
     let serverCertificate = X509Certificate.decodeFromPem(serverCrtContent)
 
     let config = KeylessTlsServerConfig(serverCertificate, keylessSignFunc)
@@ -463,7 +463,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 获取证书
-    let serverCrtContent = String.fromUtf8(readToEnd(File(serverCrt, Read)))
+    let serverCrtContent = String.fromUtf8(File.readFrom(serverCrt))
     let serverCertificate = X509Certificate.decodeFromPem(serverCrtContent)
 
     let config = KeylessTlsServerConfig(serverCertificate, keylessSignFunc)
@@ -522,7 +522,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 获取证书
-    let serverCrtContent = String.fromUtf8(readToEnd(File(serverCrt, Read)))
+    let serverCrtContent = String.fromUtf8(File.readFrom(serverCrt))
     let serverCertificate = X509Certificate.decodeFromPem(serverCrtContent)
 
     let config = KeylessTlsServerConfig(serverCertificate, keylessSignFunc)
@@ -583,7 +583,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 获取证书
-    let serverCrtContent = String.fromUtf8(readToEnd(File(serverCrt, Read)))
+    let serverCrtContent = String.fromUtf8(File.readFrom(serverCrt))
     let serverCertificate = X509Certificate.decodeFromPem(serverCrtContent)
 
     let config = KeylessTlsServerConfig(serverCertificate, keylessSignFunc)
@@ -636,7 +636,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 获取证书
-    let serverCrtContent = String.fromUtf8(readToEnd(File(serverCrt, Read)))
+    let serverCrtContent = String.fromUtf8(File.readFrom(serverCrt))
     let serverCertificate = X509Certificate.decodeFromPem(serverCrtContent)
 
     let config = KeylessTlsServerConfig(serverCertificate, keylessSignFunc)
@@ -692,7 +692,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 获取证书
-    let serverCrtContent = String.fromUtf8(readToEnd(File(serverCrt, Read)))
+    let serverCrtContent = String.fromUtf8(File.readFrom(serverCrt))
     let serverCertificate = X509Certificate.decodeFromPem(serverCrtContent)
 
     let config = KeylessTlsServerConfig(serverCertificate, keylessSignFunc)
@@ -755,7 +755,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 获取证书
-    let serverCrtContent = String.fromUtf8(readToEnd(File(serverCrt, Read)))
+    let serverCrtContent = String.fromUtf8(File.readFrom(serverCrt))
     let serverCertificate = X509Certificate.decodeFromPem(serverCrtContent)
 
     let config = KeylessTlsServerConfig(serverCertificate, keylessSignFunc)
@@ -825,8 +825,8 @@ main() {
         let cmdStr = "openssl req -x509 -newkey rsa:2048 -nodes -keyout ${serverKey} -out ${serverCrt} -days 365 -subj \"/CN=localhost\""
         executeWithOutput("sh", ["-c", cmdStr])
         // 对证书以及私钥进行解析
-        let pemString = String.fromUtf8(readToEnd(File(serverCrt, OpenMode.Read)))
-        let keyString = String.fromUtf8(readToEnd(File(serverKey, OpenMode.Read)))
+        let pemString = String.fromUtf8(File.readFrom(serverCrt))
+        let keyString = String.fromUtf8(File.readFrom(serverKey))
 
         let certificate = X509Certificate.decodeFromPem(pemString)
         let privateKey = GeneralPrivateKey.decodeFromPem(keyString)
@@ -1195,8 +1195,8 @@ main() {
         let cmdStr = "openssl req -x509 -newkey rsa:2048 -nodes -keyout ${serverKey} -out ${serverCrt} -days 365 -subj \"/CN=localhost\""
         executeWithOutput("sh", ["-c", cmdStr])
         // 对证书以及私钥进行解析
-        let pemString = String.fromUtf8(readToEnd(File(serverCrt, OpenMode.Read)))
-        let keyString = String.fromUtf8(readToEnd(File(serverKey, OpenMode.Read)))
+        let pemString = String.fromUtf8(File.readFrom(serverCrt))
+        let keyString = String.fromUtf8(File.readFrom(serverKey))
 
         let certificate = X509Certificate.decodeFromPem(pemString)
         let privateKey = GeneralPrivateKey.decodeFromPem(keyString)
@@ -1423,8 +1423,8 @@ main() {
         let cmdStr = "openssl req -x509 -newkey rsa:2048 -nodes -keyout ${serverKey} -out ${serverCrt} -days 365 -subj \"/CN=localhost\""
         executeWithOutput("sh", ["-c", cmdStr])
         // 对证书以及私钥进行解析
-        let pemString = String.fromUtf8(readToEnd(File(serverCrt, OpenMode.Read)))
-        let keyString = String.fromUtf8(readToEnd(File(serverKey, OpenMode.Read)))
+        let pemString = String.fromUtf8(File.readFrom(serverCrt))
+        let keyString = String.fromUtf8(File.readFrom(serverKey))
 
         let certificate = X509Certificate.decodeFromPem(pemString)
         let privateKey = GeneralPrivateKey.decodeFromPem(keyString)
@@ -1525,7 +1525,7 @@ main() {
         let cmdStr = "openssl req -x509 -newkey rsa:2048 -nodes -keyout ${serverKey} -out ${serverCrt} -days 365 -subj \"/CN=localhost\""
         executeWithOutput("sh", ["-c", cmdStr])
         // 对证书以及私钥进行解析
-        let pemString = String.fromUtf8(readToEnd(File(serverCrt, OpenMode.Read)))
+        let pemString = String.fromUtf8(File.readFrom(serverCrt))
 
         let certificate = X509Certificate.decodeFromPem(pemString)
 
@@ -1647,8 +1647,8 @@ main() {
         let cmdStr = "openssl req -x509 -newkey rsa:2048 -nodes -keyout ${serverKey} -out ${serverCrt} -days 365 -subj \"/CN=localhost\""
         executeWithOutput("sh", ["-c", cmdStr])
         // 对证书以及私钥进行解析
-        let pemString = String.fromUtf8(readToEnd(File(serverCrt, OpenMode.Read)))
-        let keyString = String.fromUtf8(readToEnd(File(serverKey, OpenMode.Read)))
+        let pemString = String.fromUtf8(File.readFrom(serverCrt))
+        let keyString = String.fromUtf8(File.readFrom(serverKey))
 
         let certificate = X509Certificate.decodeFromPem(pemString)
         let privateKey = GeneralPrivateKey.decodeFromPem(keyString)
@@ -1833,8 +1833,8 @@ main() {
         let cmdStr = "openssl req -x509 -newkey rsa:2048 -nodes -keyout ${serverKey} -out ${serverCrt} -days 365 -subj \"/CN=localhost\""
         executeWithOutput("sh", ["-c", cmdStr])
         // 对证书以及私钥进行解析
-        let pemString = String.fromUtf8(readToEnd(File(serverCrt, OpenMode.Read)))
-        let keyString = String.fromUtf8(readToEnd(File(serverKey, OpenMode.Read)))
+        let pemString = String.fromUtf8(File.readFrom(serverCrt))
+        let keyString = String.fromUtf8(File.readFrom(serverKey))
 
         let certificate = X509Certificate.decodeFromPem(pemString)
         let privateKey = GeneralPrivateKey.decodeFromPem(keyString)
@@ -1963,8 +1963,8 @@ main() {
         let cmdStr = "openssl req -x509 -newkey rsa:2048 -nodes -keyout ${serverKey} -out ${serverCrt} -days 365 -subj \"/CN=localhost\""
         executeWithOutput("sh", ["-c", cmdStr])
         // 对证书以及私钥进行解析
-        let pemString = String.fromUtf8(readToEnd(File(serverCrt, OpenMode.Read)))
-        let keyString = String.fromUtf8(readToEnd(File(serverKey, OpenMode.Read)))
+        let pemString = String.fromUtf8(File.readFrom(serverCrt))
+        let keyString = String.fromUtf8(File.readFrom(serverKey))
 
         let certificate = X509Certificate.decodeFromPem(pemString)
         let privateKey = GeneralPrivateKey.decodeFromPem(keyString)

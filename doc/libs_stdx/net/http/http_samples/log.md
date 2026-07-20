@@ -2,23 +2,40 @@
 
 示例：
 
-<!-- compile -->
+<!-- run -->
 ```cangjie
-import stdx.log.*
 import stdx.net.http.*
-import stdx.net.tls
+import stdx.log.*
+
+let server = ServerBuilder().addr("127.0.0.1").port(0).build()
 
 main() {
-    // 1. 构建 Server 实例
-    let server = ServerBuilder().addr("127.0.0.1").port(8080).build()
-    // 2. 注册 HttpRequestHandler
+    // 启动服务器
+    spawn {
+        startServer()
+    }
+    sleep(Duration.second) // 等待服务器启动
+
+    // 构建客户端实例，开启客户端日志
+    let client = ClientBuilder().build()
+    client.logger.level = LogLevel.DEBUG
+
+    // 发送请求
+    let response = client.get("http://127.0.0.1:${server.port}/index")
+    println("响应状态: ${response.status}")
+
+    // 关闭客户端和服务器
+    client.close()
+    server.close()
+}
+
+func startServer(): Unit {
+    // 注册请求处理器
     server.distributor.register("/index", {
         httpContext => httpContext.responseBuilder.body("Hello 仓颉!")
     })
-    // 3. 开启日志
+    // 开启服务器端日志，设置日志级别为 DEBUG
     server.logger.level = LogLevel.DEBUG
-    // client 端通过 client.logger.level = DEBUG 开启
-    // 4. 启动服务
     server.serve()
 }
 ```
@@ -26,5 +43,6 @@ main() {
 运行结果：
 
 ```text
-2025-05-24T23:55:12.779407244+08:00 DEBUG [thread#1] [Server#serve] bindAndListen(127.0.0.1, 8080)
+（...大量log省略展示...）
+响应状态: 200
 ```

@@ -64,7 +64,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 从 DerBlob 解码证书
-    let certBlob = DerBlob(readToEnd(File(certDer, Read)))
+    let certBlob = DerBlob(File.readFrom(certDer))
     let certificate = cryptoKit.certificateFromDer(certBlob)
     println("证书解码成功")
 
@@ -127,7 +127,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 读取PEM格式的证书内容
-    let pemContent = String.fromUtf8(readToEnd(File(certPem, Read)))
+    let pemContent = String.fromUtf8(File.readFrom(certPem))
 
     // 从 PEM 字符串解码证书
     let certificates = cryptoKit.certificateFromPem(pemContent)
@@ -194,7 +194,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 从 DerBlob 解码DH参数
-    let dhBlob = DerBlob(readToEnd(File(dhDer, Read)))
+    let dhBlob = DerBlob(File.readFrom(dhDer))
     let dhParams = cryptoKit.dhParametersFromDer(dhBlob)
     println("DH参数DER解码成功")
 
@@ -255,7 +255,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 读取PEM格式的DH参数内容
-    let pemContent = String.fromUtf8(readToEnd(File(dhPem, Read)))
+    let pemContent = String.fromUtf8(File.readFrom(dhPem))
 
     // 从 PEM 字符串解码DH参数
     let dhParams = cryptoKit.dhParametersFromPem(pemContent)
@@ -359,7 +359,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 从 DerBlob 解码私钥
-    let keyBlob = DerBlob(readToEnd(File(privateKeyDer, Read)))
+    let keyBlob = DerBlob(File.readFrom(privateKeyDer))
     let privateKey = cryptoKit.privateKeyFromDer(keyBlob)
     println("私钥DER解码成功")
 
@@ -425,7 +425,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 从 DerBlob 解密解码私钥
-    let encryptedKeyBlob = DerBlob(readToEnd(File(encryptedKeyDer, Read)))
+    let encryptedKeyBlob = DerBlob(File.readFrom(encryptedKeyDer))
     let privateKey = cryptoKit.privateKeyFromDer(encryptedKeyBlob, password: password)
     println("加密私钥DER解码成功")
 
@@ -486,7 +486,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 读取PEM格式的私钥内容
-    let pemContent = String.fromUtf8(readToEnd(File(privateKeyPem, Read)))
+    let pemContent = String.fromUtf8(File.readFrom(privateKeyPem))
 
     // 从 PEM 字符串解码私钥
     let privateKey = cryptoKit.privateKeyFromPem(pemContent)
@@ -551,7 +551,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 读取PEM格式的加密私钥内容
-    let pemContent = String.fromUtf8(readToEnd(File(encryptedKeyPem, Read)))
+    let pemContent = String.fromUtf8(File.readFrom(encryptedKeyPem))
 
     // 从 PEM 字符串解密解码私钥
     let privateKey = cryptoKit.privateKeyFromPem(pemContent, password: password)
@@ -618,7 +618,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 从 DerBlob 解码公钥
-    let keyBlob = DerBlob(readToEnd(File(publicKeyDer, Read)))
+    let keyBlob = DerBlob(File.readFrom(publicKeyDer))
     let publicKey = cryptoKit.publicKeyFromDer(keyBlob)
     println("公钥DER解码成功")
 
@@ -682,7 +682,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 读取PEM格式的公钥内容
-    let pemContent = String.fromUtf8(readToEnd(File(publicKeyPem, Read)))
+    let pemContent = String.fromUtf8(File.readFrom(publicKeyPem))
 
     // 从 PEM 字符串解码公钥
     let publicKey = cryptoKit.publicKeyFromPem(pemContent)

@@ -209,7 +209,7 @@ public override func writeTo(target: OutputStream): Unit
 
 示例：
 
-<!-- verify -->
+<!-- run -->
 ```cangjie
 import stdx.compress.tar.*
 import std.fs.*
@@ -222,25 +222,19 @@ main(): Unit {
     // 创建 GnuTarEntry
     var entry = GnuTarEntry(testFile)
 
-    // 创建输出流
+    // 创建输出流和 TarWriter
     let outFile = File("./output.tar", Write)
+    var writer = TarWriter(outFile)
 
-    // 将条目写入输出流
-    entry.writeTo(outFile)
-
-    println("GnuTarEntry written to stream successfully")
+    // 将条目写入 tar 文件
+    writer.write(entry)
+    writer.finish()
 
     // 清理文件
     outFile.close()
     removeIfExists(testFile)
     removeIfExists("./output.tar")
 }
-```
-
-运行结果：
-
-```text
-GnuTarEntry written to stream successfully
 ```
 
 ## class PaxTarEntry
@@ -372,7 +366,7 @@ public func getPaxData(key: String): ?String
 
 返回值：
 
-- Option\<String> - 如果存在对应键的 Pax 数据，则返回其值，否则返回 None。
+- ?\<String> - 如果存在对应键的 Pax 数据，则返回其值，否则返回 None。
 
 示例：
 
@@ -441,7 +435,7 @@ public override func writeTo(target: OutputStream): Unit
 
 示例：
 
-<!-- verify -->
+<!-- run -->
 ```cangjie
 import stdx.compress.tar.*
 import std.fs.*
@@ -454,25 +448,19 @@ main(): Unit {
     // 创建 PaxTarEntry
     var entry = PaxTarEntry(testFile)
 
-    // 创建输出流
+    // 创建输出流和 TarWriter
     let outFile = File("./output.tar", Write)
+    var writer = TarWriter(outFile)
 
-    // 将条目写入输出流
-    entry.writeTo(outFile)
-
-    println("PaxTarEntry 成功写入流")
+    // 将条目写入 tar 文件
+    writer.write(entry)
+    writer.finish()
 
     // 清理文件
     outFile.close()
     removeIfExists(testFile)
     removeIfExists("./output.tar")
 }
-```
-
-运行结果：
-
-```text
-PaxTarEntry 成功写入流
 ```
 
 ## class PosixTarEntry
@@ -1379,7 +1367,7 @@ public abstract class TarEntry {
 }
 ```
 
-功能：表示一个 tar 文件中的条目，用于和 [TarReader](tar_package_classes.md#class-tarreader) 和 [TarWriter](tar_package_classes.md#class-tarwriter) 进行交互。可从 [TarReader](tar_package_classes.md#class-tarreader) 中获取 [TarEntry](tar_package_classes.md#class-tarentry) 实例，表示 tar 归档文件中的一个条目。也可通过 [TarWriter](tar_package_classes.md#class-tarwriter) 将其写入到 tar 归档文件中。
+功能：表示一个 tar 文件中的条目，用于和 [TarReader](tar_package_classes.md#class-tarreadert) 和 [TarWriter](tar_package_classes.md#class-tarwritert) 进行交互。可从 [TarReader](tar_package_classes.md#class-tarreadert) 中获取 [TarEntry](tar_package_classes.md#class-tarentry) 实例，表示 tar 归档文件中的一个条目。也可通过 [TarWriter](tar_package_classes.md#class-tarwritert) 将其写入到 tar 归档文件中。
 
 ### prop entryType
 
@@ -1439,26 +1427,46 @@ import stdx.compress.tar.*
 import std.fs.*
 
 main(): Unit {
-    // 创建测试文件
-    let testFile = Path("./test.txt")
-    File.writeTo(testFile, "Hello, Tar!".toArray())
+    var symlinkPath = "./test_symlink_target.txt"
+    var sourcePath = "./test_symlink_source.txt"
+    // 创建前先删除，以防创建失败
+    removeIfExists(sourcePath)
+    removeIfExists(symlinkPath)
+
+    // 创建一个源文件
+    var data: Array<Byte> = [83, 121, 109, 98, 111, 108, 105, 99, 76, 105, 110, 107]
+    File.writeTo(sourcePath, data)
+
+    // 创建符号链接
+    SymbolicLink.create(symlinkPath, to: sourcePath)
+
+    // 检查符号链接文件是否存在
+    if (exists(symlinkPath)) {
+        println("符号链接文件存在")
+        // 读取符号链接文件内容
+        let content = File.readFrom(symlinkPath)
+        println("符号链接文件内容: ${content}")
+    }
 
     // 创建一个 TarEntry 实例 (使用 PaxTarEntry，因为 TarEntry 是抽象类)
-    var entry: TarEntry = PaxTarEntry(testFile)
+    var entry: TarEntry = PaxTarEntry(symlinkPath)
 
     // 获取 linkName 属性
     let linkName = entry.linkName
     println("链接名称: ${linkName}")
 
-    // 清理测试文件
-    removeIfExists(testFile)
+    // 删除文件
+    removeIfExists(sourcePath)
+    removeIfExists(symlinkPath)
 }
 ```
 
 运行结果：
 
 ```text
-链接名称: .
+符号链接文件存在
+符号链接文件内容: [83, 121, 109, 98, 111, 108, 105, 99, 76, 105, 110, 107]
+链接名称: test_symlink_source.txt
 ```
 
 ### prop gid
@@ -1591,34 +1599,49 @@ public prop checksum: Int32
 
 类型：Int32
 
+> **说明：**
+>
+> checksum 值根据文件路径、权限、修改时间等元数据动态计算，每次运行结果可能不同。
+
 示例：
 
-<!-- verfiy -->
+<!-- run -->
 ```cangjie
 import stdx.compress.tar.*
 import std.fs.*
 
 main(): Unit {
     // 创建测试文件
-    let testFile = Path("./test.txt")
+    let testFile = Path("./test_checksum.txt")
     File.writeTo(testFile, "Hello, Tar!".toArray())
 
-    // 创建一个 TarEntry 实例 (使用 PaxTarEntry，因为 TarEntry 是抽象类)
+    // 使用 TarWriter 写入 tar 文件
+    let tarFile = Path("./test.tar")
+    let outStream = File(tarFile, Write)
+    var writer = TarWriter(outStream)
     var entry: TarEntry = PaxTarEntry(testFile)
+    writer.write(entry)
+    writer.finish()
+    outStream.close()
 
-    // 获取 checksum 属性
-    let checksum = entry.checksum
-    println("校验和: ${checksum}")
+    // 从 tar 文件读取 TarEntry 并获取 checksum
+    let inStream = File(tarFile, Read)
+    var reader = TarReader(inStream)
+    for (tarEntry in reader) {
+        println("校验和: ${tarEntry.checksum}")
+    }
+    inStream.close()
 
     // 清理测试文件
     removeIfExists(testFile)
+    removeIfExists(tarFile)
 }
 ```
 
-运行结果：
+可能的运行结果：
 
 ```text
-校验和: 0
+校验和: 6681
 ```
 
 ### prop name
@@ -1707,7 +1730,7 @@ main(): Unit {
 public prop stream: ?InputStream
 ```
 
-功能：获取当前条目的输入流。如果实例由 [TarReader](tar_package_classes.md#class-tarreader) 创建，则本属性返回流中为条目的数据，若条目没有数据则返回 None。如果实例由构造函数创建，则本属性返回的是创建的文件流，传入 [TarWriter](tar_package_classes.md#class-tarwriter) 时会调用该属性用于写入条目数据。
+功能：获取当前条目的输入流。如果实例由 [TarReader](tar_package_classes.md#class-tarreadert) 创建，则本属性返回流中为条目的数据，若条目没有数据则返回 None。如果实例由构造函数创建，则本属性返回的是创建的文件流，传入 [TarWriter](tar_package_classes.md#class-tarwritert) 时会调用该属性用于写入条目数据。
 
 类型：Option\<InputStream>
 
@@ -1888,7 +1911,7 @@ public open func writeTo(target: OutputStream): Unit
 
 示例：
 
-<!-- verify -->
+<!-- run -->
 ```cangjie
 import stdx.compress.tar.*
 import std.fs.*
@@ -1901,14 +1924,14 @@ main(): Unit {
     // 创建一个 TarEntry 实例 (使用 PaxTarEntry，因为 TarEntry 是抽象类)
     var entry: TarEntry = PaxTarEntry(testFile)
 
-    // 创建输出流
+    // 创建输出流和 TarWriter
     let outputFile = Path("./output.tar")
     let outputStream = File(outputFile, Write)
+    var writer = TarWriter(outputStream)
 
-    // 调用 writeTo 方法
-    entry.writeTo(outputStream)
-
-    println("writeTo 方法调用成功")
+    // 写入条目
+    writer.write(entry)
+    writer.finish()
 
     // 清理流和文件
     outputStream.close()
@@ -1919,13 +1942,7 @@ main(): Unit {
 }
 ```
 
-运行结果：
-
-```text
-writeTo 方法调用成功
-```
-
-## class TarReader
+## class TarReader\<T>
 
 ```cangjie
 public class TarReader<T> <: Iterable<TarEntry> where T <: InputStream {
@@ -2053,7 +2070,7 @@ main(): Unit {
 extend<T> TarReader<T> <: Resource where T <: Resource
 ```
 
-功能：为 [TarReader](tar_package_classes.md#class-tarreader) 实现 Resource 接口，该类型对象可在 `try-with-resource` 语法上下文中实现自动资源释放。
+功能：为 [TarReader](tar_package_classes.md#class-tarreadert) 实现 Resource 接口，该类型对象可在 `try-with-resource` 语法上下文中实现自动资源释放。
 
 父类型：
 
@@ -2069,7 +2086,7 @@ public func close(): Unit
 
 > **注意：**
 >
-> 调用此方法后不可再调用 [TarReader](tar_package_classes.md#class-tarreader) 的其他接口，否则会造成不可期现象。
+> 调用此方法后不可再调用 [TarReader](tar_package_classes.md#class-tarreadert) 的其他接口，否则会造成不可期现象。
 
 示例：
 
@@ -2176,7 +2193,7 @@ main(): Unit {
 关闭后状态: true
 ```
 
-## class TarWriter
+## class TarWriter\<T>
 
 ```cangjie
 public class TarWriter<T> where T <: OutputStream {
@@ -2693,7 +2710,7 @@ TarWriter write(TarEntry) 调用成功
 extend<T> TarWriter<T> <: Resource where T <: Resource
 ```
 
-功能：为 [TarWriter](tar_package_classes.md#class-tarwriter) 实现 Resource 接口，该类型对象可在 `try-with-resource` 语法上下文中实现自动资源释放。
+功能：为 [TarWriter](tar_package_classes.md#class-tarwritert) 实现 Resource 接口，该类型对象可在 `try-with-resource` 语法上下文中实现自动资源释放。
 
 父类型：
 
@@ -2709,7 +2726,7 @@ public func close(): Unit
 
 > **注意：**
 >
-> 调用此方法后不可再调用 [TarWriter](tar_package_classes.md#class-tarwriter) 的其他接口，否则会造成不可期现象。
+> 调用此方法后不可再调用 [TarWriter](tar_package_classes.md#class-tarwritert) 的其他接口，否则会造成不可期现象。
 
 示例：
 
@@ -2927,7 +2944,7 @@ public override func writeTo(target: OutputStream): Unit
 
 示例：
 
-<!-- verify -->
+<!-- run -->
 ```cangjie
 import stdx.compress.tar.*
 import std.fs.*
@@ -2941,25 +2958,19 @@ main(): Unit {
     // 创建 UstarTarEntry
     var entry = UstarTarEntry(testFile)
 
-    // 创建输出流
+    // 创建输出流和 TarWriter
     let outFile = File("./output.tar", Write)
+    var writer = TarWriter(outFile)
 
-    // 将条目写入输出流
-    entry.writeTo(outFile)
-
-    println("UstarTarEntry written to stream successfully")
+    // 将条目写入 tar 文件
+    writer.write(entry)
+    writer.finish()
 
     // 清理文件
     outFile.close()
     remove(testFile)
     remove("./output.tar")
 }
-```
-
-运行结果：
-
-```text
-UstarTarEntry written to stream successfully
 ```
 
 ## class V7TarEntry

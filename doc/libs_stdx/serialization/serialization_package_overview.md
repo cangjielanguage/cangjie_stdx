@@ -20,7 +20,7 @@ serialization 包提供了序列化和反序列化的能力。
 
 | 接口名                                                       | 功能             |
 | ------------------------------------------------------------ | ---------------- |
-| [Serializable](./serialization_package_api/serialization_package_interfaces.md/#interface-serializable) | 用于规范序列化。 |
+| [Serializable](./serialization_package_api/serialization_package_interfaces.md#interface-serializablet) | 用于规范序列化。 |
 
 ### 类
 
