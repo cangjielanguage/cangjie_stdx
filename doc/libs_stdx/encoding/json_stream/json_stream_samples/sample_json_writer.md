@@ -7,6 +7,7 @@
 import stdx.encoding.json.stream.*
 import std.io.{ByteBuffer, readToEnd}
 
+// 定义一个类实现 JsonSerializable 接口，支持序列化为 JSON
 class Image <: JsonSerializable {
     var width: Int64
     var height: Int64
@@ -31,19 +32,23 @@ class Image <: JsonSerializable {
 }
 
 main() {
+    // 创建 Image 对象并设置属性
     let image = Image()
     image.width = 800
     image.height = 600
     image.title = "View from 15th Floor"
     image.ids = [116, 943, 234, 38793]
 
-    let stream = ByteBuffer()
-    let writer = JsonWriter(stream)
+    // 创建 JsonWriter
+    let buffer = ByteBuffer()
+    let writer = JsonWriter(buffer)
 
-    // 将图片序列化 
+    // 序列化对象为 JSON
     writer.writeValue(image)
     writer.flush()
-    println(String.fromUtf8(readToEnd(stream)))
+
+    // 输出 JSON 字符串
+    println(String.fromUtf8(readToEnd(buffer)))
 }
 ```
 

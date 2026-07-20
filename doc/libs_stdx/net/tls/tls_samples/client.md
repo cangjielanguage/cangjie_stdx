@@ -1,5 +1,7 @@
 # 客户端示例
 
+带证书的详细使用参见 [struct TlsClientConfig](./../tls_package_api/tls_package_structs.md#struct-tlsclientconfig)
+
 示例：
 
 <!-- compile -->
@@ -10,35 +12,41 @@ import stdx.net.tls.*
 import stdx.net.tls.common.*
 
 main() {
-    var config = TlsClientConfig()
-    config.verifyMode = TrustAll
-    config.supportedAlpnProtocols = ["h2"]
+    // 创建 TLS 客户端配置
+    var tlsConfig = TlsClientConfig()
+    tlsConfig.verifyMode = TrustAll
+    // 配置 ALPN 协议，用于应用层协议协商
+    tlsConfig.supportedAlpnProtocols = ["h2"]
 
-    // 用于恢复会话
-    var lastSession: ?TlsClientSession = None
-    // 重新连接环路
+    // 保存会话信息，用于后续连接复用
+    var sessionCache: ?TlsClientSession = None
+
+    // 循环连接服务端
     while (true) {
-        try (socket = TcpSocket("127.0.0.1", 8443)) {
-            // 首先进行 TCP 连接
-            socket.connect()
-            try (tls = TlsSocket.client(socket, clientConfig: config, session: lastSession)) {
+        try (tcpSocket = TcpSocket("127.0.0.1", 8443)) {
+            tcpSocket.connect()
+
+            try (tlsSocket = TlsSocket.client(tcpSocket, clientConfig: tlsConfig, session: sessionCache)) {
                 try {
-                    tls.handshake()
-                    // 如果成功协商下一次重新连接，将记住会话
-                    lastSession = match (tls.handshakeResult) {
-                        case Some(r) => r.session as TlsClientSession
+                    // 执行 TLS 握手
+                    tlsSocket.handshake()
+
+                    // 握手成功后保存会话，下次连接可复用
+                    sessionCache = match (tlsSocket.handshakeResult) {
+                        case Some(result) => result.session as TlsClientSession
                         case None => None
                     }
                 } catch (e: Exception) {
-                    // 如果协商失败，将删除会话
-                    lastSession = None
+                    // 握手失败时清除会话缓存
+                    sessionCache = None
                     throw e
                 }
-                // tls 实例已完成
-                tls.write("Hello, peer! Let's discuss our personal secrets.\n".toArray())
+
+                // 通过 TLS 连接发送数据
+                tlsSocket.write("Hello, peer! Let's discuss our personal secrets.\n".toArray())
             }
         } catch (e: Exception) {
-            println("client connection failed ${e}, retrying...")
+            println("连接失败: ${e}，正在重试...")
         }
     }
 }

@@ -861,7 +861,6 @@ public static func decodeDer(encoded: DerBlob): PrivateKey
 <!-- run -->
 ```cangjie
 import std.fs.*
-import std.io.*
 import std.process.*
 import stdx.crypto.keys.*
 import stdx.crypto.common.*
@@ -879,7 +878,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 从 DerBlob 解码还原私钥
-    let decodedKey = GeneralPrivateKey.decodeDer(DerBlob(readToEnd(File(privateDer, Read))))
+    let decodedKey = GeneralPrivateKey.decodeDer(DerBlob(File.readFrom(privateDer)))
     println("解码成功")
     println("解码后密钥类型: ${decodedKey}")
 
@@ -938,7 +937,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 从加密的 DerBlob 解码还原私钥
-    let decodedKey = GeneralPrivateKey.decodeDer(DerBlob(readToEnd(File(privateDer, Read))), password: password)
+    let decodedKey = GeneralPrivateKey.decodeDer(DerBlob(File.readFrom(privateDer)), password: password)
     println("解码加密DER成功")
     println("解码后密钥类型: ${decodedKey}")
 
@@ -992,7 +991,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 从 PEM 字符串解码还原私钥
-    let pemContent = String.fromUtf8(readToEnd(File(privatePem, Read)))
+    let pemContent = String.fromUtf8(File.readFrom(privatePem))
     let decodedKey = GeneralPrivateKey.decodeFromPem(pemContent)
     println("从PEM解码成功")
     println("解码后密钥类型: ${decodedKey}")
@@ -1048,7 +1047,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 从加密的 PEM 字符串解码还原私钥
-    let pemContent = String.fromUtf8(readToEnd(File(privatePem, Read)))
+    let pemContent = String.fromUtf8(File.readFrom(privatePem))
     let decodedKey = GeneralPrivateKey.decodeFromPem(pemContent, password: password)
     println("从加密PEM解码成功")
     println("解码后密钥类型: ${decodedKey}")
@@ -1101,7 +1100,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 从 DER 文件读取并解码为私钥
-    let originalKey = GeneralPrivateKey.decodeDer(DerBlob(readToEnd(File(privateDer, Read))))
+    let originalKey = GeneralPrivateKey.decodeDer(DerBlob(File.readFrom(privateDer)))
 
     // 将私钥编码为 DER 格式
     let encodedBlob = originalKey.encodeToDer()
@@ -1161,7 +1160,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 从 DER 文件读取并解码为私钥
-    let originalKey = GeneralPrivateKey.decodeDer(DerBlob(readToEnd(File(privateDer, Read))))
+    let originalKey = GeneralPrivateKey.decodeDer(DerBlob(File.readFrom(privateDer)))
 
     // 将私钥加密编码为 DER 格式
     let encodedBlob = originalKey.encodeToDer(password: "mypassword")
@@ -1214,7 +1213,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 从 PEM 文件读取并解码为私钥
-    let pemContent = String.fromUtf8(readToEnd(File(privatePem, Read)))
+    let pemContent = String.fromUtf8(File.readFrom(privatePem))
     let originalKey = GeneralPrivateKey.decodeFromPem(pemContent)
 
     // 将私钥编码为 PEM 格式
@@ -1271,7 +1270,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 从 PEM 文件读取并解码为私钥
-    let pemContent = String.fromUtf8(readToEnd(File(privatePem, Read)))
+    let pemContent = String.fromUtf8(File.readFrom(privatePem))
     let originalKey = GeneralPrivateKey.decodeFromPem(pemContent)
 
     // 将私钥加密编码为 PEM 格式
@@ -1324,7 +1323,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 从 PEM 文件读取并解码为私钥
-    let pemContent = String.fromUtf8(readToEnd(File(privatePem, Read)))
+    let pemContent = String.fromUtf8(File.readFrom(privatePem))
     let key = GeneralPrivateKey.decodeFromPem(pemContent)
 
     // 获取私钥类型描述
@@ -1395,7 +1394,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 从 DerBlob 解码还原公钥
-    let decodedKey = GeneralPublicKey.decodeDer(DerBlob(readToEnd(File(publicDer, Read))))
+    let decodedKey = GeneralPublicKey.decodeDer(DerBlob(File.readFrom(publicDer)))
     println("解码成功")
     println("解码后公钥类型: ${decodedKey}")
 
@@ -1451,7 +1450,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 从 PEM 字符串解码还原公钥
-    let pemContent = String.fromUtf8(readToEnd(File(publicPem, Read)))
+    let pemContent = String.fromUtf8(File.readFrom(publicPem))
     let decodedKey = GeneralPublicKey.decodeFromPem(pemContent)
     println("从PEM解码成功")
     println("解码后公钥类型: ${decodedKey}")
@@ -1504,7 +1503,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 从 PEM 文件读取并解码为公钥
-    let pemContent = String.fromUtf8(readToEnd(File(publicPem, Read)))
+    let pemContent = String.fromUtf8(File.readFrom(publicPem))
     let originalKey = GeneralPublicKey.decodeFromPem(pemContent)
 
     // 将公钥编码为 DER 格式
@@ -1559,7 +1558,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 从 PEM 文件读取并解码为公钥
-    let pemContent = String.fromUtf8(readToEnd(File(publicPem, Read)))
+    let pemContent = String.fromUtf8(File.readFrom(publicPem))
     let originalKey = GeneralPublicKey.decodeFromPem(pemContent)
 
     // 将公钥编码为 PEM 格式
@@ -1614,7 +1613,7 @@ main() {
     executeWithOutput("sh", ["-c", cmdStr])
 
     // 从 PEM 文件读取并解码为公钥
-    let pemContent = String.fromUtf8(readToEnd(File(publicPem, Read)))
+    let pemContent = String.fromUtf8(File.readFrom(publicPem))
     let key = GeneralPublicKey.decodeFromPem(pemContent)
 
     // 获取公钥类型描述

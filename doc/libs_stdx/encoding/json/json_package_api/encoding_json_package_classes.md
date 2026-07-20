@@ -2735,7 +2735,7 @@ JsonValue 是 JsonObject?: true
 解析后的JsonValue: {"name":"张三","age":25,"student":true}
 解析JsonString: "\n"
 解析JsonString: "A"
-异常信息: the json data is Non-standard, please check:
+异常信息: The json data is Non-standard, please check:
 Parse Error: [Line]: 1, [Pos]: 3, [Error]: Unexpected character: 'x'.
 ```
 

@@ -43,7 +43,7 @@ compress.tar 提供了归档和读取功能。
 
 [Tar](./tar_package_api/tar_package_classes.md#class-tar) 的一键解压方法未对解压的条目总数做限制。如果归档文件包含大量条目，可能导致资源耗尽或处理时间过长。
 
-如需对解压条目数量进行限制，建议使用 [TarReader](./tar_package_api/tar_package_classes.md#class-tarreader)，在迭代过程中添加自定义的限制。
+如需对解压条目数量进行限制，建议使用 [TarReader](./tar_package_api/tar_package_classes.md#class-tarreadert)，在迭代过程中添加自定义的限制。
 
 ## API 列表
 
@@ -58,8 +58,8 @@ compress.tar 提供了归档和读取功能。
 | [UstarTarEntry](./tar_package_api/tar_package_classes.md#class-ustartarentry) | 表示 USTAR tar 文件条目。      |
 | [GnuTarEntry](./tar_package_api/tar_package_classes.md#class-gnutarentry) | 表示 GNU tar 文件条目。      |
 | [PaxTarEntry](./tar_package_api/tar_package_classes.md#class-paxtarentry) | 表示 Pax tar 文件条目。      |
-| [TarReader](./tar_package_api/tar_package_classes.md#class-tarreader) | 用于读取 tar 文件的读取器。      |
-| [TarWriter](./tar_package_api/tar_package_classes.md#class-tarwriter) | 用于写入 tar 文件的写入器。      |
+| [TarReader](./tar_package_api/tar_package_classes.md#class-tarreadert) | 用于读取 tar 文件的读取器。      |
+| [TarWriter](./tar_package_api/tar_package_classes.md#class-tarwritert) | 用于写入 tar 文件的写入器。      |
 
 ### 枚举
 

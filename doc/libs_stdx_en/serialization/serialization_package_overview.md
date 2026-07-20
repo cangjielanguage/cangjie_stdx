@@ -20,7 +20,7 @@ User-defined types can support serialization and deserialization by implementing
 
 | Interface Name                                               | Description                  |
 | ------------------------------------------------------------ | ---------------------------- |
-| [Serializable](./serialization_package_api/serialization_package_interfaces.md/#interface-serializable) | Used to standardize serialization. |
+| [Serializable](./serialization_package_api/serialization_package_interfaces.md#interface-serializable) | Used to standardize serialization. |
 
 ### Classes
 

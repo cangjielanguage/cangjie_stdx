@@ -11,7 +11,7 @@ public func field<T>(name: String, data: T): Field where T <: Serializable<T>
 参数：
 
 - name: String - String 类型，`name` 字段为 `""` 时行为与为其它字符串时一致。
-- data: T - `T` 类型，`T` 类型必须实现 [Serializable](serialization_package_interfaces.md#interface-serializable)\<T> 接口。
+- data: T - `T` 类型，`T` 类型必须实现 [Serializable](serialization_package_interfaces.md#interface-serializablet)\<T> 接口。
 
 返回值：
 

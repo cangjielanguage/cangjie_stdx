@@ -14,12 +14,21 @@ import std.crypto.digest.*
 import stdx.encoding.hex.*
 
 main() {
-    var str: String = "helloworld"
-    var md5Instance = MD5()
-    md5Instance.write(str.toArray())
-    var md: Array<Byte> = md5Instance.finish()
-    var result: String = toHexString(md)
-    println(result)
+    // 准备待哈希的数据
+    let message = "helloworld"
+
+    // 创建 MD5 实例
+    let md5 = MD5()
+
+    // 写入数据
+    md5.write(message.toArray())
+
+    // 计算哈希值
+    let hash = md5.finish()
+
+    // 转换为十六进制字符串输出
+    let result = toHexString(hash)
+    println("MD5 哈希值: ${result}")
     return 0
 }
 ```
@@ -27,7 +36,7 @@ main() {
 运行结果：
 
 ```text
-fc5e038d38a57032085441e7fe7010b0
+MD5 哈希值: fc5e038d38a57032085441e7fe7010b0
 ```
 
 ## SHA1 算法示例
@@ -44,12 +53,12 @@ import std.crypto.digest.*
 import stdx.encoding.hex.*
 
 main() {
-    var str: String = "helloworld"
-    var sha1Instance = SHA1()
-    sha1Instance.write(str.toArray())
-    var md: Array<Byte> = sha1Instance.finish()
-    var result: String = toHexString(md)
-    println(result)
+    // SHA1 哈希计算示例
+    let message = "helloworld"
+    let sha1 = SHA1()
+    sha1.write(message.toArray())
+    let hash = sha1.finish()
+    println("SHA1 哈希值: ${toHexString(hash)}")
     return 0
 }
 ```
@@ -57,7 +66,7 @@ main() {
 运行结果：
 
 ```text
-6adfb183a4a2c94a2f92dab5ade762a47889a5a1
+SHA1 哈希值: 6adfb183a4a2c94a2f92dab5ade762a47889a5a1
 ```
 
 ## SHA224 算法示例
@@ -74,12 +83,12 @@ import std.crypto.digest.*
 import stdx.encoding.hex.*
 
 main() {
-    var str: String = "helloworld"
-    var sha224Instance = SHA224()
-    sha224Instance.write(str.toArray())
-    var md: Array<Byte> = sha224Instance.finish()
-    var result: String = toHexString(md)
-    println(result)
+    // SHA224 哈希计算示例
+    let message = "helloworld"
+    let sha224 = SHA224()
+    sha224.write(message.toArray())
+    let hash = sha224.finish()
+    println("SHA224 哈希值: ${toHexString(hash)}")
     return 0
 }
 ```
@@ -87,7 +96,7 @@ main() {
 运行结果：
 
 ```text
-b033d770602994efa135c5248af300d81567ad5b59cec4bccbf15bcc
+SHA224 哈希值: b033d770602994efa135c5248af300d81567ad5b59cec4bccbf15bcc
 ```
 
 ## SHA256 算法示例
@@ -104,12 +113,12 @@ import std.crypto.digest.*
 import stdx.encoding.hex.*
 
 main() {
-    var str: String = "helloworld"
-    var sha256Instance = SHA256()
-    sha256Instance.write(str.toArray())
-    var md: Array<Byte> = sha256Instance.finish()
-    var result: String = toHexString(md)
-    println(result)
+    // SHA256 哈希计算示例
+    let message = "helloworld"
+    let sha256 = SHA256()
+    sha256.write(message.toArray())
+    let hash = sha256.finish()
+    println("SHA256 哈希值: ${toHexString(hash)}")
     return 0
 }
 ```
@@ -117,7 +126,7 @@ main() {
 运行结果：
 
 ```text
-936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af
+SHA256 哈希值: 936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af
 ```
 
 ## SHA384 算法示例
@@ -134,12 +143,12 @@ import std.crypto.digest.*
 import stdx.encoding.hex.*
 
 main() {
-    var str: String = "helloworld"
-    var sha384Instance = SHA384()
-    sha384Instance.write(str.toArray())
-    var md: Array<Byte> = sha384Instance.finish()
-    var result: String = toHexString(md)
-    println(result)
+    // SHA384 哈希计算示例
+    let message = "helloworld"
+    let sha384 = SHA384()
+    sha384.write(message.toArray())
+    let hash = sha384.finish()
+    println("SHA384 哈希值: ${toHexString(hash)}")
     return 0
 }
 ```
@@ -147,7 +156,7 @@ main() {
 运行结果：
 
 ```text
-97982a5b1414b9078103a1c008c4e3526c27b41cdbcf80790560a40f2a9bf2ed4427ab1428789915ed4b3dc07c454bd9
+SHA384 哈希值: 97982a5b1414b9078103a1c008c4e3526c27b41cdbcf80790560a40f2a9bf2ed4427ab1428789915ed4b3dc07c454bd9
 ```
 
 ## SHA512 算法示例
@@ -164,12 +173,12 @@ import std.crypto.digest.*
 import stdx.encoding.hex.*
 
 main() {
-    var str: String = "helloworld"
-    var sha512Instance = SHA512()
-    sha512Instance.write(str.toArray())
-    var md: Array<Byte> = sha512Instance.finish()
-    var result: String = toHexString(md)
-    println(result)
+    // SHA512 哈希计算示例
+    let message = "helloworld"
+    let sha512 = SHA512()
+    sha512.write(message.toArray())
+    let hash = sha512.finish()
+    println("SHA512 哈希值: ${toHexString(hash)}")
     return 0
 }
 ```
@@ -177,7 +186,7 @@ main() {
 运行结果：
 
 ```text
-1594244d52f2d8c12b142bb61f47bc2eaf503d6d9ca8480cae9fcf112f66e4967dc5e8fa98285e36db8af1b8ffa8b84cb15e0fbcf836c3deb803c13f37659a60
+SHA512 哈希值: 1594244d52f2d8c12b142bb61f47bc2eaf503d6d9ca8480cae9fcf112f66e4967dc5e8fa98285e36db8af1b8ffa8b84cb15e0fbcf836c3deb803c13f37659a60
 ```
 
 ## HMAC 算法示例
@@ -196,26 +205,30 @@ import stdx.crypto.digest.*
 import stdx.encoding.hex.*
 
 main() {
-    var algorithm: HashType = HashType.SHA512
-    var key: Array<UInt8> = "cangjie".toArray()
-    var data1: Array<UInt8> = "123".toArray()
-    var data2: Array<UInt8> = "456".toArray()
-    var data3: Array<UInt8> = "789".toArray()
-    var data4: Array<UInt8> = "123456789".toArray()
-    var hmac = HMAC(key, algorithm)
-    hmac.write(data1)
-    hmac.write(data2)
-    hmac.write(data3)
-    var md1: Array<Byte> = hmac.finish()
-    var result1: String = toHexString(md1)
-    println(result1)
+    // 准备密钥和数据
+    let key = "cangjie".toArray()
+    let algorithm = HashType.SHA512
 
+    // 创建 HMAC 实例
+    let hmac = HMAC(key, algorithm)
+
+    // 分块写入数据
+    hmac.write("123".toArray())
+    hmac.write("456".toArray())
+    hmac.write("789".toArray())
+
+    // 计算第一个哈希值
+    let hash1 = hmac.finish()
+    println("HMAC 哈希值1: ${toHexString(hash1)}")
+
+    // 重置并重新计算（验证分块和一次性写入结果相同）
     hmac.reset()
-    hmac.write(data4)
-    var md2: Array<Byte> = hmac.finish()
-    var result2: String = toHexString(md2)
-    println(result2)
-    println(HMAC.equal(md1, md2))
+    hmac.write("123456789".toArray())
+    let hash2 = hmac.finish()
+    println("HMAC 哈希值2: ${toHexString(hash2)}")
+
+    // 验证两次结果是否一致
+    println("两次哈希值是否一致: ${HMAC.equal(hash1, hash2)}")
     return 0
 }
 ```
@@ -223,9 +236,9 @@ main() {
 运行结果：
 
 ```text
-2bafeb53b60a119d38793a886c7744f5027d7eaa3702351e75e4ff9bf255e3ce296bf41f80adda2861e81bd8efc52219df821852d84a17fb625e3965ebf2fdd9
-2bafeb53b60a119d38793a886c7744f5027d7eaa3702351e75e4ff9bf255e3ce296bf41f80adda2861e81bd8efc52219df821852d84a17fb625e3965ebf2fdd9
-true
+HMAC 哈希值1: 2bafeb53b60a119d38793a886c7744f5027d7eaa3702351e75e4ff9bf255e3ce296bf41f80adda2861e81bd8efc52219df821852d84a17fb625e3965ebf2fdd9
+HMAC 哈希值2: 2bafeb53b60a119d38793a886c7744f5027d7eaa3702351e75e4ff9bf255e3ce296bf41f80adda2861e81bd8efc52219df821852d84a17fb625e3965ebf2fdd9
+两次哈希值是否一致: true
 ```
 
 ## SM3 算法示例
@@ -242,12 +255,12 @@ import std.crypto.digest.*
 import stdx.encoding.hex.*
 
 main() {
-    var str: String = "helloworld"
-    var sm3Instance = SM3()
-    sm3Instance.write(str.toArray())
-    var md: Array<Byte> = sm3Instance.finish()
-    var result: String = toHexString(md)
-    println(result)
+    // SM3 哈希计算示例
+    let message = "helloworld"
+    let sm3 = SM3()
+    sm3.write(message.toArray())
+    let hash = sm3.finish()
+    println("SM3 哈希值: ${toHexString(hash)}")
     return 0
 }
 ```
@@ -255,5 +268,5 @@ main() {
 运行结果：
 
 ```text
-c70c5f73da4e8b8b73478af54241469566f6497e16c053a03a0170fa00078283
+SM3 哈希值: c70c5f73da4e8b8b73478af54241469566f6497e16c053a03a0170fa00078283
 ```

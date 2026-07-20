@@ -533,20 +533,63 @@ public prop opaque: String
 ```cangjie
 import stdx.encoding.url.*
 
-main() {
-    let url = URL.parse("https:\\\\/example.com/foo/bar") // '\' 不是协议规定的分割符，无法被解析。
-    println("url.scheme=${url.scheme}")
-    println("url.host=${url.host}")
-    println("url.opaque=${url.opaque}")
+main(): Int64 {
+    // 演示 opaque 属性（非层级 URL）
+    // 这种 URL 格式为：scheme:opaque?query#fragment
+    let mailtoUrl = URL.parse("mailto:test@example.com")
+    println("=== 非层级 URL (带 opaque) ===")
+    println("完整 URL: ${mailtoUrl}")
+    println("scheme: ${mailtoUrl.scheme}")
+    println("opaque: ${mailtoUrl.opaque}")
+    println("host: ${mailtoUrl.host}")
+    println("path: ${mailtoUrl.path}")
+
+    println()
+
+    // 对比层级 URL（没有 opaque）
+    // 这种 URL 格式为：scheme://host/path?query#fragment
+    let httpUrl = URL.parse("http://www.example.com/path?key=value")
+    println("=== 层级 URL (无 opaque) ===")
+    println("完整 URL: ${httpUrl}")
+    println("scheme: ${httpUrl.scheme}")
+    println("opaque: ${httpUrl.opaque}")
+    println("host: ${httpUrl.host}")
+    println("path: ${httpUrl.path}")
+
+    println()
+
+    // 其他常见的非层级 URL
+    let telUrl = URL.parse("tel:+86-123-4567-8901")
+    println("=== 电话号码 URL ===")
+    println("完整 URL: ${telUrl}")
+    println("scheme: ${telUrl.scheme}")
+    println("opaque: ${telUrl.opaque}")
+
+    return 0
 }
 ```
 
 运行结果：
 
 ```text
-url.scheme=https
-url.host=
-url.opaque=\\/example.com/foo/bar
+=== 非层级 URL (带 opaque) ===
+完整 URL: mailto:test@example.com
+scheme: mailto
+opaque: test@example.com
+host: 
+path: 
+
+=== 层级 URL (无 opaque) ===
+完整 URL: http://www.example.com/path?key=value
+scheme: http
+opaque: 
+host: www.example.com
+path: /path
+
+=== 电话号码 URL ===
+完整 URL: tel:+86-123-4567-8901
+scheme: tel
+opaque: +86-123-4567-8901
 ```
 
 ### prop path
@@ -781,7 +824,7 @@ import stdx.encoding.url.*
 
 main() {
     // 解析URL
-    let url = URL.parse("https://admin%40company:password123@example.com:8080/path?k=v#fragment")
+    let url = URL.parse("https://admincompany:password123@example.com:8080/path?k=v#fragment")
 
     println("URL rawUserInfo: ${url.rawUserInfo}")
 }
@@ -790,7 +833,7 @@ main() {
 运行结果：
 
 ```text
-URL rawUserInfo: admin%40company:password123
+URL rawUserInfo: admincompany:password123
 ```
 
 ### prop scheme

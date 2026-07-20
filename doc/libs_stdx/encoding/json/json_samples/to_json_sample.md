@@ -9,6 +9,7 @@
 import stdx.serialization.serialization.*
 import stdx.encoding.json.*
 
+// 定义 Person 类，实现 Serializable 接口
 class Person <: Serializable<Person> {
     var name: String = ""
     var age: Int64 = 0
@@ -22,11 +23,11 @@ class Person <: Serializable<Person> {
     }
 
     public static func deserialize(dm: DataModel): Person {
-        var dms = match (dm) {
+        let dms = match (dm) {
             case data: DataModelStruct => data
             case _ => throw Exception("this data is not DataModelStruct")
         }
-        var result = Person()
+        let result = Person()
         result.name = String.deserialize(dms.get("name"))
         result.age = Int64.deserialize(dms.get("age"))
         result.loc = Option<Location>.deserialize(dms.get("loc"))
@@ -34,6 +35,7 @@ class Person <: Serializable<Person> {
     }
 }
 
+// 定义 Location 类，实现 Serializable 接口
 class Location <: Serializable<Location> {
     var country: String = ""
     var province: String = ""
@@ -43,11 +45,11 @@ class Location <: Serializable<Location> {
     }
 
     public static func deserialize(dm: DataModel): Location {
-        var dms = match (dm) {
+        let dms = match (dm) {
             case data: DataModelStruct => data
             case _ => throw Exception("this data is not DataModelStruct")
         }
-        var result = Location()
+        let result = Location()
         result.country = String.deserialize(dms.get("country"))
         result.province = String.deserialize(dms.get("province"))
         return result
@@ -55,7 +57,8 @@ class Location <: Serializable<Location> {
 }
 
 main() {
-    var js = ##"{
+    // 准备 JSON 字符串
+    let jsonString = ##"{
     "name": "A",
     "age": 30,
     "loc": {
@@ -64,31 +67,35 @@ main() {
     }
 }"##
 
-    // 实现从 JSON 字符串到自定义类型的转换
-    var jv = JsonValue.fromStr(js)
-    var dm = DataModel.fromJson(jv)
-    var A = Person.deserialize(dm)
-    println("name == ${A.name}")
-    println("age == ${A.age}")
-    println("country == ${A.loc.getOrThrow().country}")
-    println("province == ${A.loc.getOrThrow().province}")
-    println("====================")
+    // 从 JSON 字符串转换为自定义类型（反序列化）
+    let jsonValue = JsonValue.fromStr(jsonString)
+    let dataModel = DataModel.fromJson(jsonValue)
+    let person = Person.deserialize(dataModel)
 
-    // 实现从自定义类型到 JSON 字符串的转换
-    dm = A.serialize()
-    var jo = dm.toJson().asObject()
-    println(jo.toJsonString())
+    println("反序列化结果:")
+    println("姓名: ${person.name}")
+    println("年龄: ${person.age}")
+    println("国家: ${person.loc.getOrThrow().country}")
+    println("省份: ${person.loc.getOrThrow().province}")
+
+    // 从自定义类型转换为 JSON 字符串（序列化）
+    println("\n序列化结果:")
+    let serializedDataModel = person.serialize()
+    let jsonObject = serializedDataModel.toJson().asObject()
+    println(jsonObject.toJsonString())
 }
 ```
 
 运行结果：
 
 ```text
-name == A
-age == 30
-country == China
-province == Beijing
-====================
+反序列化结果:
+姓名: A
+年龄: 30
+国家: China
+省份: Beijing
+
+序列化结果:
 {
   "name": "A",
   "age": 30,
