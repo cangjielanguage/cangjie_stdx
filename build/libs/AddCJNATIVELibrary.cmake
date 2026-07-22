@@ -7,6 +7,7 @@
 
 include(AddAndCombineStaticLib)
 include(ExtractArchive)
+include(MakeHostCJNATIVESharedLib)
 
 set(BACKEND_TYPE CJNATIVE)
 
@@ -665,7 +666,6 @@ endif()
 add_cangjie_library(
     cangjie${BACKEND_TYPE}Stdx
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     OUTPUT_NAME "cangjieStdx"
@@ -686,7 +686,6 @@ if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CANGJIE_BUILD_WITHOUT_CHIR)
     add_cangjie_library(
         cangjie${BACKEND_TYPE}Chir
         NO_SUB_PKG
-        IS_STDXLIB
         IS_CJNATIVE_BACKEND
         PACKAGE_NAME "chir"
         MODULE_NAME "stdx"
@@ -710,14 +709,14 @@ if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CANGJIE_BUILD_WITHOUT_CHIR)
     install(TARGETS stdx.chir DESTINATION ${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx)
 endif()
 
-# plugin / CHIR compiler plugins are host tools (cjc --plugin). Do not build them when
-# cross-compiling target libs: host cjc cannot link target-arch libstdx.plugin.manager.so.
-if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CMAKE_CROSSCOMPILING AND NOT CANGJIE_BUILD_WITHOUT_CHIR
+# plugin / CHIR compiler plugins (also built for cross-compiled target packages).
+# Macro packaging follows actors.macros: add_cangjie_library + make_cangjie_lib(IS_MACRO)
+# so the shipped lib-macro_stdx.plugin.* is a real target-platform shared library.
+if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CANGJIE_BUILD_WITHOUT_CHIR
     AND NOT CANGJIE_BUILD_WITHOUT_PLUGIN)
     add_cangjie_library(
         cangjie${BACKEND_TYPE}PluginManager
         NO_SUB_PKG
-        IS_STDXLIB
         IS_PACKAGE
         IS_CJNATIVE_BACKEND
         PACKAGE_NAME "plugin.manager"
@@ -733,29 +732,68 @@ if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CMAKE_CROSSCOMPILING AND NOT CANGJIE_BUIL
         CANGJIE_STD_LIB_LINK std-core std-collection
         OBJECTS ${output_cj_object_dir}/stdx/plugin.manager.o)
 
+    add_cangjie_library(
+        cangjie${BACKEND_TYPE}PluginMacro
+        IS_PACKAGE
+        IS_CJNATIVE_BACKEND
+        PACKAGE_NAME "plugin"
+        MODULE_NAME "stdx"
+        SOURCES ${PLUGIN_SRCS}
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/plugin
+        DEPENDS ${PLUGIN_MACRO_DEPENDENCIES})
+
     if(NOT CMAKE_BUILD_STAGE STREQUAL "postBuild")
-        if(DARWIN)
-            set(_plugin_manager_link -lstdx.plugin.manager)
+        make_cangjie_lib(
+            plugin IS_SHARED IS_MACRO
+            DEPENDS cangjie${BACKEND_TYPE}PluginMacro plugin.manager
+            CANGJIE_STDX_LIB_DEPENDS plugin.manager
+            CANGJIE_STD_LIB_LINK std-core std-ast std-collection std-convert
+            OBJECTS ${output_cj_object_dir}/stdx/plugin.o)
+
+        # Compile-time macro for host cjc must live under modules/ next to stdx.plugin.cjo.
+        # Native: same arch as shipped lib-macro — stage by copy (no second --compile-macro).
+        # Cross: host cjc cannot load target DLL — build host-arch deps + --compile-macro.
+        if(CMAKE_CROSSCOMPILING)
+            make_host_cangjie_shared_lib(
+                chir
+                SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/chir
+                STD_LINK std-core std-collection std-fs
+                DEPENDS cangjie${BACKEND_TYPE}Chir)
+            make_host_cangjie_shared_lib(
+                plugin.manager
+                SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/plugin/manager
+                STDX_DEP chir
+                STD_LINK std-core std-collection
+                DEPENDS cangjie${BACKEND_TYPE}PluginManager host_stdx_chir)
+            add_cangjie_macro_library_in_local(
+                cangjie${BACKEND_TYPE}PluginMacroHost
+                PACKAGE_NAME "plugin"
+                MODULE_NAME "stdx"
+                SOURCES ${PLUGIN_SRCS}
+                SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/plugin
+                DEPENDS cangjie${BACKEND_TYPE}PluginManager host_stdx_plugin_manager
+                LINK_LIBS -lstdx.plugin.manager)
         else()
-            set(_plugin_manager_link -l:libstdx.plugin.manager${CMAKE_SHARED_LIBRARY_SUFFIX})
+            set(_plugin_macro_lib
+                "${CMAKE_BINARY_DIR}/lib/${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/lib-macro_stdx.plugin${CMAKE_SHARED_LIBRARY_SUFFIX}")
+            set(_plugin_macro_modules
+                "${output_cj_object_dir}/stdx/lib-macro_stdx.plugin${CMAKE_SHARED_LIBRARY_SUFFIX}")
+            add_custom_command(
+                OUTPUT ${_plugin_macro_modules}
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    ${_plugin_macro_lib} ${_plugin_macro_modules}
+                DEPENDS ${_plugin_macro_lib} plugin
+                COMMENT "Staging lib-macro_stdx.plugin into modules/ for compile-time use")
+            add_custom_target(
+                cangjie${BACKEND_TYPE}PluginMacroHost ALL
+                DEPENDS ${_plugin_macro_modules})
         endif()
-        add_cangjie_macro_library_in_local(
-            cangjie${BACKEND_TYPE}PluginMacro
-            NO_SUB_PKG
-            INSTALL
-            PACKAGE_NAME "plugin"
-            MODULE_NAME "stdx"
-            SOURCES ${PLUGIN_SRCS}
-            SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/plugin
-            DEPENDS cangjie${BACKEND_TYPE}PluginManager plugin.manager
-            LINK_LIBS ${_plugin_manager_link})
     endif()
 endif()
 
 add_cangjie_library(
     cangjie${BACKEND_TYPE}Encoding
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     OUTPUT_NAME "cangjieEncoding"
@@ -767,7 +805,6 @@ add_cangjie_library(
 add_cangjie_library(
     cangjie${BACKEND_TYPE}Base64
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     OUTPUT_NAME "cangjieBase64"
@@ -780,7 +817,6 @@ add_cangjie_library(
 add_cangjie_library(
     cangjie${BACKEND_TYPE}Log
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "log"
@@ -792,7 +828,6 @@ add_cangjie_library(
 add_cangjie_library(
     cangjie${BACKEND_TYPE}Logger
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "logger"
@@ -805,7 +840,6 @@ if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CANGJIE_BUILD_WITHOUT_CHIR AND NOT CANGJI
     add_cangjie_library(
         cangjie${BACKEND_TYPE}AspectCj
         NO_SUB_PKG
-        IS_STDXLIB
         IS_PACKAGE
         IS_CJNATIVE_BACKEND
         PACKAGE_NAME "aspect_cj"
@@ -825,26 +859,22 @@ if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CANGJIE_BUILD_WITHOUT_CHIR AND NOT CANGJI
     set_target_properties(stdx.aspect_cj PROPERTIES LINKER_LANGUAGE C)
     install(TARGETS stdx.aspect_cj DESTINATION ${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx)
 
-    if(NOT CMAKE_BUILD_STAGE STREQUAL "postBuild" AND NOT CMAKE_CROSSCOMPILING
-        AND NOT CANGJIE_BUILD_WITHOUT_PLUGIN)
-        if(DARWIN)
-            set(_plugin_macro_compile_link -l-macro_stdx.plugin)
-        else()
-            set(_plugin_macro_compile_link -l:lib-macro_stdx.plugin${CMAKE_SHARED_LIBRARY_SUFFIX})
-        endif()
+    if(NOT CMAKE_BUILD_STAGE STREQUAL "postBuild" AND NOT CANGJIE_BUILD_WITHOUT_PLUGIN)
+        # Host cjc loads macros from modules/; PluginMacroHost stages that .so
+        # (native: copy from lib/; cross: --compile-macro).
+        list(APPEND ASPECT_CJ_PLUGINS_DEPENDENCIES cangjie${BACKEND_TYPE}PluginMacroHost)
 
         add_cangjie_library(
             cangjie${BACKEND_TYPE}CollectAspects
             NO_SUB_PKG
-            IS_STDXLIB
             IS_PACKAGE
             IS_CJNATIVE_BACKEND
             PACKAGE_NAME "aspect_cj.plugins.collect_aspects"
             MODULE_NAME "stdx"
             SOURCES ${COLLECT_ASPECTS_SRCS}
             SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/aspect_cj/plugins/collect_aspects
-            DEPENDS ${COLLECT_ASPECTS_DEPENDENCIES}
-            COMPILE_LINK_LIBS ${_plugin_macro_compile_link})
+            DEPENDS ${ASPECT_CJ_PLUGINS_DEPENDENCIES}
+            LINK_MACRO_LIBS -l-macro_stdx.plugin)
 
         make_cangjie_lib(
             collect_aspects IS_SHARED
@@ -856,15 +886,14 @@ if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CANGJIE_BUILD_WITHOUT_CHIR AND NOT CANGJI
         add_cangjie_library(
             cangjie${BACKEND_TYPE}WeaveAspects
             NO_SUB_PKG
-            IS_STDXLIB
             IS_PACKAGE
             IS_CJNATIVE_BACKEND
             PACKAGE_NAME "aspect_cj.plugins.weave_aspects"
             MODULE_NAME "stdx"
             SOURCES ${WEAVE_ASPECTS_SRCS}
             SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/aspect_cj/plugins/weave_aspects
-            DEPENDS ${WEAVE_ASPECTS_DEPENDENCIES}
-            COMPILE_LINK_LIBS ${_plugin_macro_compile_link})
+            DEPENDS ${ASPECT_CJ_PLUGINS_DEPENDENCIES}
+            LINK_MACRO_LIBS -l-macro_stdx.plugin)
 
         make_cangjie_lib(
             weave_aspects IS_SHARED
@@ -878,7 +907,6 @@ endif()
 add_cangjie_library(
     cangjie${BACKEND_TYPE}StdxSerialization
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "serialization"
@@ -889,7 +917,6 @@ add_cangjie_library(
 add_cangjie_library(
     cangjie${BACKEND_TYPE}Serialization
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "serialization.serialization"
@@ -899,7 +926,6 @@ add_cangjie_library(
 
 add_cangjie_library(
     cangjie${BACKEND_TYPE}Json
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "encoding.json"
@@ -911,7 +937,6 @@ add_cangjie_library(
 add_cangjie_library(
     cangjie${BACKEND_TYPE}JsonStream
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     OUTPUT_NAME "cangjieJson"
@@ -930,7 +955,7 @@ if(NOT WIN32)
     add_cangjie_library(
         cangjie${BACKEND_TYPE}Fuzz
         NO_SUB_PKG
-        IS_STDXLIB IS_PACKAGE
+        IS_PACKAGE
         IS_CJNATIVE_BACKEND
         PACKAGE_NAME "fuzz"
         MODULE_NAME "stdx"
@@ -942,7 +967,6 @@ endif()
 add_cangjie_library(
     cangjie${BACKEND_TYPE}StdxCrypto
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "crypto"
@@ -954,7 +978,6 @@ add_cangjie_library(
 add_cangjie_library(
     cangjie${BACKEND_TYPE}Digest
     NO_SUB_PKG
-    IS_STDXLIB
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "crypto.digest"
     MODULE_NAME "stdx"
@@ -965,7 +988,6 @@ add_cangjie_library(
 add_cangjie_library(
     cangjie${BACKEND_TYPE}Keys
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "crypto.keys"
@@ -977,7 +999,6 @@ add_cangjie_library(
 add_cangjie_library(
     cangjie${BACKEND_TYPE}X509
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "crypto.x509"
@@ -989,7 +1010,6 @@ add_cangjie_library(
 add_cangjie_library(
     cangjie${BACKEND_TYPE}Crypto
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "crypto.crypto"
@@ -1001,7 +1021,6 @@ add_cangjie_library(
 add_cangjie_library(
     cangjie${BACKEND_TYPE}CryptoCommon
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "crypto.common"
@@ -1012,7 +1031,6 @@ add_cangjie_library(
 add_cangjie_library(
     cangjie${BACKEND_TYPE}CryptoKit
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "crypto.kit"
@@ -1023,7 +1041,6 @@ add_cangjie_library(
 add_cangjie_library(
     cangjie${BACKEND_TYPE}ZLIB
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "compress.zlib"
@@ -1035,7 +1052,6 @@ add_cangjie_library(
 add_cangjie_library(
     cangjie${BACKEND_TYPE}Tar
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "compress.tar"
@@ -1047,7 +1063,6 @@ add_cangjie_library(
 add_cangjie_library(
     cangjie${BACKEND_TYPE}StdxCompress
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     OUTPUT_NAME "cangjieCompress"
@@ -1060,7 +1075,6 @@ add_cangjie_library(
 add_cangjie_library(
     cangjie${BACKEND_TYPE}Url
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "encoding.url"
@@ -1070,7 +1084,6 @@ add_cangjie_library(
 
 add_cangjie_library(
     cangjie${BACKEND_TYPE}StdxUnittest
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "unittest"
@@ -1081,7 +1094,6 @@ add_cangjie_library(
 add_cangjie_library(
     cangjie${BACKEND_TYPE}UnittestData
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "unittest.data"
@@ -1093,7 +1105,6 @@ add_cangjie_library(
 add_cangjie_library(
     cangjie${BACKEND_TYPE}StdxNet
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "net"
@@ -1104,7 +1115,6 @@ add_cangjie_library(
 add_cangjie_library(
     cangjie${BACKEND_TYPE}StringIntern
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "string_intern"
@@ -1114,7 +1124,6 @@ add_cangjie_library(
 
 add_cangjie_library(
     cangjie${BACKEND_TYPE}Tls
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "net.tls"
@@ -1125,7 +1134,6 @@ add_cangjie_library(
 add_cangjie_library(
     cangjie${BACKEND_TYPE}TlsCommon
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "net.tls.common"
@@ -1134,7 +1142,8 @@ add_cangjie_library(
     DEPENDS ${NET_TLS_COMMON_DEPENDENCIES})
 
 add_cangjie_library(
-    cangjie${BACKEND_TYPE}Http IS_STDXLIB IS_CJNATIVE_BACKEND
+    cangjie${BACKEND_TYPE}Http
+    IS_CJNATIVE_BACKEND
     NO_SUB_PKG
     PACKAGE_NAME "net.http"
     MODULE_NAME "stdx"
@@ -1145,7 +1154,6 @@ add_cangjie_library(
 if(NOT CANGJIE_BUILD_WITHOUT_EFFECT_HANDLERS)
 add_cangjie_library(
     cangjie${BACKEND_TYPE}Effect
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "effect"
@@ -1158,7 +1166,6 @@ endif()
 add_cangjie_library(
     cangjie${BACKEND_TYPE}Hex
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "encoding.hex"
@@ -1168,7 +1175,6 @@ add_cangjie_library(
 
 add_cangjie_library(
     cangjie${BACKEND_TYPE}Actors
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "actors"
@@ -1179,7 +1185,6 @@ add_cangjie_library(
 add_cangjie_library(
     cangjie${BACKEND_TYPE}ActorsMacros
     NO_SUB_PKG
-    IS_STDXLIB
     IS_PACKAGE
     IS_CJNATIVE_BACKEND
     PACKAGE_NAME "actors.macros"
@@ -1218,7 +1223,6 @@ if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CANGJIE_BUILD_WITHOUT_SYNTAX)
     add_cangjie_library(
         cangjie${BACKEND_TYPE}Syntax
         NO_SUB_PKG
-        IS_STDXLIB
         IS_PACKAGE
         IS_CJNATIVE_BACKEND
         PACKAGE_NAME "syntax"

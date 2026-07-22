@@ -32,16 +32,13 @@ if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CANGJIE_BUILD_WITHOUT_SYNTAX AND NOT TRIP
     add_subdirectory(syntax)
 endif()
 
-if(CANGJIE_CODEGEN_CJNATIVE_BACKEND AND "$ENV{NO_ASPECT_CJ}" STREQUAL "" AND NOT CANGJIE_CJPM_BUILD_TYPE)
-    if(CMAKE_CROSSCOMPILING AND "$ENV{CANGJIE_LSP_PATH}" STREQUAL "")
-        # Nothing to do
-    elseif(NOT CANGJIE_BUILD_WITHOUT_CHIR)
-        if(NOT CANGJIE_BUILD_WITHOUT_PLUGIN)
-            add_subdirectory(plugin)
-        endif()
-        if(NOT CANGJIE_BUILD_WITHOUT_ASPECT_CJ)
-            add_subdirectory(aspect_cj)
-        endif()
+if(CANGJIE_CODEGEN_CJNATIVE_BACKEND AND "$ENV{NO_ASPECT_CJ}" STREQUAL "" AND NOT CANGJIE_CJPM_BUILD_TYPE
+    AND NOT CANGJIE_BUILD_WITHOUT_CHIR)
+    if(NOT CANGJIE_BUILD_WITHOUT_PLUGIN)
+        add_subdirectory(plugin)
+    endif()
+    if(NOT CANGJIE_BUILD_WITHOUT_ASPECT_CJ)
+        add_subdirectory(aspect_cj)
     endif()
 endif()
 

@@ -72,17 +72,12 @@ set(COMPRESS_DEPENDENCIES
 
 set(ASPECT_CJ_DEPENDENCIES cangjie${BACKEND_TYPE}Chir)
 
-set(COLLECT_ASPECTS_DEPENDENCIES
+set(ASPECT_CJ_PLUGINS_DEPENDENCIES
     cangjie${BACKEND_TYPE}Chir
     cangjie${BACKEND_TYPE}AspectCj
     cangjie${BACKEND_TYPE}PluginMacro
-    cangjie${BACKEND_TYPE}PluginManager)
-
-set(WEAVE_ASPECTS_DEPENDENCIES
-    cangjie${BACKEND_TYPE}Chir
-    cangjie${BACKEND_TYPE}AspectCj
-    cangjie${BACKEND_TYPE}PluginMacro
-    cangjie${BACKEND_TYPE}PluginManager)
+    cangjie${BACKEND_TYPE}PluginManager
+    plugin)
 
 set(PLUGIN_MACRO_DEPENDENCIES cangjie${BACKEND_TYPE}PluginManager)
 
