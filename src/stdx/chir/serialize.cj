@@ -9,6 +9,7 @@
 package stdx.chir
 
 import std.collection.{HashMap, ArrayList}
+import flatbuffers.*
 
 let fbBuilder = Builder(0)
 
@@ -34,11 +35,11 @@ public func serializePackage(pkg: Package): (CPointer<UInt8>, Int64) {
     return serializer.convertToMemoryData()
 }
 
-private func serializePackageAccessLevel(accessLevel: AccessLevel): PackageFormat_PackageAccessLevel {
+private func serializePackageAccessLevel(accessLevel: AccessLevel): CHIRFormat_PackageAccessLevel {
     return match (accessLevel) {
-        case AccessLevel.Internal => PackageFormat_PackageAccessLevel.PackageAccessLevel_INTERNAL
-        case AccessLevel.Protected => PackageFormat_PackageAccessLevel.PackageAccessLevel_PROTECTED
-        case AccessLevel.Public => PackageFormat_PackageAccessLevel.PackageAccessLevel_PUBLIC
+        case AccessLevel.Internal => CHIRFormat_PackageAccessLevel.PackageAccessLevel_INTERNAL
+        case AccessLevel.Protected => CHIRFormat_PackageAccessLevel.PackageAccessLevel_PROTECTED
+        case AccessLevel.Public => CHIRFormat_PackageAccessLevel.PackageAccessLevel_PUBLIC
     }
 }
 
@@ -172,15 +173,15 @@ class CHIRSerializerImpl {
         }
     }
 
-    // ----- Helper serializers (PackageFormat tables) -----
+    // ----- Helper serializers (CHIRFormat tables) -----
 
     private func serializeDebugLocation(loc: DebugLocation): UInt32 {
         let filePath = fbBuilder.createString(loc.filePath.toString())
-        let beginPos = PackageFormat_Pos.createPos(fbBuilder, UInt32(loc.start.line), UInt32(loc.start.column))
-        let endPos = PackageFormat_Pos.createPos(fbBuilder, UInt32(loc.end.line), UInt32(loc.end.column))
+        let beginPos = CHIRFormat_Pos.createPos(fbBuilder, UInt32(loc.start.line), UInt32(loc.start.column))
+        let endPos = CHIRFormat_Pos.createPos(fbBuilder, UInt32(loc.end.line), UInt32(loc.end.column))
         let scopeArray = Array<Int32>(loc._scopeInfo.size, { i => Int32(loc._scopeInfo[i]) })
         let scopeVec = fbBuilder.createInt32Vector(scopeArray)
-        return PackageFormat_DebugLocation.createDebugLocation(
+        return CHIRFormat_DebugLocation.createDebugLocation(
             fbBuilder, filePath, UInt32(loc._fileId), beginPos, endPos, scopeVec
         )
     }
@@ -193,81 +194,81 @@ class CHIRSerializerImpl {
                 case a: DebugLocationInfoForWarning =>
                     let warnLoc = a.get()
                     if (warnLoc.isValid()) {
-                        annoTypes.add(EnumPackageFormat_AnnotationValues(PackageFormat_Annotation.Annotation_DEBUGLOCATIONINFOFORWARNING))
+                        annoTypes.add(EnumCHIRFormat_AnnotationValues(CHIRFormat_Annotation.Annotation_DEBUGLOCATIONINFOFORWARNING))
                         annos.add(serializeDebugLocation(warnLoc))
                     }
                 case a: NeedCheckArrayBound =>
                     let need = a.get()
-                    annoTypes.add(EnumPackageFormat_AnnotationValues(PackageFormat_Annotation.Annotation_NEEDCHECKARRAYBOUND))
-                    annos.add(PackageFormat_NeedCheckArrayBound.createNeedCheckArrayBound(fbBuilder, need))
+                    annoTypes.add(EnumCHIRFormat_AnnotationValues(CHIRFormat_Annotation.Annotation_NEEDCHECKARRAYBOUND))
+                    annos.add(CHIRFormat_NeedCheckArrayBound.createNeedCheckArrayBound(fbBuilder, need))
                 case a: NeedCheckCast =>
                     let need = a.get()
-                    annoTypes.add(EnumPackageFormat_AnnotationValues(PackageFormat_Annotation.Annotation_NEEDCHECKCAST))
-                    annos.add(PackageFormat_NeedCheckCast.createNeedCheckCast(fbBuilder, need))
+                    annoTypes.add(EnumCHIRFormat_AnnotationValues(CHIRFormat_Annotation.Annotation_NEEDCHECKCAST))
+                    annos.add(CHIRFormat_NeedCheckCast.createNeedCheckCast(fbBuilder, need))
                 case a: GenerateFromForIn =>
                     let value = a.get()
-                    annoTypes.add(EnumPackageFormat_AnnotationValues(PackageFormat_Annotation.Annotation_GENERATEDFROMFORIN))
-                    annos.add(PackageFormat_GeneratedFromForIn.createGeneratedFromForIn(fbBuilder, value))
+                    annoTypes.add(EnumCHIRFormat_AnnotationValues(CHIRFormat_Annotation.Annotation_GENERATEDFROMFORIN))
+                    annos.add(CHIRFormat_GeneratedFromForIn.createGeneratedFromForIn(fbBuilder, value))
                 case a: GeneratedFromForIn =>
                     let value = a.get()
-                    annoTypes.add(EnumPackageFormat_AnnotationValues(PackageFormat_Annotation.Annotation_GENERATEDFROMFORIN))
-                    annos.add(PackageFormat_GeneratedFromForIn.createGeneratedFromForIn(fbBuilder, value))
+                    annoTypes.add(EnumCHIRFormat_AnnotationValues(CHIRFormat_Annotation.Annotation_GENERATEDFROMFORIN))
+                    annos.add(CHIRFormat_GeneratedFromForIn.createGeneratedFromForIn(fbBuilder, value))
                 case a: IsAutoEnvClass =>
                     let value = a.get()
-                    annoTypes.add(EnumPackageFormat_AnnotationValues(PackageFormat_Annotation.Annotation_ISAUTOENVCLASS))
-                    annos.add(PackageFormat_IsAutoEnvClass.createIsAutoEnvClass(fbBuilder, value))
+                    annoTypes.add(EnumCHIRFormat_AnnotationValues(CHIRFormat_Annotation.Annotation_ISAUTOENVCLASS))
+                    annos.add(CHIRFormat_IsAutoEnvClass.createIsAutoEnvClass(fbBuilder, value))
                 case a: IsCapturedClassInCC =>
                     let value = a.get()
-                    annoTypes.add(EnumPackageFormat_AnnotationValues(PackageFormat_Annotation.Annotation_ISCAPTUREDCLASSINCC))
-                    annos.add(PackageFormat_IsCapturedClassInCC.createIsCapturedClassInCC(fbBuilder, value))
+                    annoTypes.add(EnumCHIRFormat_AnnotationValues(CHIRFormat_Annotation.Annotation_ISCAPTUREDCLASSINCC))
+                    annos.add(CHIRFormat_IsCapturedClassInCC.createIsCapturedClassInCC(fbBuilder, value))
                 case a: LinkTypeInfo =>
                     let linkType = a.get()
                     let linkage = match (linkType) {
-                        case LinkType.External => PackageFormat_Linkage.Linkage_EXTERNAL
-                        case LinkType.Internal => PackageFormat_Linkage.Linkage_INTERNAL
-                        case LinkType.WeakOdr => PackageFormat_Linkage.Linkage_WEAK_ODR
-                        case LinkType.LinkonceOdr => PackageFormat_Linkage.Linkage_LINKONCE_ODR
-                        case LinkType.ExternalWeak => PackageFormat_Linkage.Linkage_EXTERNAL_WEAK
+                        case LinkType.External => CHIRFormat_Linkage.Linkage_EXTERNAL
+                        case LinkType.Internal => CHIRFormat_Linkage.Linkage_INTERNAL
+                        case LinkType.WeakOdr => CHIRFormat_Linkage.Linkage_WEAK_ODR
+                        case LinkType.LinkonceOdr => CHIRFormat_Linkage.Linkage_LINKONCE_ODR
+                        case LinkType.ExternalWeak => CHIRFormat_Linkage.Linkage_EXTERNAL_WEAK
                     }
-                    annoTypes.add(EnumPackageFormat_AnnotationValues(PackageFormat_Annotation.Annotation_LINKTYPEINFO))
-                    annos.add(PackageFormat_LinkTypeInfo.createLinkTypeInfo(fbBuilder, linkage))
+                    annoTypes.add(EnumCHIRFormat_AnnotationValues(CHIRFormat_Annotation.Annotation_LINKTYPEINFO))
+                    annos.add(CHIRFormat_LinkTypeInfo.createLinkTypeInfo(fbBuilder, linkage))
                 case a: SkipCheck =>
                     let skipKind = a.get()
                     let pkgSkipKind = match (skipKind) {
-                        case SkipKind.NoSkip => PackageFormat_SkipKind.SkipKind_NO_SKIP
-                        case SkipKind.SkipDceWarning => PackageFormat_SkipKind.SkipKind_SKIP_DCE_WARNING
-                        case SkipKind.SkipForinExit => PackageFormat_SkipKind.SkipKind_SKIP_FORIN_EXIT
-                        case SkipKind.SkipVic => PackageFormat_SkipKind.SkipKind_SKIP_VIC
+                        case SkipKind.NoSkip => CHIRFormat_SkipKind.SkipKind_NO_SKIP
+                        case SkipKind.SkipDceWarning => CHIRFormat_SkipKind.SkipKind_SKIP_DCE_WARNING
+                        case SkipKind.SkipForinExit => CHIRFormat_SkipKind.SkipKind_SKIP_FORIN_EXIT
+                        case SkipKind.SkipVic => CHIRFormat_SkipKind.SkipKind_SKIP_VIC
                     }
-                    annoTypes.add(EnumPackageFormat_AnnotationValues(PackageFormat_Annotation.Annotation_SKIPCHECK))
-                    annos.add(PackageFormat_SkipCheck.createSkipCheck(fbBuilder, pkgSkipKind))
+                    annoTypes.add(EnumCHIRFormat_AnnotationValues(CHIRFormat_Annotation.Annotation_SKIPCHECK))
+                    annos.add(CHIRFormat_SkipCheck.createSkipCheck(fbBuilder, pkgSkipKind))
                 case a: NeverOverflowInfo =>
                     let neverOverflow = a.get()
-                    annoTypes.add(EnumPackageFormat_AnnotationValues(PackageFormat_Annotation.Annotation_NEVEROVERFLOWINFO))
-                    annos.add(PackageFormat_NeverOverflowInfo.createNeverOverflowInfo(fbBuilder, neverOverflow))
+                    annoTypes.add(EnumCHIRFormat_AnnotationValues(CHIRFormat_Annotation.Annotation_NEVEROVERFLOWINFO))
+                    annos.add(CHIRFormat_NeverOverflowInfo.createNeverOverflowInfo(fbBuilder, neverOverflow))
                 case a: EnumCaseIndex =>
                     let indexOpt = a.get()
                     let index = if (let Some(i) <- indexOpt) { Int64(i) } else { Int64(-1) }
-                    annoTypes.add(EnumPackageFormat_AnnotationValues(PackageFormat_Annotation.Annotation_ENUMCASEINDEX))
-                    annos.add(PackageFormat_EnumCaseIndex.createEnumCaseIndex(fbBuilder, index))
+                    annoTypes.add(EnumCHIRFormat_AnnotationValues(CHIRFormat_Annotation.Annotation_ENUMCASEINDEX))
+                    annos.add(CHIRFormat_EnumCaseIndex.createEnumCaseIndex(fbBuilder, index))
                 case a: VirMethodOffset =>
                     let offsetOpt = a.get()
                     let offset = if (let Some(o) <- offsetOpt) { Int64(o) } else { Int64(-1) }
-                    annoTypes.add(EnumPackageFormat_AnnotationValues(PackageFormat_Annotation.Annotation_VIRMETHODOFFSET))
-                    annos.add(PackageFormat_VirMethodOffset.createVirMethodOffset(fbBuilder, offset))
+                    annoTypes.add(EnumCHIRFormat_AnnotationValues(CHIRFormat_Annotation.Annotation_VIRMETHODOFFSET))
+                    annos.add(CHIRFormat_VirMethodOffset.createVirMethodOffset(fbBuilder, offset))
                 case a: WrappedRawMethod =>
                     let funcOpt = a.get()
                     let skipWrapped = if (let Some(f) <- funcOpt) { f.body.isNone() } else { false }
                     if (!skipWrapped) {
                         let funcId = if (let Some(f) <- funcOpt) { getId(f) } else { UInt32(0) }
-                        annoTypes.add(EnumPackageFormat_AnnotationValues(PackageFormat_Annotation.Annotation_WRAPPEDRAWMETHOD))
-                        annos.add(PackageFormat_WrappedRawMethod.createWrappedRawMethod(fbBuilder, funcId))
+                        annoTypes.add(EnumCHIRFormat_AnnotationValues(CHIRFormat_Annotation.Annotation_WRAPPEDRAWMETHOD))
+                        annos.add(CHIRFormat_WrappedRawMethod.createWrappedRawMethod(fbBuilder, funcId))
                     }
                 case a: OverrideSrcFuncType =>
                     let funcTypeOpt = a.get()
                     let typeId = if (let Some(ft) <- funcTypeOpt) { getId(ft) } else { UInt32(0) }
-                    annoTypes.add(EnumPackageFormat_AnnotationValues(PackageFormat_Annotation.Annotation_OVERRIDESRCFUNCTYPE))
-                    annos.add(PackageFormat_OverrideSrcFuncType.createOverrideSrcFuncType(fbBuilder, typeId))
+                    annoTypes.add(EnumCHIRFormat_AnnotationValues(CHIRFormat_Annotation.Annotation_OVERRIDESRCFUNCTYPE))
+                    annos.add(CHIRFormat_OverrideSrcFuncType.createOverrideSrcFuncType(fbBuilder, typeId))
                 case _ => ()
             }
         }
@@ -283,7 +284,7 @@ class CHIRSerializerImpl {
         }
 
         let attributes: UInt64 = obj._attributes.getRawAttrs()
-        return PackageFormat_Base.createBase(fbBuilder, annoTypesVec, annosVec, locOffset, attributes)
+        return CHIRFormat_Base.createBase(fbBuilder, annoTypesVec, annosVec, locOffset, attributes)
     }
 
     private func serializeType(obj: Type): UInt32 {
@@ -294,62 +295,62 @@ class CHIRSerializerImpl {
         } else {
             fbBuilder.createUInt32Vector(argTys)
         }
-        return PackageFormat_Type.createType(fbBuilder, kind, argTysVec)
+        return CHIRFormat_Type.createType(fbBuilder, kind, argTysVec)
     }
 
-    private func serializeTypeKind(kind: TypeKind): PackageFormat_CHIRTypeKind {
+    private func serializeTypeKind(kind: TypeKind): CHIRFormat_CHIRTypeKind {
         return match (kind) {
-            case TypeKind.`Int8` => PackageFormat_CHIRTypeKind.CHIRTypeKind_INT8
-            case TypeKind.`Int16` => PackageFormat_CHIRTypeKind.CHIRTypeKind_INT16
-            case TypeKind.`Int32` => PackageFormat_CHIRTypeKind.CHIRTypeKind_INT32
-            case TypeKind.`Int64` => PackageFormat_CHIRTypeKind.CHIRTypeKind_INT64
-            case TypeKind.`IntNative` => PackageFormat_CHIRTypeKind.CHIRTypeKind_INT_NATIVE
-            case TypeKind.`UInt8` => PackageFormat_CHIRTypeKind.CHIRTypeKind_UINT8
-            case TypeKind.`UInt16` => PackageFormat_CHIRTypeKind.CHIRTypeKind_UINT16
-            case TypeKind.`UInt32` => PackageFormat_CHIRTypeKind.CHIRTypeKind_UINT32
-            case TypeKind.`UInt64` => PackageFormat_CHIRTypeKind.CHIRTypeKind_UINT64
-            case TypeKind.`UIntNative` => PackageFormat_CHIRTypeKind.CHIRTypeKind_UINT_NATIVE
-            case TypeKind.`Float16` => PackageFormat_CHIRTypeKind.CHIRTypeKind_FLOAT16
-            case TypeKind.`Float32` => PackageFormat_CHIRTypeKind.CHIRTypeKind_FLOAT32
-            case TypeKind.`Float64` => PackageFormat_CHIRTypeKind.CHIRTypeKind_FLOAT64
-            case TypeKind.`Rune` => PackageFormat_CHIRTypeKind.CHIRTypeKind_RUNE
-            case TypeKind.`Bool` => PackageFormat_CHIRTypeKind.CHIRTypeKind_BOOLEAN
-            case TypeKind.`Unit` => PackageFormat_CHIRTypeKind.CHIRTypeKind_UNIT
-            case TypeKind.`Nothing` => PackageFormat_CHIRTypeKind.CHIRTypeKind_NOTHING
-            case TypeKind.Tuple => PackageFormat_CHIRTypeKind.CHIRTypeKind_TUPLE
-            case TypeKind.Struct => PackageFormat_CHIRTypeKind.CHIRTypeKind_STRUCT
-            case TypeKind.Enum => PackageFormat_CHIRTypeKind.CHIRTypeKind_ENUM
-            case TypeKind.Func => PackageFormat_CHIRTypeKind.CHIRTypeKind_FUNC
-            case TypeKind.ClassLike => PackageFormat_CHIRTypeKind.CHIRTypeKind_CLASS
-            case TypeKind.RawArray => PackageFormat_CHIRTypeKind.CHIRTypeKind_RAWARRAY
-            case TypeKind.`VArray` => PackageFormat_CHIRTypeKind.CHIRTypeKind_VARRAY
-            case TypeKind.CPointer => PackageFormat_CHIRTypeKind.CHIRTypeKind_C_POINTER
-            case TypeKind.CString => PackageFormat_CHIRTypeKind.CHIRTypeKind_C_STRING
-            case TypeKind.Generic => PackageFormat_CHIRTypeKind.CHIRTypeKind_GENERIC
-            case TypeKind.Ref => PackageFormat_CHIRTypeKind.CHIRTypeKind_REFTYPE
-            case TypeKind.Box => PackageFormat_CHIRTypeKind.CHIRTypeKind_BOXTYPE
-            case TypeKind.`This` => PackageFormat_CHIRTypeKind.CHIRTypeKind_THIS
-            case TypeKind.Invalid => PackageFormat_CHIRTypeKind.CHIRTypeKind_INVALID
+            case TypeKind.`Int8` => CHIRFormat_CHIRTypeKind.CHIRTypeKind_INT8
+            case TypeKind.`Int16` => CHIRFormat_CHIRTypeKind.CHIRTypeKind_INT16
+            case TypeKind.`Int32` => CHIRFormat_CHIRTypeKind.CHIRTypeKind_INT32
+            case TypeKind.`Int64` => CHIRFormat_CHIRTypeKind.CHIRTypeKind_INT64
+            case TypeKind.`IntNative` => CHIRFormat_CHIRTypeKind.CHIRTypeKind_INT_NATIVE
+            case TypeKind.`UInt8` => CHIRFormat_CHIRTypeKind.CHIRTypeKind_UINT8
+            case TypeKind.`UInt16` => CHIRFormat_CHIRTypeKind.CHIRTypeKind_UINT16
+            case TypeKind.`UInt32` => CHIRFormat_CHIRTypeKind.CHIRTypeKind_UINT32
+            case TypeKind.`UInt64` => CHIRFormat_CHIRTypeKind.CHIRTypeKind_UINT64
+            case TypeKind.`UIntNative` => CHIRFormat_CHIRTypeKind.CHIRTypeKind_UINT_NATIVE
+            case TypeKind.`Float16` => CHIRFormat_CHIRTypeKind.CHIRTypeKind_FLOAT16
+            case TypeKind.`Float32` => CHIRFormat_CHIRTypeKind.CHIRTypeKind_FLOAT32
+            case TypeKind.`Float64` => CHIRFormat_CHIRTypeKind.CHIRTypeKind_FLOAT64
+            case TypeKind.`Rune` => CHIRFormat_CHIRTypeKind.CHIRTypeKind_RUNE
+            case TypeKind.`Bool` => CHIRFormat_CHIRTypeKind.CHIRTypeKind_BOOLEAN
+            case TypeKind.`Unit` => CHIRFormat_CHIRTypeKind.CHIRTypeKind_UNIT
+            case TypeKind.`Nothing` => CHIRFormat_CHIRTypeKind.CHIRTypeKind_NOTHING
+            case TypeKind.Tuple => CHIRFormat_CHIRTypeKind.CHIRTypeKind_TUPLE
+            case TypeKind.Struct => CHIRFormat_CHIRTypeKind.CHIRTypeKind_STRUCT
+            case TypeKind.Enum => CHIRFormat_CHIRTypeKind.CHIRTypeKind_ENUM
+            case TypeKind.Func => CHIRFormat_CHIRTypeKind.CHIRTypeKind_FUNC
+            case TypeKind.ClassLike => CHIRFormat_CHIRTypeKind.CHIRTypeKind_CLASS
+            case TypeKind.RawArray => CHIRFormat_CHIRTypeKind.CHIRTypeKind_RAWARRAY
+            case TypeKind.`VArray` => CHIRFormat_CHIRTypeKind.CHIRTypeKind_VARRAY
+            case TypeKind.CPointer => CHIRFormat_CHIRTypeKind.CHIRTypeKind_C_POINTER
+            case TypeKind.CString => CHIRFormat_CHIRTypeKind.CHIRTypeKind_C_STRING
+            case TypeKind.Generic => CHIRFormat_CHIRTypeKind.CHIRTypeKind_GENERIC
+            case TypeKind.Ref => CHIRFormat_CHIRTypeKind.CHIRTypeKind_REFTYPE
+            case TypeKind.Box => CHIRFormat_CHIRTypeKind.CHIRTypeKind_BOXTYPE
+            case TypeKind.`This` => CHIRFormat_CHIRTypeKind.CHIRTypeKind_THIS
+            case TypeKind.Invalid => CHIRFormat_CHIRTypeKind.CHIRTypeKind_INVALID
         }
     }
 
-    // Dispatch Type: align to PackageFormat TypeElem (Type, RawArrayType, VArrayType, FuncType, CustomType, GenericType).
+    // Dispatch Type: align to CHIRFormat TypeElem (Type, RawArrayType, VArrayType, FuncType, CustomType, GenericType).
     private func dispatchType(obj: Type): UInt32 {
         let base = serializeType(obj)
         let typeId = getId(obj)
 
         return match (obj) {
             case t: RawArrayType =>
-                typeKind[Int64(typeId) - 1] = EnumPackageFormat_TypeElemValues(PackageFormat_TypeElem.TypeElem_RAWARRAYTYPE)
-                PackageFormat_RawArrayType.createRawArrayType(fbBuilder, base, t.dims)
+                typeKind[Int64(typeId) - 1] = EnumCHIRFormat_TypeElemValues(CHIRFormat_TypeElem.TypeElem_RAWARRAYTYPE)
+                CHIRFormat_RawArrayType.createRawArrayType(fbBuilder, base, t.dims)
             case t: VArrayType =>
-                typeKind[Int64(typeId) - 1] = EnumPackageFormat_TypeElemValues(PackageFormat_TypeElem.TypeElem_VARRAYTYPE)
-                PackageFormat_VArrayType.createVArrayType(fbBuilder, base, t.size)
+                typeKind[Int64(typeId) - 1] = EnumCHIRFormat_TypeElemValues(CHIRFormat_TypeElem.TypeElem_VARRAYTYPE)
+                CHIRFormat_VArrayType.createVArrayType(fbBuilder, base, t.size)
             case t: FuncType =>
-                typeKind[Int64(typeId) - 1] = EnumPackageFormat_TypeElemValues(PackageFormat_TypeElem.TypeElem_FUNCTYPE)
-                PackageFormat_FuncType.createFuncType(fbBuilder, base, t.isCFunc, t.hasVarArg)
+                typeKind[Int64(typeId) - 1] = EnumCHIRFormat_TypeElemValues(CHIRFormat_TypeElem.TypeElem_FUNCTYPE)
+                CHIRFormat_FuncType.createFuncType(fbBuilder, base, t.isCFunc, t.hasVarArg)
             case t: GenericType =>
-                typeKind[Int64(typeId) - 1] = EnumPackageFormat_TypeElemValues(PackageFormat_TypeElem.TypeElem_GENERICTYPE)
+                typeKind[Int64(typeId) - 1] = EnumCHIRFormat_TypeElemValues(CHIRFormat_TypeElem.TypeElem_GENERICTYPE)
                 let identifier = fbBuilder.createString(t._identifier)
                 let srcCodeIdentifier = fbBuilder.createString(t.srcCodeName)
                 let upperBounds = getTypeIdList(t._upperBounds)
@@ -358,24 +359,24 @@ class CHIRSerializerImpl {
                 } else {
                     fbBuilder.createUInt32Vector(upperBounds)
                 }
-                PackageFormat_GenericType.createGenericType(fbBuilder, base, identifier, srcCodeIdentifier, upperBoundsVec)
+                CHIRFormat_GenericType.createGenericType(fbBuilder, base, identifier, srcCodeIdentifier, upperBoundsVec)
             case t: CustomType =>
                 match (t) {
                     case ct: ClassLikeType =>
-                        typeKind[Int64(typeId) - 1] = EnumPackageFormat_TypeElemValues(PackageFormat_TypeElem.TypeElem_CUSTOMTYPE)
-                        PackageFormat_CustomType.createCustomType(fbBuilder, base, getId(ct.def))
+                        typeKind[Int64(typeId) - 1] = EnumCHIRFormat_TypeElemValues(CHIRFormat_TypeElem.TypeElem_CUSTOMTYPE)
+                        CHIRFormat_CustomType.createCustomType(fbBuilder, base, getId(ct.def))
                     case st: StructType =>
-                        typeKind[Int64(typeId) - 1] = EnumPackageFormat_TypeElemValues(PackageFormat_TypeElem.TypeElem_CUSTOMTYPE)
-                        PackageFormat_CustomType.createCustomType(fbBuilder, base, getId(st.def))
+                        typeKind[Int64(typeId) - 1] = EnumCHIRFormat_TypeElemValues(CHIRFormat_TypeElem.TypeElem_CUSTOMTYPE)
+                        CHIRFormat_CustomType.createCustomType(fbBuilder, base, getId(st.def))
                     case et: EnumType =>
-                        typeKind[Int64(typeId) - 1] = EnumPackageFormat_TypeElemValues(PackageFormat_TypeElem.TypeElem_CUSTOMTYPE)
-                        PackageFormat_CustomType.createCustomType(fbBuilder, base, getId(et.def))
+                        typeKind[Int64(typeId) - 1] = EnumCHIRFormat_TypeElemValues(CHIRFormat_TypeElem.TypeElem_CUSTOMTYPE)
+                        CHIRFormat_CustomType.createCustomType(fbBuilder, base, getId(et.def))
                     case _ =>
                         throw Exception("Invalid custom type '${t.toString()}'.")
                 }
             case _ =>
                 // Primitives / tuple / ref / box / this / C family: nested Type tables only (kind + argTys).
-                typeKind[Int64(typeId) - 1] = EnumPackageFormat_TypeElemValues(PackageFormat_TypeElem.TypeElem_TYPE)
+                typeKind[Int64(typeId) - 1] = EnumCHIRFormat_TypeElemValues(CHIRFormat_TypeElem.TypeElem_TYPE)
                 base
         }
     }
@@ -389,7 +390,7 @@ class CHIRSerializerImpl {
             fbBuilder.createVectorOfTables(strOffsets)
         }
         let loc: UInt32 = serializeDebugLocation(anno._loc)
-        return PackageFormat_CustomAnnoInstance.createCustomAnnoInstance(fbBuilder, annoClassName, argValuesVec, loc)
+        return CHIRFormat_CustomAnnoInstance.createCustomAnnoInstance(fbBuilder, annoClassName, argValuesVec, loc)
     }
 
     private func serializeAnnoInfo(obj: AnnoInfo): UInt32 {
@@ -400,7 +401,7 @@ class CHIRSerializerImpl {
             let instanceOffsets = Array<UInt32>(obj._annoInstances.size, { i => serializeCustomAnnoInstance(obj._annoInstances[i]) })
             fbBuilder.createVectorOfTables(instanceOffsets)
         }
-        return PackageFormat_AnnoInfo.createAnnoInfo(fbBuilder, mangledName, annoInstancesVec)
+        return CHIRFormat_AnnoInfo.createAnnoInfo(fbBuilder, mangledName, annoInstancesVec)
     }
 
     private func serializeValue(obj: Value): UInt32 {
@@ -408,18 +409,18 @@ class CHIRSerializerImpl {
         let identifier = fbBuilder.createString(obj._identifier)
         let typeId = getId(obj._type)
         let kind = serializeValueKind(obj._kind)
-        return PackageFormat_Value.createValue(fbBuilder, base, typeId, identifier, kind)
+        return CHIRFormat_Value.createValue(fbBuilder, base, typeId, identifier, kind)
     }
 
-    private func serializeValueKind(kind: ValueKind): PackageFormat_ValueKind {
+    private func serializeValueKind(kind: ValueKind): CHIRFormat_ValueKind {
         return match (kind) {
-            case ValueKind.Literal => PackageFormat_ValueKind.ValueKind_LITERAL
-            case ValueKind.GlobalVar => PackageFormat_ValueKind.ValueKind_GLOBALVAR
-            case ValueKind.Parameter => PackageFormat_ValueKind.ValueKind_PARAMETER
-            case ValueKind.Func => PackageFormat_ValueKind.ValueKind_FUNC
-            case ValueKind.Block => PackageFormat_ValueKind.ValueKind_BLOCK
-            case ValueKind.BlockGroup => PackageFormat_ValueKind.ValueKind_BLOCK_GROUP
-            case ValueKind.LocalVar => PackageFormat_ValueKind.ValueKind_LOCALVAR
+            case ValueKind.Literal => CHIRFormat_ValueKind.ValueKind_LITERAL
+            case ValueKind.GlobalVar => CHIRFormat_ValueKind.ValueKind_GLOBALVAR
+            case ValueKind.Parameter => CHIRFormat_ValueKind.ValueKind_PARAMETER
+            case ValueKind.Func => CHIRFormat_ValueKind.ValueKind_FUNC
+            case ValueKind.Block => CHIRFormat_ValueKind.ValueKind_BLOCK
+            case ValueKind.BlockGroup => CHIRFormat_ValueKind.ValueKind_BLOCK_GROUP
+            case ValueKind.LocalVar => CHIRFormat_ValueKind.ValueKind_LOCALVAR
             case ValueKind.Invalid => throw CHIRException("Invalid value kind.")
         }
     }
@@ -440,7 +441,7 @@ class CHIRSerializerImpl {
             fbBuilder.createVectorOfTables(featOffsets)
         }
         let annoInfo = serializeAnnoInfo(obj._annoInfo)
-        return PackageFormat_GlobalValue.createGlobalValue(
+        return CHIRFormat_GlobalValue.createGlobalValue(
             fbBuilder, base, srcCodeName, rawMangledName, packageName, declaredParent, featuresVec, annoInfo
         )
     }
@@ -451,8 +452,8 @@ class CHIRSerializerImpl {
         if (let Some(v) <- obj._initializer) {
             initializerId = getId(v)
         }
-        valueKind[Int64(valueId) - 1] = EnumPackageFormat_ValueElemValues(PackageFormat_ValueElem.ValueElem_GLOBALVAR)
-        return PackageFormat_GlobalVar.createGlobalVar(fbBuilder, globalValueBase, initializerId)
+        valueKind[Int64(valueId) - 1] = EnumCHIRFormat_ValueElemValues(CHIRFormat_ValueElem.ValueElem_GLOBALVAR)
+        return CHIRFormat_GlobalVar.createGlobalVar(fbBuilder, globalValueBase, initializerId)
     }
 
     private func serializeParameter(obj: Parameter, base: UInt32, valueId: UInt32): UInt32 {
@@ -463,18 +464,18 @@ class CHIRSerializerImpl {
         } else {
             ownedLambda = getId((obj._owner as LocalVar).getOrThrow().expr)
         }
-        valueKind[Int64(valueId) - 1] = EnumPackageFormat_ValueElemValues(PackageFormat_ValueElem.ValueElem_PARAMETER)
+        valueKind[Int64(valueId) - 1] = EnumCHIRFormat_ValueElemValues(CHIRFormat_ValueElem.ValueElem_PARAMETER)
         let srcCodeName = fbBuilder.createString(obj._srcCodeName)
         let annoInfo = serializeAnnoInfo(obj._annoInfo)
-        return PackageFormat_Parameter.createParameter(fbBuilder, base, ownedFunc, ownedLambda, srcCodeName, annoInfo)
+        return CHIRFormat_Parameter.createParameter(fbBuilder, base, ownedFunc, ownedLambda, srcCodeName, annoInfo)
     }
 
     private func serializeLocalVar(obj: LocalVar, base: UInt32, valueId: UInt32): UInt32 {
         let associatedExpr = getId(obj._expr)
         let isRetVal = obj._isRetValue
-        valueKind[Int64(valueId) - 1] = EnumPackageFormat_ValueElemValues(PackageFormat_ValueElem.ValueElem_LOCALVAR)
+        valueKind[Int64(valueId) - 1] = EnumCHIRFormat_ValueElemValues(CHIRFormat_ValueElem.ValueElem_LOCALVAR)
         let srcCodeName = fbBuilder.createString(obj._srcCodeName)
-        return PackageFormat_LocalVar.createLocalVar(fbBuilder, base, associatedExpr, isRetVal, srcCodeName)
+        return CHIRFormat_LocalVar.createLocalVar(fbBuilder, base, associatedExpr, isRetVal, srcCodeName)
     }
 
     private func serializeFuncSigInfo(funcSig: FuncSigInfo): UInt32 {
@@ -486,7 +487,7 @@ class CHIRSerializerImpl {
             let gtpIds = getTypeIdList(funcSig._genericTypeParams)
             fbBuilder.createUInt32Vector(gtpIds)
         }
-        return PackageFormat_FuncSigInfo.createFuncSigInfo(fbBuilder, nameOff, funcTypeId, gtpVec)
+        return CHIRFormat_FuncSigInfo.createFuncSigInfo(fbBuilder, nameOff, funcTypeId, gtpVec)
     }
 
     private func serializeFunction(obj: Function, base: UInt32, valueId: UInt32): UInt32 {
@@ -511,7 +512,7 @@ class CHIRSerializerImpl {
         if (let Some(host) <- obj._paramDftValHostFunc) {
             paramDftValHostFunc = getId(host)
         }
-        valueKind[Int64(valueId) - 1] = EnumPackageFormat_ValueElemValues(PackageFormat_ValueElem.ValueElem_FUNCTION)
+        valueKind[Int64(valueId) - 1] = EnumCHIRFormat_ValueElemValues(CHIRFormat_ValueElem.ValueElem_FUNCTION)
         let globalValueBase = serializeGlobalValue(obj, base)
         var body: UInt32 = 0
         var retVal: UInt32 = 0
@@ -528,30 +529,30 @@ class CHIRSerializerImpl {
             fbBuilder.createUInt32Vector(params)
         }
         let propLoc = serializeDebugLocation(obj._propLocation)
-        return PackageFormat_Function.createFunction(
+        return CHIRFormat_Function.createFunction(
             fbBuilder, globalValueBase, genericDecl, funcKind, isFastNative, isCFFIWrapper,
             originalLambdaInfo, genericTypeParamsVec, paramDftValHostFunc, body, paramsVec, retVal, propLoc,
             obj._localId, obj._blockId, obj._blockGroupId
         )
     }
 
-    private func serializeFuncKind(obj: FuncKind): PackageFormat_FuncKind {
+    private func serializeFuncKind(obj: FuncKind): CHIRFormat_FuncKind {
         return match (obj) {
-            case FuncKind.Default => PackageFormat_FuncKind.FuncKind_DEFAULT
-            case FuncKind.Getter => PackageFormat_FuncKind.FuncKind_GETTER
-            case FuncKind.Setter => PackageFormat_FuncKind.FuncKind_SETTER
-            case FuncKind.Lambda => PackageFormat_FuncKind.FuncKind_LAMBDA
-            case FuncKind.ClassConstructor => PackageFormat_FuncKind.FuncKind_CLASS_CONSTRUCTOR
-            case FuncKind.PrimaryClassConstructor => PackageFormat_FuncKind.FuncKind_PRIMAL_CLASS_CONSTRUCTOR
-            case FuncKind.StructConstructor => PackageFormat_FuncKind.FuncKind_STRUCT_CONSTRUCTOR
-            case FuncKind.PrimaryStructConstructor => PackageFormat_FuncKind.FuncKind_PRIMAL_STRUCT_CONSTRUCTOR
-            case FuncKind.GlobalVarInit => PackageFormat_FuncKind.FuncKind_GLOBALVAR_INIT
-            case FuncKind.Finalizer => PackageFormat_FuncKind.FuncKind_FINALIZER
-            case FuncKind.MainEntry => PackageFormat_FuncKind.FuncKind_MAIN_ENTRY
-            case FuncKind.AnnoFactoryFunc => PackageFormat_FuncKind.FuncKind_ANNOFACTORY_FUNC
-            case FuncKind.MacroFunc => PackageFormat_FuncKind.FuncKind_MACRO_FUNC
-            case FuncKind.DefaultParameterFunc => PackageFormat_FuncKind.FuncKind_DEFAULT_PARAMETER_FUNC
-            case FuncKind.InstanceVarInit => PackageFormat_FuncKind.FuncKind_INSTANCEVAR_INIT
+            case FuncKind.Default => CHIRFormat_FuncKind.FuncKind_DEFAULT
+            case FuncKind.Getter => CHIRFormat_FuncKind.FuncKind_GETTER
+            case FuncKind.Setter => CHIRFormat_FuncKind.FuncKind_SETTER
+            case FuncKind.Lambda => CHIRFormat_FuncKind.FuncKind_LAMBDA
+            case FuncKind.ClassConstructor => CHIRFormat_FuncKind.FuncKind_CLASS_CONSTRUCTOR
+            case FuncKind.PrimaryClassConstructor => CHIRFormat_FuncKind.FuncKind_PRIMAL_CLASS_CONSTRUCTOR
+            case FuncKind.StructConstructor => CHIRFormat_FuncKind.FuncKind_STRUCT_CONSTRUCTOR
+            case FuncKind.PrimaryStructConstructor => CHIRFormat_FuncKind.FuncKind_PRIMAL_STRUCT_CONSTRUCTOR
+            case FuncKind.GlobalVarInit => CHIRFormat_FuncKind.FuncKind_GLOBALVAR_INIT
+            case FuncKind.Finalizer => CHIRFormat_FuncKind.FuncKind_FINALIZER
+            case FuncKind.MainEntry => CHIRFormat_FuncKind.FuncKind_MAIN_ENTRY
+            case FuncKind.AnnoFactoryFunc => CHIRFormat_FuncKind.FuncKind_ANNOFACTORY_FUNC
+            case FuncKind.MacroFunc => CHIRFormat_FuncKind.FuncKind_MACRO_FUNC
+            case FuncKind.DefaultParameterFunc => CHIRFormat_FuncKind.FuncKind_DEFAULT_PARAMETER_FUNC
+            case FuncKind.InstanceVarInit => CHIRFormat_FuncKind.FuncKind_INSTANCEVAR_INIT
         }
     }
 
@@ -579,8 +580,8 @@ class CHIRSerializerImpl {
         } else {
             UInt32(0)
         }
-        valueKind[Int64(valueId) - 1] = EnumPackageFormat_ValueElemValues(PackageFormat_ValueElem.ValueElem_BLOCK)
-        return PackageFormat_Block.createBlock(fbBuilder, base, parentGroup, exprsVec, predecessorsVec, obj.isLandingPadBlock, exceptionCatchListVec)
+        valueKind[Int64(valueId) - 1] = EnumCHIRFormat_ValueElemValues(CHIRFormat_ValueElem.ValueElem_BLOCK)
+        return CHIRFormat_Block.createBlock(fbBuilder, base, parentGroup, exprsVec, predecessorsVec, obj.isLandingPadBlock, exceptionCatchListVec)
     }
 
     private func serializeBlockGroup(obj: BlockGroup, base: UInt32, valueId: UInt32): UInt32 {
@@ -594,43 +595,43 @@ class CHIRSerializerImpl {
         } else {
             ownedExpression = getId((obj.owner as LocalVar).getOrThrow().expr)
         }
-        valueKind[Int64(valueId) - 1] = EnumPackageFormat_ValueElemValues(PackageFormat_ValueElem.ValueElem_BLOCKGROUP)
-        return PackageFormat_BlockGroup.createBlockGroup(fbBuilder, base, entryBlock, blocksVec, ownedFunc, ownedExpression)
+        valueKind[Int64(valueId) - 1] = EnumCHIRFormat_ValueElemValues(CHIRFormat_ValueElem.ValueElem_BLOCKGROUP)
+        return CHIRFormat_BlockGroup.createBlockGroup(fbBuilder, base, entryBlock, blocksVec, ownedFunc, ownedExpression)
     }
 
     private func serializeLiteralValue(obj: LiteralValue, base: UInt32, valueId: UInt32): UInt32 {
         return match (obj) {
             case v: BoolLiteral =>
-                valueKind[Int64(valueId) - 1] = EnumPackageFormat_ValueElemValues(PackageFormat_ValueElem.ValueElem_BOOLLITERAL)
-                let literalBase = PackageFormat_LiteralValue.createLiteralValue(fbBuilder, base, PackageFormat_ConstantValueKind.ConstantValueKind_BOOL)
-                PackageFormat_BoolLiteral.createBoolLiteral(fbBuilder, literalBase, v.value)
+                valueKind[Int64(valueId) - 1] = EnumCHIRFormat_ValueElemValues(CHIRFormat_ValueElem.ValueElem_BOOLLITERAL)
+                let literalBase = CHIRFormat_LiteralValue.createLiteralValue(fbBuilder, base, CHIRFormat_ConstantValueKind.ConstantValueKind_BOOL)
+                CHIRFormat_BoolLiteral.createBoolLiteral(fbBuilder, literalBase, v.value)
             case v: IntLiteral =>
-                valueKind[Int64(valueId) - 1] = EnumPackageFormat_ValueElemValues(PackageFormat_ValueElem.ValueElem_INTLITERAL)
-                let literalBase = PackageFormat_LiteralValue.createLiteralValue(fbBuilder, base, PackageFormat_ConstantValueKind.ConstantValueKind_INT)
-                PackageFormat_IntLiteral.createIntLiteral(fbBuilder, literalBase, v.unsignedValue)
+                valueKind[Int64(valueId) - 1] = EnumCHIRFormat_ValueElemValues(CHIRFormat_ValueElem.ValueElem_INTLITERAL)
+                let literalBase = CHIRFormat_LiteralValue.createLiteralValue(fbBuilder, base, CHIRFormat_ConstantValueKind.ConstantValueKind_INT)
+                CHIRFormat_IntLiteral.createIntLiteral(fbBuilder, literalBase, v.unsignedValue)
             case v: FloatLiteral =>
-                valueKind[Int64(valueId) - 1] = EnumPackageFormat_ValueElemValues(PackageFormat_ValueElem.ValueElem_FLOATLITERAL)
-                let literalBase = PackageFormat_LiteralValue.createLiteralValue(fbBuilder, base, PackageFormat_ConstantValueKind.ConstantValueKind_FLOAT)
-                PackageFormat_FloatLiteral.createFloatLiteral(fbBuilder, literalBase, v.value)
+                valueKind[Int64(valueId) - 1] = EnumCHIRFormat_ValueElemValues(CHIRFormat_ValueElem.ValueElem_FLOATLITERAL)
+                let literalBase = CHIRFormat_LiteralValue.createLiteralValue(fbBuilder, base, CHIRFormat_ConstantValueKind.ConstantValueKind_FLOAT)
+                CHIRFormat_FloatLiteral.createFloatLiteral(fbBuilder, literalBase, v.value)
             case v: StringLiteral =>
-                valueKind[Int64(valueId) - 1] = EnumPackageFormat_ValueElemValues(PackageFormat_ValueElem.ValueElem_STRINGLITERAL)
-                let literalBase = PackageFormat_LiteralValue.createLiteralValue(fbBuilder, base, PackageFormat_ConstantValueKind.ConstantValueKind_STRING)
+                valueKind[Int64(valueId) - 1] = EnumCHIRFormat_ValueElemValues(CHIRFormat_ValueElem.ValueElem_STRINGLITERAL)
+                let literalBase = CHIRFormat_LiteralValue.createLiteralValue(fbBuilder, base, CHIRFormat_ConstantValueKind.ConstantValueKind_STRING)
                 let val = fbBuilder.createString(v.value)
-                PackageFormat_StringLiteral.createStringLiteral(fbBuilder, literalBase, val)
+                CHIRFormat_StringLiteral.createStringLiteral(fbBuilder, literalBase, val)
             case v: RuneLiteral =>
-                valueKind[Int64(valueId) - 1] = EnumPackageFormat_ValueElemValues(PackageFormat_ValueElem.ValueElem_RUNELITERAL)
-                let literalBase = PackageFormat_LiteralValue.createLiteralValue(fbBuilder, base, PackageFormat_ConstantValueKind.ConstantValueKind_RUNE)
+                valueKind[Int64(valueId) - 1] = EnumCHIRFormat_ValueElemValues(CHIRFormat_ValueElem.ValueElem_RUNELITERAL)
+                let literalBase = CHIRFormat_LiteralValue.createLiteralValue(fbBuilder, base, CHIRFormat_ConstantValueKind.ConstantValueKind_RUNE)
                 // Rune literal: encode as UInt32 (Unicode scalar value).
                 let runeVal = UInt32(v.value)
-                PackageFormat_RuneLiteral.createRuneLiteral(fbBuilder, literalBase, runeVal)
+                CHIRFormat_RuneLiteral.createRuneLiteral(fbBuilder, literalBase, runeVal)
             case v: UnitLiteral =>
-                valueKind[Int64(valueId) - 1] = EnumPackageFormat_ValueElemValues(PackageFormat_ValueElem.ValueElem_UNITLITERAL)
-                let literalBase = PackageFormat_LiteralValue.createLiteralValue(fbBuilder, base, PackageFormat_ConstantValueKind.ConstantValueKind_UNIT)
-                PackageFormat_UnitLiteral.createUnitLiteral(fbBuilder, literalBase)
+                valueKind[Int64(valueId) - 1] = EnumCHIRFormat_ValueElemValues(CHIRFormat_ValueElem.ValueElem_UNITLITERAL)
+                let literalBase = CHIRFormat_LiteralValue.createLiteralValue(fbBuilder, base, CHIRFormat_ConstantValueKind.ConstantValueKind_UNIT)
+                CHIRFormat_UnitLiteral.createUnitLiteral(fbBuilder, literalBase)
             case v: NullLiteral =>
-                valueKind[Int64(valueId) - 1] = EnumPackageFormat_ValueElemValues(PackageFormat_ValueElem.ValueElem_NULLLITERAL)
-                let literalBase = PackageFormat_LiteralValue.createLiteralValue(fbBuilder, base, PackageFormat_ConstantValueKind.ConstantValueKind_NULL)
-                PackageFormat_NullLiteral.createNullLiteral(fbBuilder, literalBase)
+                valueKind[Int64(valueId) - 1] = EnumCHIRFormat_ValueElemValues(CHIRFormat_ValueElem.ValueElem_NULLLITERAL)
+                let literalBase = CHIRFormat_LiteralValue.createLiteralValue(fbBuilder, base, CHIRFormat_ConstantValueKind.ConstantValueKind_NULL)
+                CHIRFormat_NullLiteral.createNullLiteral(fbBuilder, literalBase)
             case _ => throw CHIRException("Invalid CHIR literal.")
         }
     }
@@ -670,467 +671,467 @@ class CHIRSerializerImpl {
         var resultLocalVar: UInt32 = if (let Some(v) <- obj._result) { getId(v) } else { UInt32(0) }
         var resultTy: UInt32 = if (let Some(v) <- obj._result) { getId(v._type) } else { UInt32(0) }
 
-        return PackageFormat_Expression.createExpression(fbBuilder, base, kind, operandsVec, blockGroupsVec, parentBlock, resultLocalVar, resultTy)
+        return CHIRFormat_Expression.createExpression(fbBuilder, base, kind, operandsVec, blockGroupsVec, parentBlock, resultLocalVar, resultTy)
     }
 
-    private func serializeExprKind(kind: ExprKind): PackageFormat_CHIRExprKind {
+    private func serializeExprKind(kind: ExprKind): CHIRFormat_CHIRExprKind {
         return match (kind) {
-            case ExprKind.Goto => PackageFormat_CHIRExprKind.CHIRExprKind_GOTO
-            case ExprKind.Branch => PackageFormat_CHIRExprKind.CHIRExprKind_BRANCH
-            case ExprKind.MultiBranch => PackageFormat_CHIRExprKind.CHIRExprKind_MULTIBRANCH
-            case ExprKind.Exit => PackageFormat_CHIRExprKind.CHIRExprKind_EXIT
+            case ExprKind.Goto => CHIRFormat_CHIRExprKind.CHIRExprKind_GOTO
+            case ExprKind.Branch => CHIRFormat_CHIRExprKind.CHIRExprKind_BRANCH
+            case ExprKind.MultiBranch => CHIRFormat_CHIRExprKind.CHIRExprKind_MULTIBRANCH
+            case ExprKind.Exit => CHIRFormat_CHIRExprKind.CHIRExprKind_EXIT
 
-            case ExprKind.TryApply => PackageFormat_CHIRExprKind.CHIRExprKind_TRYAPPLY
-            case ExprKind.TryInvoke => PackageFormat_CHIRExprKind.CHIRExprKind_TRYINVOKE
-            case ExprKind.TryIntrinsic => PackageFormat_CHIRExprKind.CHIRExprKind_TRYINTRINSIC
-            case ExprKind.RaiseException => PackageFormat_CHIRExprKind.CHIRExprKind_RAISEEXCEPTION
-            case ExprKind.TrySpawn => PackageFormat_CHIRExprKind.CHIRExprKind_TRYSPAWN
-            case ExprKind.TryNumericCast => PackageFormat_CHIRExprKind.CHIRExprKind_TRYNUMERICCAST
-            case ExprKind.TryAllocate => PackageFormat_CHIRExprKind.CHIRExprKind_TRYALLOCATE
-            case ExprKind.TryRawArrayAllocate => PackageFormat_CHIRExprKind.CHIRExprKind_TRYRAWARRAYALLOCATE
-            case ExprKind.TryNeg => PackageFormat_CHIRExprKind.CHIRExprKind_TRYNEG
-            case ExprKind.TryAdd => PackageFormat_CHIRExprKind.CHIRExprKind_TRYADD
-            case ExprKind.TrySub => PackageFormat_CHIRExprKind.CHIRExprKind_TRYSUB
-            case ExprKind.TryMul => PackageFormat_CHIRExprKind.CHIRExprKind_TRYMUL
-            case ExprKind.TryDiv => PackageFormat_CHIRExprKind.CHIRExprKind_TRYDIV
-            case ExprKind.TryMod => PackageFormat_CHIRExprKind.CHIRExprKind_TRYMOD
-            case ExprKind.TryExp => PackageFormat_CHIRExprKind.CHIRExprKind_TRYEXP
-            case ExprKind.TryLShift => PackageFormat_CHIRExprKind.CHIRExprKind_TRYLSHIFT
-            case ExprKind.TryRShift => PackageFormat_CHIRExprKind.CHIRExprKind_TRYRSHIFT
+            case ExprKind.TryApply => CHIRFormat_CHIRExprKind.CHIRExprKind_TRYAPPLY
+            case ExprKind.TryInvoke => CHIRFormat_CHIRExprKind.CHIRExprKind_TRYINVOKE
+            case ExprKind.TryIntrinsic => CHIRFormat_CHIRExprKind.CHIRExprKind_TRYINTRINSIC
+            case ExprKind.RaiseException => CHIRFormat_CHIRExprKind.CHIRExprKind_RAISEEXCEPTION
+            case ExprKind.TrySpawn => CHIRFormat_CHIRExprKind.CHIRExprKind_TRYSPAWN
+            case ExprKind.TryNumericCast => CHIRFormat_CHIRExprKind.CHIRExprKind_TRYNUMERICCAST
+            case ExprKind.TryAllocate => CHIRFormat_CHIRExprKind.CHIRExprKind_TRYALLOCATE
+            case ExprKind.TryRawArrayAllocate => CHIRFormat_CHIRExprKind.CHIRExprKind_TRYRAWARRAYALLOCATE
+            case ExprKind.TryNeg => CHIRFormat_CHIRExprKind.CHIRExprKind_TRYNEG
+            case ExprKind.TryAdd => CHIRFormat_CHIRExprKind.CHIRExprKind_TRYADD
+            case ExprKind.TrySub => CHIRFormat_CHIRExprKind.CHIRExprKind_TRYSUB
+            case ExprKind.TryMul => CHIRFormat_CHIRExprKind.CHIRExprKind_TRYMUL
+            case ExprKind.TryDiv => CHIRFormat_CHIRExprKind.CHIRExprKind_TRYDIV
+            case ExprKind.TryMod => CHIRFormat_CHIRExprKind.CHIRExprKind_TRYMOD
+            case ExprKind.TryExp => CHIRFormat_CHIRExprKind.CHIRExprKind_TRYEXP
+            case ExprKind.TryLShift => CHIRFormat_CHIRExprKind.CHIRExprKind_TRYLSHIFT
+            case ExprKind.TryRShift => CHIRFormat_CHIRExprKind.CHIRExprKind_TRYRSHIFT
 
-            case ExprKind.Neg => PackageFormat_CHIRExprKind.CHIRExprKind_NEG
-            case ExprKind.Not => PackageFormat_CHIRExprKind.CHIRExprKind_NOT
-            case ExprKind.BitNot => PackageFormat_CHIRExprKind.CHIRExprKind_BITNOT
+            case ExprKind.Neg => CHIRFormat_CHIRExprKind.CHIRExprKind_NEG
+            case ExprKind.Not => CHIRFormat_CHIRExprKind.CHIRExprKind_NOT
+            case ExprKind.BitNot => CHIRFormat_CHIRExprKind.CHIRExprKind_BITNOT
 
-            case ExprKind.Add => PackageFormat_CHIRExprKind.CHIRExprKind_ADD
-            case ExprKind.Sub => PackageFormat_CHIRExprKind.CHIRExprKind_SUB
-            case ExprKind.Mul => PackageFormat_CHIRExprKind.CHIRExprKind_MUL
-            case ExprKind.Div => PackageFormat_CHIRExprKind.CHIRExprKind_DIV
-            case ExprKind.Mod => PackageFormat_CHIRExprKind.CHIRExprKind_MOD
-            case ExprKind.Exp => PackageFormat_CHIRExprKind.CHIRExprKind_EXP
-            case ExprKind.LShift => PackageFormat_CHIRExprKind.CHIRExprKind_LSHIFT
-            case ExprKind.RShift => PackageFormat_CHIRExprKind.CHIRExprKind_RSHIFT
-            case ExprKind.BitAnd => PackageFormat_CHIRExprKind.CHIRExprKind_BITAND
-            case ExprKind.BitOr => PackageFormat_CHIRExprKind.CHIRExprKind_BITOR
-            case ExprKind.BitXor => PackageFormat_CHIRExprKind.CHIRExprKind_BITXOR
-            case ExprKind.LT => PackageFormat_CHIRExprKind.CHIRExprKind_LT
-            case ExprKind.GT => PackageFormat_CHIRExprKind.CHIRExprKind_GT
-            case ExprKind.LE => PackageFormat_CHIRExprKind.CHIRExprKind_LE
-            case ExprKind.GE => PackageFormat_CHIRExprKind.CHIRExprKind_GE
-            case ExprKind.Equal => PackageFormat_CHIRExprKind.CHIRExprKind_EQUAL
-            case ExprKind.NotEqual => PackageFormat_CHIRExprKind.CHIRExprKind_NOTEQUAL
-            case ExprKind.And => PackageFormat_CHIRExprKind.CHIRExprKind_AND
-            case ExprKind.Or => PackageFormat_CHIRExprKind.CHIRExprKind_OR
+            case ExprKind.Add => CHIRFormat_CHIRExprKind.CHIRExprKind_ADD
+            case ExprKind.Sub => CHIRFormat_CHIRExprKind.CHIRExprKind_SUB
+            case ExprKind.Mul => CHIRFormat_CHIRExprKind.CHIRExprKind_MUL
+            case ExprKind.Div => CHIRFormat_CHIRExprKind.CHIRExprKind_DIV
+            case ExprKind.Mod => CHIRFormat_CHIRExprKind.CHIRExprKind_MOD
+            case ExprKind.Exp => CHIRFormat_CHIRExprKind.CHIRExprKind_EXP
+            case ExprKind.LShift => CHIRFormat_CHIRExprKind.CHIRExprKind_LSHIFT
+            case ExprKind.RShift => CHIRFormat_CHIRExprKind.CHIRExprKind_RSHIFT
+            case ExprKind.BitAnd => CHIRFormat_CHIRExprKind.CHIRExprKind_BITAND
+            case ExprKind.BitOr => CHIRFormat_CHIRExprKind.CHIRExprKind_BITOR
+            case ExprKind.BitXor => CHIRFormat_CHIRExprKind.CHIRExprKind_BITXOR
+            case ExprKind.LT => CHIRFormat_CHIRExprKind.CHIRExprKind_LT
+            case ExprKind.GT => CHIRFormat_CHIRExprKind.CHIRExprKind_GT
+            case ExprKind.LE => CHIRFormat_CHIRExprKind.CHIRExprKind_LE
+            case ExprKind.GE => CHIRFormat_CHIRExprKind.CHIRExprKind_GE
+            case ExprKind.Equal => CHIRFormat_CHIRExprKind.CHIRExprKind_EQUAL
+            case ExprKind.NotEqual => CHIRFormat_CHIRExprKind.CHIRExprKind_NOTEQUAL
+            case ExprKind.And => CHIRFormat_CHIRExprKind.CHIRExprKind_AND
+            case ExprKind.Or => CHIRFormat_CHIRExprKind.CHIRExprKind_OR
 
-            case ExprKind.Allocate => PackageFormat_CHIRExprKind.CHIRExprKind_ALLOCATE
-            case ExprKind.Load => PackageFormat_CHIRExprKind.CHIRExprKind_LOAD
-            case ExprKind.Store => PackageFormat_CHIRExprKind.CHIRExprKind_STORE
-            case ExprKind.GetElementByName => PackageFormat_CHIRExprKind.CHIRExprKind_GETELEMENTBYNAME
-            case ExprKind.GetElementRef => PackageFormat_CHIRExprKind.CHIRExprKind_GETELEMENTREF
-            case ExprKind.StoreElementByName => PackageFormat_CHIRExprKind.CHIRExprKind_STOREELEMENTBYNAME
-            case ExprKind.StoreElementRef => PackageFormat_CHIRExprKind.CHIRExprKind_STOREELEMENTREF
+            case ExprKind.Allocate => CHIRFormat_CHIRExprKind.CHIRExprKind_ALLOCATE
+            case ExprKind.Load => CHIRFormat_CHIRExprKind.CHIRExprKind_LOAD
+            case ExprKind.Store => CHIRFormat_CHIRExprKind.CHIRExprKind_STORE
+            case ExprKind.GetElementByName => CHIRFormat_CHIRExprKind.CHIRExprKind_GETELEMENTBYNAME
+            case ExprKind.GetElementRef => CHIRFormat_CHIRExprKind.CHIRExprKind_GETELEMENTREF
+            case ExprKind.StoreElementByName => CHIRFormat_CHIRExprKind.CHIRExprKind_STOREELEMENTBYNAME
+            case ExprKind.StoreElementRef => CHIRFormat_CHIRExprKind.CHIRExprKind_STOREELEMENTREF
 
-            case ExprKind.Lambda => PackageFormat_CHIRExprKind.CHIRExprKind_LAMBDA
-            case ExprKind.Constant => PackageFormat_CHIRExprKind.CHIRExprKind_CONSTANT
-            case ExprKind.Debug => PackageFormat_CHIRExprKind.CHIRExprKind_DEBUG
-            case ExprKind.Tuple => PackageFormat_CHIRExprKind.CHIRExprKind_TUPLE
-            case ExprKind.Field => PackageFormat_CHIRExprKind.CHIRExprKind_FIELD
-            case ExprKind.FieldByName => PackageFormat_CHIRExprKind.CHIRExprKind_FIELDBYNAME
+            case ExprKind.Lambda => CHIRFormat_CHIRExprKind.CHIRExprKind_LAMBDA
+            case ExprKind.Constant => CHIRFormat_CHIRExprKind.CHIRExprKind_CONSTANT
+            case ExprKind.Debug => CHIRFormat_CHIRExprKind.CHIRExprKind_DEBUG
+            case ExprKind.Tuple => CHIRFormat_CHIRExprKind.CHIRExprKind_TUPLE
+            case ExprKind.Field => CHIRFormat_CHIRExprKind.CHIRExprKind_FIELD
+            case ExprKind.FieldByName => CHIRFormat_CHIRExprKind.CHIRExprKind_FIELDBYNAME
 
-            case ExprKind.Apply => PackageFormat_CHIRExprKind.CHIRExprKind_APPLY
-            case ExprKind.Invoke => PackageFormat_CHIRExprKind.CHIRExprKind_INVOKE
-            case ExprKind.InstanceOf => PackageFormat_CHIRExprKind.CHIRExprKind_INSTANCEOF
-            case ExprKind.StaticCast => PackageFormat_CHIRExprKind.CHIRExprKind_STATICCAST
-            case ExprKind.Box => PackageFormat_CHIRExprKind.CHIRExprKind_BOX
-            case ExprKind.UnboxToValue => PackageFormat_CHIRExprKind.CHIRExprKind_UNBOXTOVALUE
-            case ExprKind.UnboxToRef => PackageFormat_CHIRExprKind.CHIRExprKind_UNBOXTOREF
-            case ExprKind.NumericCast => PackageFormat_CHIRExprKind.CHIRExprKind_NUMERICCAST
-            case ExprKind.CastToConcrete => PackageFormat_CHIRExprKind.CHIRExprKind_CASTTOCONCRETE
-            case ExprKind.CastToGeneric => PackageFormat_CHIRExprKind.CHIRExprKind_CASTTOGENERIC
+            case ExprKind.Apply => CHIRFormat_CHIRExprKind.CHIRExprKind_APPLY
+            case ExprKind.Invoke => CHIRFormat_CHIRExprKind.CHIRExprKind_INVOKE
+            case ExprKind.InstanceOf => CHIRFormat_CHIRExprKind.CHIRExprKind_INSTANCEOF
+            case ExprKind.StaticCast => CHIRFormat_CHIRExprKind.CHIRExprKind_STATICCAST
+            case ExprKind.Box => CHIRFormat_CHIRExprKind.CHIRExprKind_BOX
+            case ExprKind.UnboxToValue => CHIRFormat_CHIRExprKind.CHIRExprKind_UNBOXTOVALUE
+            case ExprKind.UnboxToRef => CHIRFormat_CHIRExprKind.CHIRExprKind_UNBOXTOREF
+            case ExprKind.NumericCast => CHIRFormat_CHIRExprKind.CHIRExprKind_NUMERICCAST
+            case ExprKind.CastToConcrete => CHIRFormat_CHIRExprKind.CHIRExprKind_CASTTOCONCRETE
+            case ExprKind.CastToGeneric => CHIRFormat_CHIRExprKind.CHIRExprKind_CASTTOGENERIC
 
-            case ExprKind.GetException => PackageFormat_CHIRExprKind.CHIRExprKind_GETEXCEPTION
-            case ExprKind.RawArrayAllocate => PackageFormat_CHIRExprKind.CHIRExprKind_RAWARRAYALLOCATE
-            case ExprKind.RawArrayLiteralInit => PackageFormat_CHIRExprKind.CHIRExprKind_RAWARRAYLITERALINIT
-            case ExprKind.RawArrayInitByValue => PackageFormat_CHIRExprKind.CHIRExprKind_RAWARRAYINITBYVALUE
-            case ExprKind.VArrayExpr => PackageFormat_CHIRExprKind.CHIRExprKind_VARRAYEXPR
-            case ExprKind.VArrayBuilder => PackageFormat_CHIRExprKind.CHIRExprKind_VARRAYBUILDER
+            case ExprKind.GetException => CHIRFormat_CHIRExprKind.CHIRExprKind_GETEXCEPTION
+            case ExprKind.RawArrayAllocate => CHIRFormat_CHIRExprKind.CHIRExprKind_RAWARRAYALLOCATE
+            case ExprKind.RawArrayLiteralInit => CHIRFormat_CHIRExprKind.CHIRExprKind_RAWARRAYLITERALINIT
+            case ExprKind.RawArrayInitByValue => CHIRFormat_CHIRExprKind.CHIRExprKind_RAWARRAYINITBYVALUE
+            case ExprKind.VArrayExpr => CHIRFormat_CHIRExprKind.CHIRExprKind_VARRAYEXPR
+            case ExprKind.VArrayBuilder => CHIRFormat_CHIRExprKind.CHIRExprKind_VARRAYBUILDER
 
-            case ExprKind.Intrinsic => PackageFormat_CHIRExprKind.CHIRExprKind_INTRINSIC
-            case ExprKind.Spawn => PackageFormat_CHIRExprKind.CHIRExprKind_SPAWN
-            case ExprKind.GetInstantiateValue => PackageFormat_CHIRExprKind.CHIRExprKind_GETINSTANTIATEVALUE
-            case ExprKind.GetRtti => PackageFormat_CHIRExprKind.CHIRExprKind_GETRTTI
-            case ExprKind.GetRttiStatic => PackageFormat_CHIRExprKind.CHIRExprKind_GETRTTISTATIC
+            case ExprKind.Intrinsic => CHIRFormat_CHIRExprKind.CHIRExprKind_INTRINSIC
+            case ExprKind.Spawn => CHIRFormat_CHIRExprKind.CHIRExprKind_SPAWN
+            case ExprKind.GetInstantiateValue => CHIRFormat_CHIRExprKind.CHIRExprKind_GETINSTANTIATEVALUE
+            case ExprKind.GetRtti => CHIRFormat_CHIRExprKind.CHIRExprKind_GETRTTI
+            case ExprKind.GetRttiStatic => CHIRFormat_CHIRExprKind.CHIRExprKind_GETRTTISTATIC
             case _ => throw CHIRException("Invalid expression kind '${kind.toString()}'.")
         }
     }
 
-    private func serializeOverflowStrategy(strategy: OverflowStrategy): PackageFormat_OverflowStrategy {
+    private func serializeOverflowStrategy(strategy: OverflowStrategy): CHIRFormat_OverflowStrategy {
         return match (strategy) {
-            case OverflowStrategy.NA => PackageFormat_OverflowStrategy.OverflowStrategy_NA
-            case OverflowStrategy.Wrapping => PackageFormat_OverflowStrategy.OverflowStrategy_WRAPPING
-            case OverflowStrategy.Throwing => PackageFormat_OverflowStrategy.OverflowStrategy_THROWING
-            case OverflowStrategy.Saturating => PackageFormat_OverflowStrategy.OverflowStrategy_SATURATING
+            case OverflowStrategy.NA => CHIRFormat_OverflowStrategy.OverflowStrategy_NA
+            case OverflowStrategy.Wrapping => CHIRFormat_OverflowStrategy.OverflowStrategy_WRAPPING
+            case OverflowStrategy.Throwing => CHIRFormat_OverflowStrategy.OverflowStrategy_THROWING
+            case OverflowStrategy.Saturating => CHIRFormat_OverflowStrategy.OverflowStrategy_SATURATING
             case _ => throw CHIRException("Unsupported OverflowStrategy.")
         }
     }
 
-    private func serializeSourceExpr(sourceExpr: SourceExpr): PackageFormat_SourceExpr {
+    private func serializeSourceExpr(sourceExpr: SourceExpr): CHIRFormat_SourceExpr {
         return match (sourceExpr) {
-            case SourceExpr.IfExpr => PackageFormat_SourceExpr.SourceExpr_IF_EXPR
-            case SourceExpr.WhileExpr => PackageFormat_SourceExpr.SourceExpr_WHILE_EXPR
-            case SourceExpr.DoWhileExpr => PackageFormat_SourceExpr.SourceExpr_DO_WHILE_EXPR
-            case SourceExpr.MatchExpr => PackageFormat_SourceExpr.SourceExpr_MATCH_EXPR
-            case SourceExpr.IfLetOrWhileLet => PackageFormat_SourceExpr.SourceExpr_IF_LET_OR_WHILE_LET
-            case SourceExpr.Quest => PackageFormat_SourceExpr.SourceExpr_QUEST
-            case SourceExpr.Binary => PackageFormat_SourceExpr.SourceExpr_BINARY
-            case SourceExpr.ForInExpr => PackageFormat_SourceExpr.SourceExpr_FOR_IN_EXPR
-            case SourceExpr.Other => PackageFormat_SourceExpr.SourceExpr_OTHER
+            case SourceExpr.IfExpr => CHIRFormat_SourceExpr.SourceExpr_IF_EXPR
+            case SourceExpr.WhileExpr => CHIRFormat_SourceExpr.SourceExpr_WHILE_EXPR
+            case SourceExpr.DoWhileExpr => CHIRFormat_SourceExpr.SourceExpr_DO_WHILE_EXPR
+            case SourceExpr.MatchExpr => CHIRFormat_SourceExpr.SourceExpr_MATCH_EXPR
+            case SourceExpr.IfLetOrWhileLet => CHIRFormat_SourceExpr.SourceExpr_IF_LET_OR_WHILE_LET
+            case SourceExpr.Quest => CHIRFormat_SourceExpr.SourceExpr_QUEST
+            case SourceExpr.Binary => CHIRFormat_SourceExpr.SourceExpr_BINARY
+            case SourceExpr.ForInExpr => CHIRFormat_SourceExpr.SourceExpr_FOR_IN_EXPR
+            case SourceExpr.Other => CHIRFormat_SourceExpr.SourceExpr_OTHER
         }
     }
 
-    private func serializeIntrinsicKind(kind: IntrinsicKind): PackageFormat_IntrinsicKind {
+    private func serializeIntrinsicKind(kind: IntrinsicKind): CHIRFormat_IntrinsicKind {
         return match (kind) {
-            case IntrinsicKind.NotIntrinsic => PackageFormat_IntrinsicKind.IntrinsicKind_NOT_INTRINSIC
-            case IntrinsicKind.NotImplemented => PackageFormat_IntrinsicKind.IntrinsicKind_NOT_IMPLEMENTED
-            case IntrinsicKind.ArrayInit => PackageFormat_IntrinsicKind.IntrinsicKind_ARRAY_INIT
-            case IntrinsicKind.SizeOf => PackageFormat_IntrinsicKind.IntrinsicKind_SIZE_OF
-            case IntrinsicKind.AlignOf => PackageFormat_IntrinsicKind.IntrinsicKind_ALIGN_OF
-            case IntrinsicKind.ArrayAcquireRawData => PackageFormat_IntrinsicKind.IntrinsicKind_ARRAY_ACQUIRE_RAW_DATA
-            case IntrinsicKind.ArrayReleaseRawData => PackageFormat_IntrinsicKind.IntrinsicKind_ARRAY_RELEASE_RAW_DATA
-            case IntrinsicKind.ArrayBuiltInCopyTo => PackageFormat_IntrinsicKind.IntrinsicKind_ARRAY_BUILT_IN_COPY_TO
-            case IntrinsicKind.ArrayGet => PackageFormat_IntrinsicKind.IntrinsicKind_ARRAY_GET
-            case IntrinsicKind.ArraySet => PackageFormat_IntrinsicKind.IntrinsicKind_ARRAY_SET
-            case IntrinsicKind.ArrayGetUnchecked => PackageFormat_IntrinsicKind.IntrinsicKind_ARRAY_GET_UNCHECKED
-            case IntrinsicKind.ArrayGetRefUnchecked => PackageFormat_IntrinsicKind.IntrinsicKind_ARRAY_GET_REF_UNCHECKED
-            case IntrinsicKind.ArraySetUnchecked => PackageFormat_IntrinsicKind.IntrinsicKind_ARRAY_SET_UNCHECKED
-            case IntrinsicKind.ArraySize => PackageFormat_IntrinsicKind.IntrinsicKind_ARRAY_SIZE
-            case IntrinsicKind.ArrayClone => PackageFormat_IntrinsicKind.IntrinsicKind_ARRAY_CLONE
-            case IntrinsicKind.ArraySliceInit => PackageFormat_IntrinsicKind.IntrinsicKind_ARRAY_SLICE_INIT
-            case IntrinsicKind.ArraySlice => PackageFormat_IntrinsicKind.IntrinsicKind_ARRAY_SLICE
-            case IntrinsicKind.ArraySliceRawArray => PackageFormat_IntrinsicKind.IntrinsicKind_ARRAY_SLICE_RAWARRAY
-            case IntrinsicKind.ArraySliceStart => PackageFormat_IntrinsicKind.IntrinsicKind_ARRAY_SLICE_START
-            case IntrinsicKind.ArraySliceSize => PackageFormat_IntrinsicKind.IntrinsicKind_ARRAY_SLICE_SIZE
-            case IntrinsicKind.ArraySliceGetElement => PackageFormat_IntrinsicKind.IntrinsicKind_ARRAY_SLICE_GET_ELEMENT
-            case IntrinsicKind.ArraySliceGetElementUnchecked => PackageFormat_IntrinsicKind.IntrinsicKind_ARRAY_SLICE_GET_ELEMENT_UNCHECKED
-            case IntrinsicKind.ArraySliceSetElement => PackageFormat_IntrinsicKind.IntrinsicKind_ARRAY_SLICE_SET_ELEMENT
-            case IntrinsicKind.ArraySliceSetElementUnchecked => PackageFormat_IntrinsicKind.IntrinsicKind_ARRAY_SLICE_SET_ELEMENT_UNCHECKED
-            case IntrinsicKind.FillInStackTrace => PackageFormat_IntrinsicKind.IntrinsicKind_FILL_IN_STACK_TRACE
-            case IntrinsicKind.DecodeStackTrace => PackageFormat_IntrinsicKind.IntrinsicKind_DECODE_STACK_TRACE
-            case IntrinsicKind.DumpCurrentThreadInfo => PackageFormat_IntrinsicKind.IntrinsicKind_DUMP_CURRENT_THREAD_INFO
-            case IntrinsicKind.DumpAllThreadsInfo => PackageFormat_IntrinsicKind.IntrinsicKind_DUMP_ALL_THREADS_INFO
-            case IntrinsicKind.Chr => PackageFormat_IntrinsicKind.IntrinsicKind_CHR
-            case IntrinsicKind.Ord => PackageFormat_IntrinsicKind.IntrinsicKind_ORD
-            case IntrinsicKind.CPointerGetPointerAddress => PackageFormat_IntrinsicKind.IntrinsicKind_CPOINTER_GET_POINTER_ADDRESS
-            case IntrinsicKind.CPointerInit0 => PackageFormat_IntrinsicKind.IntrinsicKind_CPOINTER_INIT0
-            case IntrinsicKind.CPointerInit1 => PackageFormat_IntrinsicKind.IntrinsicKind_CPOINTER_INIT1
-            case IntrinsicKind.CPointerRead => PackageFormat_IntrinsicKind.IntrinsicKind_CPOINTER_READ
-            case IntrinsicKind.CPointerWrite => PackageFormat_IntrinsicKind.IntrinsicKind_CPOINTER_WRITE
-            case IntrinsicKind.CPointerAdd => PackageFormat_IntrinsicKind.IntrinsicKind_CPOINTER_ADD
-            case IntrinsicKind.CStringInit => PackageFormat_IntrinsicKind.IntrinsicKind_CSTRING_INIT
-            case IntrinsicKind.CStringConvertCstrToPtr => PackageFormat_IntrinsicKind.IntrinsicKind_CSTRING_CONVERT_CSTR_TO_PTR
-            case IntrinsicKind.InoutParam => PackageFormat_IntrinsicKind.IntrinsicKind_INOUT_PARAM
-            case IntrinsicKind.RegisterWatchedObject => PackageFormat_IntrinsicKind.IntrinsicKind_REGISTER_WATCHED_OBJECT
-            case IntrinsicKind.ObjectRefeq => PackageFormat_IntrinsicKind.IntrinsicKind_OBJECT_REFEQ
-            case IntrinsicKind.RawArrayRefeq => PackageFormat_IntrinsicKind.IntrinsicKind_RAW_ARRAY_REFEQ
-            case IntrinsicKind.FuncRefeq => PackageFormat_IntrinsicKind.IntrinsicKind_FUNC_REFEQ
-            case IntrinsicKind.ObjectZeroValue => PackageFormat_IntrinsicKind.IntrinsicKind_OBJECT_ZERO_VALUE
-            case IntrinsicKind.InvokeGc => PackageFormat_IntrinsicKind.IntrinsicKind_INVOKE_GC
-            case IntrinsicKind.SetGcThreshold => PackageFormat_IntrinsicKind.IntrinsicKind_SET_GC_THRESHOLD
-            case IntrinsicKind.DumpCjHeapData => PackageFormat_IntrinsicKind.IntrinsicKind_DUMP_CJ_HEAP_DATA
-            case IntrinsicKind.GetGcCount => PackageFormat_IntrinsicKind.IntrinsicKind_GET_GC_COUNT
-            case IntrinsicKind.GetGcTimeUs => PackageFormat_IntrinsicKind.IntrinsicKind_GET_GC_TIME_US
-            case IntrinsicKind.GetGcFreedSize => PackageFormat_IntrinsicKind.IntrinsicKind_GET_GC_FREED_SIZE
-            case IntrinsicKind.StartCjCpuProfiling => PackageFormat_IntrinsicKind.IntrinsicKind_START_CJ_CPU_PROFILING
-            case IntrinsicKind.StopCjCpuProfiling => PackageFormat_IntrinsicKind.IntrinsicKind_STOP_CJ_CPU_PROFILING
-            case IntrinsicKind.BlackBox => PackageFormat_IntrinsicKind.IntrinsicKind_BLACK_BOX
-            case IntrinsicKind.GetMaxHeapSize => PackageFormat_IntrinsicKind.IntrinsicKind_GET_MAX_HEAP_SIZE
-            case IntrinsicKind.GetAllocateHeapSize => PackageFormat_IntrinsicKind.IntrinsicKind_GET_ALLOCATE_HEAP_SIZE
-            case IntrinsicKind.GetRealHeapSize => PackageFormat_IntrinsicKind.IntrinsicKind_GET_REAL_HEAP_SIZE
-            case IntrinsicKind.GetThreadNumber => PackageFormat_IntrinsicKind.IntrinsicKind_GET_THREAD_NUMBER
-            case IntrinsicKind.GetBlockingThreadNumber => PackageFormat_IntrinsicKind.IntrinsicKind_GET_BLOCKING_THREAD_NUMBER
-            case IntrinsicKind.GetNativeThreadNumber => PackageFormat_IntrinsicKind.IntrinsicKind_GET_NATIVE_THREAD_NUMBER
-            case IntrinsicKind.VArraySet => PackageFormat_IntrinsicKind.IntrinsicKind_VARRAY_SET
-            case IntrinsicKind.VArrayGet => PackageFormat_IntrinsicKind.IntrinsicKind_VARRAY_GET
-            case IntrinsicKind.FutureInit => PackageFormat_IntrinsicKind.IntrinsicKind_FUTURE_INIT
-            case IntrinsicKind.FutureIsComplete => PackageFormat_IntrinsicKind.IntrinsicKind_FUTURE_IS_COMPLETE
-            case IntrinsicKind.FutureWait => PackageFormat_IntrinsicKind.IntrinsicKind_FUTURE_WAIT
-            case IntrinsicKind.FutureNotifyAll => PackageFormat_IntrinsicKind.IntrinsicKind_FUTURE_NOTIFYALL
-            case IntrinsicKind.IsThreadObjectInited => PackageFormat_IntrinsicKind.IntrinsicKind_IS_THREAD_OBJECT_INITED
-            case IntrinsicKind.GetThreadObject => PackageFormat_IntrinsicKind.IntrinsicKind_GET_THREAD_OBJECT
-            case IntrinsicKind.SetThreadObject => PackageFormat_IntrinsicKind.IntrinsicKind_SET_THREAD_OBJECT
-            case IntrinsicKind.OverflowCheckedAdd => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_CHECKED_ADD
-            case IntrinsicKind.OverflowCheckedSub => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_CHECKED_SUB
-            case IntrinsicKind.OverflowCheckedMul => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_CHECKED_MUL
-            case IntrinsicKind.OverflowCheckedDiv => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_CHECKED_DIV
-            case IntrinsicKind.OverflowCheckedMod => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_CHECKED_MOD
-            case IntrinsicKind.OverflowCheckedPow => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_CHECKED_POW
-            case IntrinsicKind.OverflowCheckedInc => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_CHECKED_INC
-            case IntrinsicKind.OverflowCheckedDec => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_CHECKED_DEC
-            case IntrinsicKind.OverflowCheckedNeg => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_CHECKED_NEG
-            case IntrinsicKind.OverflowThrowingAdd => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_THROWING_ADD
-            case IntrinsicKind.OverflowThrowingSub => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_THROWING_SUB
-            case IntrinsicKind.OverflowThrowingMul => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_THROWING_MUL
-            case IntrinsicKind.OverflowThrowingDiv => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_THROWING_DIV
-            case IntrinsicKind.OverflowThrowingMod => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_THROWING_MOD
-            case IntrinsicKind.OverflowThrowingPow => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_THROWING_POW
-            case IntrinsicKind.OverflowThrowingInc => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_THROWING_INC
-            case IntrinsicKind.OverflowThrowingDec => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_THROWING_DEC
-            case IntrinsicKind.OverflowThrowingNeg => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_THROWING_NEG
-            case IntrinsicKind.OverflowSaturatingAdd => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_SATURATING_ADD
-            case IntrinsicKind.OverflowSaturatingSub => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_SATURATING_SUB
-            case IntrinsicKind.OverflowSaturatingMul => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_SATURATING_MUL
-            case IntrinsicKind.OverflowSaturatingDiv => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_SATURATING_DIV
-            case IntrinsicKind.OverflowSaturatingMod => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_SATURATING_MOD
-            case IntrinsicKind.OverflowSaturatingPow => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_SATURATING_POW
-            case IntrinsicKind.OverflowSaturatingInc => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_SATURATING_INC
-            case IntrinsicKind.OverflowSaturatingDec => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_SATURATING_DEC
-            case IntrinsicKind.OverflowSaturatingNeg => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_SATURATING_NEG
-            case IntrinsicKind.OverflowWrappingAdd => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_WRAPPING_ADD
-            case IntrinsicKind.OverflowWrappingSub => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_WRAPPING_SUB
-            case IntrinsicKind.OverflowWrappingMul => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_WRAPPING_MUL
-            case IntrinsicKind.OverflowWrappingDiv => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_WRAPPING_DIV
-            case IntrinsicKind.OverflowWrappingMod => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_WRAPPING_MOD
-            case IntrinsicKind.OverflowWrappingPow => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_WRAPPING_POW
-            case IntrinsicKind.OverflowWrappingInc => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_WRAPPING_INC
-            case IntrinsicKind.OverflowWrappingDec => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_WRAPPING_DEC
-            case IntrinsicKind.OverflowWrappingNeg => PackageFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_WRAPPING_NEG
-            case IntrinsicKind.VectorCompare32 => PackageFormat_IntrinsicKind.IntrinsicKind_VECTOR_COMPARE_32
-            case IntrinsicKind.VectorIndexByte32 => PackageFormat_IntrinsicKind.IntrinsicKind_VECTOR_INDEX_BYTE_32
-            case IntrinsicKind.CjCoreCanUseSimd => PackageFormat_IntrinsicKind.IntrinsicKind_CJ_CORE_CAN_USE_SIMD
-            case IntrinsicKind.CjTlsDynSetSessionCallback => PackageFormat_IntrinsicKind.IntrinsicKind_CJ_TLS_DYN_SET_SESSION_CALLBACK
-            case IntrinsicKind.CjTlsDynSslInit => PackageFormat_IntrinsicKind.IntrinsicKind_CJ_TLS_DYN_SSL_INIT
-            case IntrinsicKind.ReflectionIntrinsicStartFlag => PackageFormat_IntrinsicKind.IntrinsicKind_REFLECTION_INTRINSIC_START_FLAG
-            case IntrinsicKind.IsInterface => PackageFormat_IntrinsicKind.IntrinsicKind_IS_INTERFACE
-            case IntrinsicKind.IsClass => PackageFormat_IntrinsicKind.IntrinsicKind_IS_CLASS
-            case IntrinsicKind.IsPrimitive => PackageFormat_IntrinsicKind.IntrinsicKind_IS_PRIMITIVE
-            case IntrinsicKind.IsStruct => PackageFormat_IntrinsicKind.IntrinsicKind_IS_STRUCT
-            case IntrinsicKind.IsGeneric => PackageFormat_IntrinsicKind.IntrinsicKind_IS_GENERIC
-            case IntrinsicKind.GetOrCreateTypeInfoForReflect => PackageFormat_IntrinsicKind.IntrinsicKind_GET_OR_CREATE_TYPEINFO_FOR_REFLECT
-            case IntrinsicKind.GetTypeTemplate => PackageFormat_IntrinsicKind.IntrinsicKind_GET_TYPETEMPLATE
-            case IntrinsicKind.CheckMethodActualArgs => PackageFormat_IntrinsicKind.IntrinsicKind_CHECK_METHOD_ACTUAL_ARGS
-            case IntrinsicKind.MethodEntrypointIsNull => PackageFormat_IntrinsicKind.IntrinsicKind_METHOD_ENTRYPOINT_IS_NULL
-            case IntrinsicKind.IsRelectUnsupportedType => PackageFormat_IntrinsicKind.IntrinsicKind_IS_RELECT_UNSUPPORTED_TYPE
-            case IntrinsicKind.GetTypeForAny => PackageFormat_IntrinsicKind.IntrinsicKind_GET_TYPE_FOR_ANY
-            case IntrinsicKind.GetTypeByMangledName => PackageFormat_IntrinsicKind.IntrinsicKind_GET_TYPE_BY_MANGLED_NAME
-            case IntrinsicKind.GetTypeName => PackageFormat_IntrinsicKind.IntrinsicKind_GET_TYPE_NAME
-            case IntrinsicKind.GetTypeByQualifiedName => PackageFormat_IntrinsicKind.IntrinsicKind_GET_TYPE_BY_QUALIFIED_NAME
-            case IntrinsicKind.GetTypeQualifiedNameLength => PackageFormat_IntrinsicKind.IntrinsicKind_GET_TYPE_QUALIFIED_NAME_LENGTH
-            case IntrinsicKind.GetTypeQualifiedName => PackageFormat_IntrinsicKind.IntrinsicKind_GET_TYPE_QUALIFIED_NAME
-            case IntrinsicKind.GetNumOfInterface => PackageFormat_IntrinsicKind.IntrinsicKind_GET_NUM_OF_INTERFACE
-            case IntrinsicKind.GetInterface => PackageFormat_IntrinsicKind.IntrinsicKind_GET_INTERFACE
-            case IntrinsicKind.IsSubtype => PackageFormat_IntrinsicKind.IntrinsicKind_IS_SUBTYPE
-            case IntrinsicKind.GetTypeInfoModifier => PackageFormat_IntrinsicKind.IntrinsicKind_GET_TYPE_INFO_MODIFIER
-            case IntrinsicKind.GetTypeInfoAnnotations => PackageFormat_IntrinsicKind.IntrinsicKind_GET_TYPE_INFO_ANNOTATIONS
-            case IntrinsicKind.GetObjClass => PackageFormat_IntrinsicKind.IntrinsicKind_GET_OBJ_CLASS
-            case IntrinsicKind.GetSuperTypeInfo => PackageFormat_IntrinsicKind.IntrinsicKind_GET_SUPER_TYPE_INFO
-            case IntrinsicKind.GetNumOfInstanceMethodInfos => PackageFormat_IntrinsicKind.IntrinsicKind_GET_NUM_OF_INSTANCE_METHOD_INFOS
-            case IntrinsicKind.GetInstanceMethodInfo => PackageFormat_IntrinsicKind.IntrinsicKind_GET_INSTANCE_METHOD_INFO
-            case IntrinsicKind.GetNumOfStaticMethodInfos => PackageFormat_IntrinsicKind.IntrinsicKind_GET_NUM_OF_STATIC_METHOD_INFOS
-            case IntrinsicKind.GetStaticMethodInfo => PackageFormat_IntrinsicKind.IntrinsicKind_GET_STATIC_METHOD_INFO
-            case IntrinsicKind.GetMethodName => PackageFormat_IntrinsicKind.IntrinsicKind_GET_METHOD_NAME
-            case IntrinsicKind.GetMethodReturnType => PackageFormat_IntrinsicKind.IntrinsicKind_GET_METHOD_RETURN_TYPE
-            case IntrinsicKind.GetMethodModifier => PackageFormat_IntrinsicKind.IntrinsicKind_GET_METHOD_MODIFIER
-            case IntrinsicKind.GetMethodAnnotations => PackageFormat_IntrinsicKind.IntrinsicKind_GET_METHOD_ANNOTATIONS
-            case IntrinsicKind.ApplyCjMethod => PackageFormat_IntrinsicKind.IntrinsicKind_APPLY_CJ_METHOD
-            case IntrinsicKind.ApplyCjStaticMethod => PackageFormat_IntrinsicKind.IntrinsicKind_APPLY_CJ_STATIC_METHOD
-            case IntrinsicKind.ApplyCjGenericMethod => PackageFormat_IntrinsicKind.IntrinsicKind_APPLY_CJ_GENERIC_METHOD
-            case IntrinsicKind.ApplyCjGenericStaticMethod => PackageFormat_IntrinsicKind.IntrinsicKind_APPLY_CJ_GENERIC_STATIC_METHOD
-            case IntrinsicKind.GetNumOfActualParameters => PackageFormat_IntrinsicKind.IntrinsicKind_GET_NUM_OF_ACTUAL_PARAMETERS
-            case IntrinsicKind.GetNumOfGenericParameters => PackageFormat_IntrinsicKind.IntrinsicKind_GET_NUM_OF_GENERIC_PARAMETERS
-            case IntrinsicKind.GetActualParameterInfo => PackageFormat_IntrinsicKind.IntrinsicKind_GET_ACTUAL_PARAMETER_INFO
-            case IntrinsicKind.GetGenericParameterInfo => PackageFormat_IntrinsicKind.IntrinsicKind_GET_GENERIC_PARAMETER_INFO
-            case IntrinsicKind.GetNumOfInstanceFieldInfos => PackageFormat_IntrinsicKind.IntrinsicKind_GET_NUM_OF_INSTANCE_FIELD_INFOS
-            case IntrinsicKind.GetInstanceFieldInfo => PackageFormat_IntrinsicKind.IntrinsicKind_GET_INSTANCE_FIELD_INFO
-            case IntrinsicKind.GetNumOfStaticFieldInfos => PackageFormat_IntrinsicKind.IntrinsicKind_GET_NUM_OF_STATIC_FIELD_INFOS
-            case IntrinsicKind.GetStaticFieldInfo => PackageFormat_IntrinsicKind.IntrinsicKind_GET_STATIC_FIELD_INFO
-            case IntrinsicKind.GetStaticFieldName => PackageFormat_IntrinsicKind.IntrinsicKind_GET_STATIC_FIELD_NAME
-            case IntrinsicKind.GetStaticFieldType => PackageFormat_IntrinsicKind.IntrinsicKind_GET_STATIC_FIELD_TYPE
-            case IntrinsicKind.GetStaticFieldAnnotations => PackageFormat_IntrinsicKind.IntrinsicKind_GET_STATIC_FIELD_ANNOTATIONS
-            case IntrinsicKind.GetStaticFieldModifier => PackageFormat_IntrinsicKind.IntrinsicKind_GET_STATIC_FIELD_MODIFIER
-            case IntrinsicKind.GetFieldValue => PackageFormat_IntrinsicKind.IntrinsicKind_GET_FIELD_VALUE
-            case IntrinsicKind.SetFieldValue => PackageFormat_IntrinsicKind.IntrinsicKind_SET_FIELD_VALUE
-            case IntrinsicKind.GetStaticFieldValue => PackageFormat_IntrinsicKind.IntrinsicKind_GET_STATIC_FIELD_VALUE
-            case IntrinsicKind.SetStaticFieldValue => PackageFormat_IntrinsicKind.IntrinsicKind_SET_STATIC_FIELD_VALUE
-            case IntrinsicKind.GetFieldDeclaringType => PackageFormat_IntrinsicKind.IntrinsicKind_GET_FIELD_DECLARING_TYPE
-            case IntrinsicKind.GetParameterIndex => PackageFormat_IntrinsicKind.IntrinsicKind_GET_PARAMETER_INDEX
-            case IntrinsicKind.GetParameterName => PackageFormat_IntrinsicKind.IntrinsicKind_GET_PARAMETER_NAME
-            case IntrinsicKind.GetParameterType => PackageFormat_IntrinsicKind.IntrinsicKind_GET_PARAMETER_TYPE
-            case IntrinsicKind.GetParameterAnnotations => PackageFormat_IntrinsicKind.IntrinsicKind_GET_PARAMETER_ANNOTATIONS
-            case IntrinsicKind.GetRelatedPackageInf => PackageFormat_IntrinsicKind.IntrinsicKind_GET_RELATED_PACKAGE_INF
-            case IntrinsicKind.GetPackageName => PackageFormat_IntrinsicKind.IntrinsicKind_GET_PACKAGE_NAME
-            case IntrinsicKind.GetPackageNumOfTypeInfos => PackageFormat_IntrinsicKind.IntrinsicKind_GET_PACKAGE_NUM_OF_TYPE_INFOS
-            case IntrinsicKind.GetPackageTypeInfo => PackageFormat_IntrinsicKind.IntrinsicKind_GET_PACKAGE_TYPE_INFO
-            case IntrinsicKind.GetPackageNumOfGlobalMethods => PackageFormat_IntrinsicKind.IntrinsicKind_GET_PACKAGE_NUM_OF_GLOBAL_METHODS
-            case IntrinsicKind.GetPackageGlobalMethodInfo => PackageFormat_IntrinsicKind.IntrinsicKind_GET_PACKAGE_GLOBAL_METHOD_INFO
-            case IntrinsicKind.GetPackageNumOfGlobalFieldInfos => PackageFormat_IntrinsicKind.IntrinsicKind_GET_PACKAGE_NUM_OF_GLOBAL_FIELD_INFOS
-            case IntrinsicKind.GetPackageGlobalFieldInfo => PackageFormat_IntrinsicKind.IntrinsicKind_GET_PACKAGE_GLOBAL_FIELD_INFO
-            case IntrinsicKind.LoadPackage => PackageFormat_IntrinsicKind.IntrinsicKind_LOAD_PACKAGE
-            case IntrinsicKind.GetPackageByQualifiedName => PackageFormat_IntrinsicKind.IntrinsicKind_GET_PACKAGE_BY_QUALIFIEDNAME
-            case IntrinsicKind.GetPackageVersion => PackageFormat_IntrinsicKind.IntrinsicKind_GET_PACKAGE_VERSION
-            case IntrinsicKind.GetSubPackages => PackageFormat_IntrinsicKind.IntrinsicKind_GET_SUB_PACKAGES
-            case IntrinsicKind.ReflectionIntrinsicEndFlag => PackageFormat_IntrinsicKind.IntrinsicKind_REFLECTION_INTRINSIC_END_FLAG
-            case IntrinsicKind.Sleep => PackageFormat_IntrinsicKind.IntrinsicKind_SLEEP
-            case IntrinsicKind.SourceFile => PackageFormat_IntrinsicKind.IntrinsicKind_SOURCE_FILE
-            case IntrinsicKind.SourceLine => PackageFormat_IntrinsicKind.IntrinsicKind_SOURCE_LINE
-            case IntrinsicKind.IdentityHashCode => PackageFormat_IntrinsicKind.IntrinsicKind_IDENTITY_HASHCODE
-            case IntrinsicKind.IdentityHashCodeForArray => PackageFormat_IntrinsicKind.IntrinsicKind_IDENTITY_HASHCODE_FOR_ARRAY
-            case IntrinsicKind.AtomicLoad => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_LOAD
-            case IntrinsicKind.AtomicStore => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_STORE
-            case IntrinsicKind.AtomicSwap => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_SWAP
-            case IntrinsicKind.AtomicCompareAndSwap => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_COMPARE_AND_SWAP
-            case IntrinsicKind.AtomicFetchAdd => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_FETCH_ADD
-            case IntrinsicKind.AtomicFetchSub => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_FETCH_SUB
-            case IntrinsicKind.AtomicFetchAnd => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_FETCH_AND
-            case IntrinsicKind.AtomicFetchOr => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_FETCH_OR
-            case IntrinsicKind.AtomicFetchXor => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_FETCH_XOR
-            case IntrinsicKind.MutexInit => PackageFormat_IntrinsicKind.IntrinsicKind_MUTEX_INIT
-            case IntrinsicKind.CjMutexLock => PackageFormat_IntrinsicKind.IntrinsicKind_CJ_MUTEX_LOCK
-            case IntrinsicKind.MutexTryLock => PackageFormat_IntrinsicKind.IntrinsicKind_MUTEX_TRY_LOCK
-            case IntrinsicKind.MutexCheckStatus => PackageFormat_IntrinsicKind.IntrinsicKind_MUTEX_CHECK_STATUS
-            case IntrinsicKind.MutexUnlock => PackageFormat_IntrinsicKind.IntrinsicKind_MUTEX_UNLOCK
-            case IntrinsicKind.WaitQueueInit => PackageFormat_IntrinsicKind.IntrinsicKind_WAITQUEUE_INIT
-            case IntrinsicKind.MonitorInit => PackageFormat_IntrinsicKind.IntrinsicKind_MONITOR_INIT
-            case IntrinsicKind.MoitiorWait => PackageFormat_IntrinsicKind.IntrinsicKind_MOITIOR_WAIT
-            case IntrinsicKind.MoitiorNotify => PackageFormat_IntrinsicKind.IntrinsicKind_MOITIOR_NOTIFY
-            case IntrinsicKind.MoitiorNotifyAll => PackageFormat_IntrinsicKind.IntrinsicKind_MOITIOR_NOTIFY_ALL
-            case IntrinsicKind.MulticonditionWait => PackageFormat_IntrinsicKind.IntrinsicKind_MULTICONDITION_WAIT
-            case IntrinsicKind.MulticonditionNotify => PackageFormat_IntrinsicKind.IntrinsicKind_MULTICONDITION_NOTIFY
-            case IntrinsicKind.MulticonditionNotifyAll => PackageFormat_IntrinsicKind.IntrinsicKind_MULTICONDITION_NOTIFY_ALL
-            case IntrinsicKind.CrossAccessBarrier => PackageFormat_IntrinsicKind.IntrinsicKind_CROSS_ACCESS_BARRIER
-            case IntrinsicKind.CreateExportHandle => PackageFormat_IntrinsicKind.IntrinsicKind_CREATE_EXPORT_HANDLE
-            case IntrinsicKind.GetExportedRef => PackageFormat_IntrinsicKind.IntrinsicKind_GET_EXPORTED_REF
-            case IntrinsicKind.RemoveExportedRef => PackageFormat_IntrinsicKind.IntrinsicKind_REMOVE_EXPORTED_REF
-            case IntrinsicKind.FfiCjAstLex => PackageFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_AST_LEX
-            case IntrinsicKind.FfiCjAstParseExpr => PackageFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_AST_PARSEEXPR
-            case IntrinsicKind.FfiCjAstParseDecl => PackageFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_AST_PARSEDECL
-            case IntrinsicKind.FfiCjAstParsePropMemberDecl => PackageFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_AST_PARSE_PROPMEMBERDECL
-            case IntrinsicKind.FfiCjAstParsePriConstructor => PackageFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_AST_PARSE_PRICONSTRUCTOR
-            case IntrinsicKind.FfiCjAstParsePattern => PackageFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_AST_PARSE_PATTERN
-            case IntrinsicKind.FfiCjAstParseType => PackageFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_AST_PARSE_TYPE
-            case IntrinsicKind.FfiCjAstParseTopLevel => PackageFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_AST_PARSETOPLEVEL
-            case IntrinsicKind.FfiCjAstDiagReport => PackageFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_AST_DIAGREPORT
-            case IntrinsicKind.FfiCjParentContext => PackageFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_PARENT_CONTEXT
-            case IntrinsicKind.FfiCjMacroItemInfo => PackageFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_MACRO_ITEM_INFO
-            case IntrinsicKind.FfiCjGetChildMessages => PackageFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_GET_CHILD_MESSAGES
-            case IntrinsicKind.FfiCjCheckAddSpace => PackageFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_CHECK_ADD_SPACE
-            case IntrinsicKind.CgUnsafeBegin => PackageFormat_IntrinsicKind.IntrinsicKind_CG_UNSAFE_BEGIN
-            case IntrinsicKind.CgUnsafeEnd => PackageFormat_IntrinsicKind.IntrinsicKind_CG_UNSAFE_END
-            case IntrinsicKind.Strlen => PackageFormat_IntrinsicKind.IntrinsicKind_STRLEN
-            case IntrinsicKind.MemcpyS => PackageFormat_IntrinsicKind.IntrinsicKind_MEMCPY_S
-            case IntrinsicKind.MemsetS => PackageFormat_IntrinsicKind.IntrinsicKind_MEMSET_S
-            case IntrinsicKind.Free => PackageFormat_IntrinsicKind.IntrinsicKind_FREE
-            case IntrinsicKind.Malloc => PackageFormat_IntrinsicKind.IntrinsicKind_MALLOC
-            case IntrinsicKind.Strcmp => PackageFormat_IntrinsicKind.IntrinsicKind_STRCMP
-            case IntrinsicKind.Memcmp => PackageFormat_IntrinsicKind.IntrinsicKind_MEMCMP
-            case IntrinsicKind.Strncmp => PackageFormat_IntrinsicKind.IntrinsicKind_STRNCMP
-            case IntrinsicKind.Strcasecmp => PackageFormat_IntrinsicKind.IntrinsicKind_STRCASECMP
-            case IntrinsicKind.AtomicInt8Load => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT8_LOAD
-            case IntrinsicKind.AtomicInt8Store => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT8_STORE
-            case IntrinsicKind.AtomicInt8Swap => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT8_SWAP
-            case IntrinsicKind.AtomicInt8Cas => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT8_CAS
-            case IntrinsicKind.AtomicInt8FetchAdd => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT8_FETCH_ADD
-            case IntrinsicKind.AtomicInt8FetchSub => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT8_FETCH_SUB
-            case IntrinsicKind.AtomicInt8FetchAnd => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT8_FETCH_AND
-            case IntrinsicKind.AtomicInt8FetchOr => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT8_FETCH_OR
-            case IntrinsicKind.AtomicInt8FetchXor => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT8_FETCH_XOR
-            case IntrinsicKind.AtomicInt16Load => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT16_LOAD
-            case IntrinsicKind.AtomicInt16Store => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT16_STORE
-            case IntrinsicKind.AtomicInt16Swap => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT16_SWAP
-            case IntrinsicKind.AtomicInt16Cas => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT16_CAS
-            case IntrinsicKind.AtomicInt16FetchAdd => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT16_FETCH_ADD
-            case IntrinsicKind.AtomicInt16FetchSub => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT16_FETCH_SUB
-            case IntrinsicKind.AtomicInt16FetchAnd => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT16_FETCH_AND
-            case IntrinsicKind.AtomicInt16FetchOr => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT16_FETCH_OR
-            case IntrinsicKind.AtomicInt16FetchXor => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT16_FETCH_XOR
-            case IntrinsicKind.AtomicInt32Load => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT32_LOAD
-            case IntrinsicKind.AtomicInt32Store => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT32_STORE
-            case IntrinsicKind.AtomicInt32Swap => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT32_SWAP
-            case IntrinsicKind.AtomicInt32Cas => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT32_CAS
-            case IntrinsicKind.AtomicInt32FetchAdd => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT32_FETCH_ADD
-            case IntrinsicKind.AtomicInt32FetchSub => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT32_FETCH_SUB
-            case IntrinsicKind.AtomicInt32FetchAnd => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT32_FETCH_AND
-            case IntrinsicKind.AtomicInt32FetchOr => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT32_FETCH_OR
-            case IntrinsicKind.AtomicInt32FetchXor => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT32_FETCH_XOR
-            case IntrinsicKind.AtomicInt64Load => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT64_LOAD
-            case IntrinsicKind.AtomicInt64Store => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT64_STORE
-            case IntrinsicKind.AtomicInt64Swap => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT64_SWAP
-            case IntrinsicKind.AtomicInt64Cas => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT64_CAS
-            case IntrinsicKind.AtomicInt64FetchAdd => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT64_FETCH_ADD
-            case IntrinsicKind.AtomicInt64FetchSub => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT64_FETCH_SUB
-            case IntrinsicKind.AtomicInt64FetchAnd => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT64_FETCH_AND
-            case IntrinsicKind.AtomicInt64FetchOr => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT64_FETCH_OR
-            case IntrinsicKind.AtomicInt64FetchXor => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT64_FETCH_XOR
-            case IntrinsicKind.AtomicUint8Load => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT8_LOAD
-            case IntrinsicKind.AtomicUint8Store => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT8_STORE
-            case IntrinsicKind.AtomicUint8Swap => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT8_SWAP
-            case IntrinsicKind.AtomicUint8Cas => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT8_CAS
-            case IntrinsicKind.AtomicUint8FetchAdd => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT8_FETCH_ADD
-            case IntrinsicKind.AtomicUint8FetchSub => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT8_FETCH_SUB
-            case IntrinsicKind.AtomicUint8FetchAnd => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT8_FETCH_AND
-            case IntrinsicKind.AtomicUint8FetchOr => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT8_FETCH_OR
-            case IntrinsicKind.AtomicUint8FetchXor => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT8_FETCH_XOR
-            case IntrinsicKind.AtomicUint16Load => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT16_LOAD
-            case IntrinsicKind.AtomicUint16Store => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT16_STORE
-            case IntrinsicKind.AtomicUint16Swap => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT16_SWAP
-            case IntrinsicKind.AtomicUint16Cas => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT16_CAS
-            case IntrinsicKind.AtomicUint16FetchAdd => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT16_FETCH_ADD
-            case IntrinsicKind.AtomicUint16FetchSub => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT16_FETCH_SUB
-            case IntrinsicKind.AtomicUint16FetchAnd => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT16_FETCH_AND
-            case IntrinsicKind.AtomicUint16FetchOr => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT16_FETCH_OR
-            case IntrinsicKind.AtomicUint16FetchXor => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT16_FETCH_XOR
-            case IntrinsicKind.AtomicUint32Load => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT32_LOAD
-            case IntrinsicKind.AtomicUint32Store => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT32_STORE
-            case IntrinsicKind.AtomicUint32Swap => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT32_SWAP
-            case IntrinsicKind.AtomicUint32Cas => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT32_CAS
-            case IntrinsicKind.AtomicUint32FetchAdd => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT32_FETCH_ADD
-            case IntrinsicKind.AtomicUint32FetchSub => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT32_FETCH_SUB
-            case IntrinsicKind.AtomicUint32FetchAnd => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT32_FETCH_AND
-            case IntrinsicKind.AtomicUint32FetchOr => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT32_FETCH_OR
-            case IntrinsicKind.AtomicUint32FetchXor => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT32_FETCH_XOR
-            case IntrinsicKind.AtomicUint64Load => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT64_LOAD
-            case IntrinsicKind.AtomicUint64Store => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT64_STORE
-            case IntrinsicKind.AtomicUint64Swap => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT64_SWAP
-            case IntrinsicKind.AtomicUint64Cas => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT64_CAS
-            case IntrinsicKind.AtomicUint64FetchAdd => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT64_FETCH_ADD
-            case IntrinsicKind.AtomicUint64FetchSub => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT64_FETCH_SUB
-            case IntrinsicKind.AtomicUint64FetchAnd => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT64_FETCH_AND
-            case IntrinsicKind.AtomicUint64FetchOr => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT64_FETCH_OR
-            case IntrinsicKind.AtomicUint64FetchXor => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT64_FETCH_XOR
-            case IntrinsicKind.AtomicBoolLoad => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_BOOL_LOAD
-            case IntrinsicKind.AtomicBoolStore => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_BOOL_STORE
-            case IntrinsicKind.AtomicBoolSwap => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_BOOL_SWAP
-            case IntrinsicKind.AtomicBoolCas => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_BOOL_CAS
-            case IntrinsicKind.AtomicReferenceBaseLoad => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_REFERENCEBASE_LOAD
-            case IntrinsicKind.AtomicReferenceBaseStore => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_REFERENCEBASE_STORE
-            case IntrinsicKind.AtomicReferenceBaseSwap => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_REFERENCEBASE_SWAP
-            case IntrinsicKind.AtomicReferenceBaseCas => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_REFERENCEBASE_CAS
-            case IntrinsicKind.AtomicOptionReferenceLoad => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_OPTIONREFERENCE_LOAD
-            case IntrinsicKind.AtomicOptionReferenceStore => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_OPTIONREFERENCE_STORE
-            case IntrinsicKind.AtomicOptionReferenceSwap => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_OPTIONREFERENCE_SWAP
-            case IntrinsicKind.AtomicOptionReferenceCas => PackageFormat_IntrinsicKind.IntrinsicKind_ATOMIC_OPTIONREFERENCE_CAS
-            case IntrinsicKind.BeginCatch => PackageFormat_IntrinsicKind.IntrinsicKind_BEGIN_CATCH
-            case IntrinsicKind.Abs => PackageFormat_IntrinsicKind.IntrinsicKind_ABS
-            case IntrinsicKind.Fabs => PackageFormat_IntrinsicKind.IntrinsicKind_FABS
-            case IntrinsicKind.Floor => PackageFormat_IntrinsicKind.IntrinsicKind_FLOOR
-            case IntrinsicKind.Ceil => PackageFormat_IntrinsicKind.IntrinsicKind_CEIL
-            case IntrinsicKind.Trunc => PackageFormat_IntrinsicKind.IntrinsicKind_TRUNC
-            case IntrinsicKind.Sin => PackageFormat_IntrinsicKind.IntrinsicKind_SIN
-            case IntrinsicKind.Cos => PackageFormat_IntrinsicKind.IntrinsicKind_COS
-            case IntrinsicKind.Exp => PackageFormat_IntrinsicKind.IntrinsicKind_EXP
-            case IntrinsicKind.Exp2 => PackageFormat_IntrinsicKind.IntrinsicKind_EXP2
-            case IntrinsicKind.Log => PackageFormat_IntrinsicKind.IntrinsicKind_LOG
-            case IntrinsicKind.Log2 => PackageFormat_IntrinsicKind.IntrinsicKind_LOG2
-            case IntrinsicKind.Log10 => PackageFormat_IntrinsicKind.IntrinsicKind_LOG10
-            case IntrinsicKind.Sqrt => PackageFormat_IntrinsicKind.IntrinsicKind_SQRT
-            case IntrinsicKind.Round => PackageFormat_IntrinsicKind.IntrinsicKind_ROUND
-            case IntrinsicKind.Pow => PackageFormat_IntrinsicKind.IntrinsicKind_POW
-            case IntrinsicKind.Powi => PackageFormat_IntrinsicKind.IntrinsicKind_POWI
-            case IntrinsicKind.BitCast => PackageFormat_IntrinsicKind.IntrinsicKind_BIT_CAST
-            case IntrinsicKind.Preinitialize => PackageFormat_IntrinsicKind.IntrinsicKind_PREINITIALIZE
-            case IntrinsicKind.ObjectAs => PackageFormat_IntrinsicKind.IntrinsicKind_OBJECT_AS
-            case IntrinsicKind.IsNull => PackageFormat_IntrinsicKind.IntrinsicKind_IS_NULL
-            case IntrinsicKind.GetTypeForTypeParameter => PackageFormat_IntrinsicKind.IntrinsicKind_GET_TYPE_FOR_TYPE_PARAMETER
-            case IntrinsicKind.IsSubtypeTypes => PackageFormat_IntrinsicKind.IntrinsicKind_IS_SUBTYPE_TYPES
+            case IntrinsicKind.NotIntrinsic => CHIRFormat_IntrinsicKind.IntrinsicKind_NOT_INTRINSIC
+            case IntrinsicKind.NotImplemented => CHIRFormat_IntrinsicKind.IntrinsicKind_NOT_IMPLEMENTED
+            case IntrinsicKind.ArrayInit => CHIRFormat_IntrinsicKind.IntrinsicKind_ARRAY_INIT
+            case IntrinsicKind.SizeOf => CHIRFormat_IntrinsicKind.IntrinsicKind_SIZE_OF
+            case IntrinsicKind.AlignOf => CHIRFormat_IntrinsicKind.IntrinsicKind_ALIGN_OF
+            case IntrinsicKind.ArrayAcquireRawData => CHIRFormat_IntrinsicKind.IntrinsicKind_ARRAY_ACQUIRE_RAW_DATA
+            case IntrinsicKind.ArrayReleaseRawData => CHIRFormat_IntrinsicKind.IntrinsicKind_ARRAY_RELEASE_RAW_DATA
+            case IntrinsicKind.ArrayBuiltInCopyTo => CHIRFormat_IntrinsicKind.IntrinsicKind_ARRAY_BUILT_IN_COPY_TO
+            case IntrinsicKind.ArrayGet => CHIRFormat_IntrinsicKind.IntrinsicKind_ARRAY_GET
+            case IntrinsicKind.ArraySet => CHIRFormat_IntrinsicKind.IntrinsicKind_ARRAY_SET
+            case IntrinsicKind.ArrayGetUnchecked => CHIRFormat_IntrinsicKind.IntrinsicKind_ARRAY_GET_UNCHECKED
+            case IntrinsicKind.ArrayGetRefUnchecked => CHIRFormat_IntrinsicKind.IntrinsicKind_ARRAY_GET_REF_UNCHECKED
+            case IntrinsicKind.ArraySetUnchecked => CHIRFormat_IntrinsicKind.IntrinsicKind_ARRAY_SET_UNCHECKED
+            case IntrinsicKind.ArraySize => CHIRFormat_IntrinsicKind.IntrinsicKind_ARRAY_SIZE
+            case IntrinsicKind.ArrayClone => CHIRFormat_IntrinsicKind.IntrinsicKind_ARRAY_CLONE
+            case IntrinsicKind.ArraySliceInit => CHIRFormat_IntrinsicKind.IntrinsicKind_ARRAY_SLICE_INIT
+            case IntrinsicKind.ArraySlice => CHIRFormat_IntrinsicKind.IntrinsicKind_ARRAY_SLICE
+            case IntrinsicKind.ArraySliceRawArray => CHIRFormat_IntrinsicKind.IntrinsicKind_ARRAY_SLICE_RAWARRAY
+            case IntrinsicKind.ArraySliceStart => CHIRFormat_IntrinsicKind.IntrinsicKind_ARRAY_SLICE_START
+            case IntrinsicKind.ArraySliceSize => CHIRFormat_IntrinsicKind.IntrinsicKind_ARRAY_SLICE_SIZE
+            case IntrinsicKind.ArraySliceGetElement => CHIRFormat_IntrinsicKind.IntrinsicKind_ARRAY_SLICE_GET_ELEMENT
+            case IntrinsicKind.ArraySliceGetElementUnchecked => CHIRFormat_IntrinsicKind.IntrinsicKind_ARRAY_SLICE_GET_ELEMENT_UNCHECKED
+            case IntrinsicKind.ArraySliceSetElement => CHIRFormat_IntrinsicKind.IntrinsicKind_ARRAY_SLICE_SET_ELEMENT
+            case IntrinsicKind.ArraySliceSetElementUnchecked => CHIRFormat_IntrinsicKind.IntrinsicKind_ARRAY_SLICE_SET_ELEMENT_UNCHECKED
+            case IntrinsicKind.FillInStackTrace => CHIRFormat_IntrinsicKind.IntrinsicKind_FILL_IN_STACK_TRACE
+            case IntrinsicKind.DecodeStackTrace => CHIRFormat_IntrinsicKind.IntrinsicKind_DECODE_STACK_TRACE
+            case IntrinsicKind.DumpCurrentThreadInfo => CHIRFormat_IntrinsicKind.IntrinsicKind_DUMP_CURRENT_THREAD_INFO
+            case IntrinsicKind.DumpAllThreadsInfo => CHIRFormat_IntrinsicKind.IntrinsicKind_DUMP_ALL_THREADS_INFO
+            case IntrinsicKind.Chr => CHIRFormat_IntrinsicKind.IntrinsicKind_CHR
+            case IntrinsicKind.Ord => CHIRFormat_IntrinsicKind.IntrinsicKind_ORD
+            case IntrinsicKind.CPointerGetPointerAddress => CHIRFormat_IntrinsicKind.IntrinsicKind_CPOINTER_GET_POINTER_ADDRESS
+            case IntrinsicKind.CPointerInit0 => CHIRFormat_IntrinsicKind.IntrinsicKind_CPOINTER_INIT0
+            case IntrinsicKind.CPointerInit1 => CHIRFormat_IntrinsicKind.IntrinsicKind_CPOINTER_INIT1
+            case IntrinsicKind.CPointerRead => CHIRFormat_IntrinsicKind.IntrinsicKind_CPOINTER_READ
+            case IntrinsicKind.CPointerWrite => CHIRFormat_IntrinsicKind.IntrinsicKind_CPOINTER_WRITE
+            case IntrinsicKind.CPointerAdd => CHIRFormat_IntrinsicKind.IntrinsicKind_CPOINTER_ADD
+            case IntrinsicKind.CStringInit => CHIRFormat_IntrinsicKind.IntrinsicKind_CSTRING_INIT
+            case IntrinsicKind.CStringConvertCstrToPtr => CHIRFormat_IntrinsicKind.IntrinsicKind_CSTRING_CONVERT_CSTR_TO_PTR
+            case IntrinsicKind.InoutParam => CHIRFormat_IntrinsicKind.IntrinsicKind_INOUT_PARAM
+            case IntrinsicKind.RegisterWatchedObject => CHIRFormat_IntrinsicKind.IntrinsicKind_REGISTER_WATCHED_OBJECT
+            case IntrinsicKind.ObjectRefeq => CHIRFormat_IntrinsicKind.IntrinsicKind_OBJECT_REFEQ
+            case IntrinsicKind.RawArrayRefeq => CHIRFormat_IntrinsicKind.IntrinsicKind_RAW_ARRAY_REFEQ
+            case IntrinsicKind.FuncRefeq => CHIRFormat_IntrinsicKind.IntrinsicKind_FUNC_REFEQ
+            case IntrinsicKind.ObjectZeroValue => CHIRFormat_IntrinsicKind.IntrinsicKind_OBJECT_ZERO_VALUE
+            case IntrinsicKind.InvokeGc => CHIRFormat_IntrinsicKind.IntrinsicKind_INVOKE_GC
+            case IntrinsicKind.SetGcThreshold => CHIRFormat_IntrinsicKind.IntrinsicKind_SET_GC_THRESHOLD
+            case IntrinsicKind.DumpCjHeapData => CHIRFormat_IntrinsicKind.IntrinsicKind_DUMP_CJ_HEAP_DATA
+            case IntrinsicKind.GetGcCount => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_GC_COUNT
+            case IntrinsicKind.GetGcTimeUs => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_GC_TIME_US
+            case IntrinsicKind.GetGcFreedSize => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_GC_FREED_SIZE
+            case IntrinsicKind.StartCjCpuProfiling => CHIRFormat_IntrinsicKind.IntrinsicKind_START_CJ_CPU_PROFILING
+            case IntrinsicKind.StopCjCpuProfiling => CHIRFormat_IntrinsicKind.IntrinsicKind_STOP_CJ_CPU_PROFILING
+            case IntrinsicKind.BlackBox => CHIRFormat_IntrinsicKind.IntrinsicKind_BLACK_BOX
+            case IntrinsicKind.GetMaxHeapSize => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_MAX_HEAP_SIZE
+            case IntrinsicKind.GetAllocateHeapSize => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_ALLOCATE_HEAP_SIZE
+            case IntrinsicKind.GetRealHeapSize => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_REAL_HEAP_SIZE
+            case IntrinsicKind.GetThreadNumber => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_THREAD_NUMBER
+            case IntrinsicKind.GetBlockingThreadNumber => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_BLOCKING_THREAD_NUMBER
+            case IntrinsicKind.GetNativeThreadNumber => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_NATIVE_THREAD_NUMBER
+            case IntrinsicKind.VArraySet => CHIRFormat_IntrinsicKind.IntrinsicKind_VARRAY_SET
+            case IntrinsicKind.VArrayGet => CHIRFormat_IntrinsicKind.IntrinsicKind_VARRAY_GET
+            case IntrinsicKind.FutureInit => CHIRFormat_IntrinsicKind.IntrinsicKind_FUTURE_INIT
+            case IntrinsicKind.FutureIsComplete => CHIRFormat_IntrinsicKind.IntrinsicKind_FUTURE_IS_COMPLETE
+            case IntrinsicKind.FutureWait => CHIRFormat_IntrinsicKind.IntrinsicKind_FUTURE_WAIT
+            case IntrinsicKind.FutureNotifyAll => CHIRFormat_IntrinsicKind.IntrinsicKind_FUTURE_NOTIFYALL
+            case IntrinsicKind.IsThreadObjectInited => CHIRFormat_IntrinsicKind.IntrinsicKind_IS_THREAD_OBJECT_INITED
+            case IntrinsicKind.GetThreadObject => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_THREAD_OBJECT
+            case IntrinsicKind.SetThreadObject => CHIRFormat_IntrinsicKind.IntrinsicKind_SET_THREAD_OBJECT
+            case IntrinsicKind.OverflowCheckedAdd => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_CHECKED_ADD
+            case IntrinsicKind.OverflowCheckedSub => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_CHECKED_SUB
+            case IntrinsicKind.OverflowCheckedMul => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_CHECKED_MUL
+            case IntrinsicKind.OverflowCheckedDiv => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_CHECKED_DIV
+            case IntrinsicKind.OverflowCheckedMod => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_CHECKED_MOD
+            case IntrinsicKind.OverflowCheckedPow => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_CHECKED_POW
+            case IntrinsicKind.OverflowCheckedInc => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_CHECKED_INC
+            case IntrinsicKind.OverflowCheckedDec => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_CHECKED_DEC
+            case IntrinsicKind.OverflowCheckedNeg => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_CHECKED_NEG
+            case IntrinsicKind.OverflowThrowingAdd => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_THROWING_ADD
+            case IntrinsicKind.OverflowThrowingSub => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_THROWING_SUB
+            case IntrinsicKind.OverflowThrowingMul => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_THROWING_MUL
+            case IntrinsicKind.OverflowThrowingDiv => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_THROWING_DIV
+            case IntrinsicKind.OverflowThrowingMod => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_THROWING_MOD
+            case IntrinsicKind.OverflowThrowingPow => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_THROWING_POW
+            case IntrinsicKind.OverflowThrowingInc => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_THROWING_INC
+            case IntrinsicKind.OverflowThrowingDec => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_THROWING_DEC
+            case IntrinsicKind.OverflowThrowingNeg => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_THROWING_NEG
+            case IntrinsicKind.OverflowSaturatingAdd => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_SATURATING_ADD
+            case IntrinsicKind.OverflowSaturatingSub => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_SATURATING_SUB
+            case IntrinsicKind.OverflowSaturatingMul => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_SATURATING_MUL
+            case IntrinsicKind.OverflowSaturatingDiv => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_SATURATING_DIV
+            case IntrinsicKind.OverflowSaturatingMod => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_SATURATING_MOD
+            case IntrinsicKind.OverflowSaturatingPow => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_SATURATING_POW
+            case IntrinsicKind.OverflowSaturatingInc => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_SATURATING_INC
+            case IntrinsicKind.OverflowSaturatingDec => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_SATURATING_DEC
+            case IntrinsicKind.OverflowSaturatingNeg => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_SATURATING_NEG
+            case IntrinsicKind.OverflowWrappingAdd => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_WRAPPING_ADD
+            case IntrinsicKind.OverflowWrappingSub => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_WRAPPING_SUB
+            case IntrinsicKind.OverflowWrappingMul => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_WRAPPING_MUL
+            case IntrinsicKind.OverflowWrappingDiv => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_WRAPPING_DIV
+            case IntrinsicKind.OverflowWrappingMod => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_WRAPPING_MOD
+            case IntrinsicKind.OverflowWrappingPow => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_WRAPPING_POW
+            case IntrinsicKind.OverflowWrappingInc => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_WRAPPING_INC
+            case IntrinsicKind.OverflowWrappingDec => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_WRAPPING_DEC
+            case IntrinsicKind.OverflowWrappingNeg => CHIRFormat_IntrinsicKind.IntrinsicKind_OVERFLOW_WRAPPING_NEG
+            case IntrinsicKind.VectorCompare32 => CHIRFormat_IntrinsicKind.IntrinsicKind_VECTOR_COMPARE_32
+            case IntrinsicKind.VectorIndexByte32 => CHIRFormat_IntrinsicKind.IntrinsicKind_VECTOR_INDEX_BYTE_32
+            case IntrinsicKind.CjCoreCanUseSimd => CHIRFormat_IntrinsicKind.IntrinsicKind_CJ_CORE_CAN_USE_SIMD
+            case IntrinsicKind.CjTlsDynSetSessionCallback => CHIRFormat_IntrinsicKind.IntrinsicKind_CJ_TLS_DYN_SET_SESSION_CALLBACK
+            case IntrinsicKind.CjTlsDynSslInit => CHIRFormat_IntrinsicKind.IntrinsicKind_CJ_TLS_DYN_SSL_INIT
+            case IntrinsicKind.ReflectionIntrinsicStartFlag => CHIRFormat_IntrinsicKind.IntrinsicKind_REFLECTION_INTRINSIC_START_FLAG
+            case IntrinsicKind.IsInterface => CHIRFormat_IntrinsicKind.IntrinsicKind_IS_INTERFACE
+            case IntrinsicKind.IsClass => CHIRFormat_IntrinsicKind.IntrinsicKind_IS_CLASS
+            case IntrinsicKind.IsPrimitive => CHIRFormat_IntrinsicKind.IntrinsicKind_IS_PRIMITIVE
+            case IntrinsicKind.IsStruct => CHIRFormat_IntrinsicKind.IntrinsicKind_IS_STRUCT
+            case IntrinsicKind.IsGeneric => CHIRFormat_IntrinsicKind.IntrinsicKind_IS_GENERIC
+            case IntrinsicKind.GetOrCreateTypeInfoForReflect => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_OR_CREATE_TYPEINFO_FOR_REFLECT
+            case IntrinsicKind.GetTypeTemplate => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_TYPETEMPLATE
+            case IntrinsicKind.CheckMethodActualArgs => CHIRFormat_IntrinsicKind.IntrinsicKind_CHECK_METHOD_ACTUAL_ARGS
+            case IntrinsicKind.MethodEntrypointIsNull => CHIRFormat_IntrinsicKind.IntrinsicKind_METHOD_ENTRYPOINT_IS_NULL
+            case IntrinsicKind.IsRelectUnsupportedType => CHIRFormat_IntrinsicKind.IntrinsicKind_IS_RELECT_UNSUPPORTED_TYPE
+            case IntrinsicKind.GetTypeForAny => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_TYPE_FOR_ANY
+            case IntrinsicKind.GetTypeByMangledName => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_TYPE_BY_MANGLED_NAME
+            case IntrinsicKind.GetTypeName => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_TYPE_NAME
+            case IntrinsicKind.GetTypeByQualifiedName => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_TYPE_BY_QUALIFIED_NAME
+            case IntrinsicKind.GetTypeQualifiedNameLength => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_TYPE_QUALIFIED_NAME_LENGTH
+            case IntrinsicKind.GetTypeQualifiedName => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_TYPE_QUALIFIED_NAME
+            case IntrinsicKind.GetNumOfInterface => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_NUM_OF_INTERFACE
+            case IntrinsicKind.GetInterface => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_INTERFACE
+            case IntrinsicKind.IsSubtype => CHIRFormat_IntrinsicKind.IntrinsicKind_IS_SUBTYPE
+            case IntrinsicKind.GetTypeInfoModifier => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_TYPE_INFO_MODIFIER
+            case IntrinsicKind.GetTypeInfoAnnotations => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_TYPE_INFO_ANNOTATIONS
+            case IntrinsicKind.GetObjClass => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_OBJ_CLASS
+            case IntrinsicKind.GetSuperTypeInfo => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_SUPER_TYPE_INFO
+            case IntrinsicKind.GetNumOfInstanceMethodInfos => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_NUM_OF_INSTANCE_METHOD_INFOS
+            case IntrinsicKind.GetInstanceMethodInfo => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_INSTANCE_METHOD_INFO
+            case IntrinsicKind.GetNumOfStaticMethodInfos => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_NUM_OF_STATIC_METHOD_INFOS
+            case IntrinsicKind.GetStaticMethodInfo => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_STATIC_METHOD_INFO
+            case IntrinsicKind.GetMethodName => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_METHOD_NAME
+            case IntrinsicKind.GetMethodReturnType => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_METHOD_RETURN_TYPE
+            case IntrinsicKind.GetMethodModifier => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_METHOD_MODIFIER
+            case IntrinsicKind.GetMethodAnnotations => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_METHOD_ANNOTATIONS
+            case IntrinsicKind.ApplyCjMethod => CHIRFormat_IntrinsicKind.IntrinsicKind_APPLY_CJ_METHOD
+            case IntrinsicKind.ApplyCjStaticMethod => CHIRFormat_IntrinsicKind.IntrinsicKind_APPLY_CJ_STATIC_METHOD
+            case IntrinsicKind.ApplyCjGenericMethod => CHIRFormat_IntrinsicKind.IntrinsicKind_APPLY_CJ_GENERIC_METHOD
+            case IntrinsicKind.ApplyCjGenericStaticMethod => CHIRFormat_IntrinsicKind.IntrinsicKind_APPLY_CJ_GENERIC_STATIC_METHOD
+            case IntrinsicKind.GetNumOfActualParameters => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_NUM_OF_ACTUAL_PARAMETERS
+            case IntrinsicKind.GetNumOfGenericParameters => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_NUM_OF_GENERIC_PARAMETERS
+            case IntrinsicKind.GetActualParameterInfo => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_ACTUAL_PARAMETER_INFO
+            case IntrinsicKind.GetGenericParameterInfo => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_GENERIC_PARAMETER_INFO
+            case IntrinsicKind.GetNumOfInstanceFieldInfos => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_NUM_OF_INSTANCE_FIELD_INFOS
+            case IntrinsicKind.GetInstanceFieldInfo => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_INSTANCE_FIELD_INFO
+            case IntrinsicKind.GetNumOfStaticFieldInfos => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_NUM_OF_STATIC_FIELD_INFOS
+            case IntrinsicKind.GetStaticFieldInfo => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_STATIC_FIELD_INFO
+            case IntrinsicKind.GetStaticFieldName => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_STATIC_FIELD_NAME
+            case IntrinsicKind.GetStaticFieldType => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_STATIC_FIELD_TYPE
+            case IntrinsicKind.GetStaticFieldAnnotations => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_STATIC_FIELD_ANNOTATIONS
+            case IntrinsicKind.GetStaticFieldModifier => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_STATIC_FIELD_MODIFIER
+            case IntrinsicKind.GetFieldValue => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_FIELD_VALUE
+            case IntrinsicKind.SetFieldValue => CHIRFormat_IntrinsicKind.IntrinsicKind_SET_FIELD_VALUE
+            case IntrinsicKind.GetStaticFieldValue => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_STATIC_FIELD_VALUE
+            case IntrinsicKind.SetStaticFieldValue => CHIRFormat_IntrinsicKind.IntrinsicKind_SET_STATIC_FIELD_VALUE
+            case IntrinsicKind.GetFieldDeclaringType => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_FIELD_DECLARING_TYPE
+            case IntrinsicKind.GetParameterIndex => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_PARAMETER_INDEX
+            case IntrinsicKind.GetParameterName => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_PARAMETER_NAME
+            case IntrinsicKind.GetParameterType => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_PARAMETER_TYPE
+            case IntrinsicKind.GetParameterAnnotations => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_PARAMETER_ANNOTATIONS
+            case IntrinsicKind.GetRelatedPackageInf => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_RELATED_PACKAGE_INF
+            case IntrinsicKind.GetPackageName => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_PACKAGE_NAME
+            case IntrinsicKind.GetPackageNumOfTypeInfos => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_PACKAGE_NUM_OF_TYPE_INFOS
+            case IntrinsicKind.GetPackageTypeInfo => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_PACKAGE_TYPE_INFO
+            case IntrinsicKind.GetPackageNumOfGlobalMethods => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_PACKAGE_NUM_OF_GLOBAL_METHODS
+            case IntrinsicKind.GetPackageGlobalMethodInfo => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_PACKAGE_GLOBAL_METHOD_INFO
+            case IntrinsicKind.GetPackageNumOfGlobalFieldInfos => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_PACKAGE_NUM_OF_GLOBAL_FIELD_INFOS
+            case IntrinsicKind.GetPackageGlobalFieldInfo => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_PACKAGE_GLOBAL_FIELD_INFO
+            case IntrinsicKind.LoadPackage => CHIRFormat_IntrinsicKind.IntrinsicKind_LOAD_PACKAGE
+            case IntrinsicKind.GetPackageByQualifiedName => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_PACKAGE_BY_QUALIFIEDNAME
+            case IntrinsicKind.GetPackageVersion => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_PACKAGE_VERSION
+            case IntrinsicKind.GetSubPackages => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_SUB_PACKAGES
+            case IntrinsicKind.ReflectionIntrinsicEndFlag => CHIRFormat_IntrinsicKind.IntrinsicKind_REFLECTION_INTRINSIC_END_FLAG
+            case IntrinsicKind.Sleep => CHIRFormat_IntrinsicKind.IntrinsicKind_SLEEP
+            case IntrinsicKind.SourceFile => CHIRFormat_IntrinsicKind.IntrinsicKind_SOURCE_FILE
+            case IntrinsicKind.SourceLine => CHIRFormat_IntrinsicKind.IntrinsicKind_SOURCE_LINE
+            case IntrinsicKind.IdentityHashCode => CHIRFormat_IntrinsicKind.IntrinsicKind_IDENTITY_HASHCODE
+            case IntrinsicKind.IdentityHashCodeForArray => CHIRFormat_IntrinsicKind.IntrinsicKind_IDENTITY_HASHCODE_FOR_ARRAY
+            case IntrinsicKind.AtomicLoad => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_LOAD
+            case IntrinsicKind.AtomicStore => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_STORE
+            case IntrinsicKind.AtomicSwap => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_SWAP
+            case IntrinsicKind.AtomicCompareAndSwap => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_COMPARE_AND_SWAP
+            case IntrinsicKind.AtomicFetchAdd => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_FETCH_ADD
+            case IntrinsicKind.AtomicFetchSub => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_FETCH_SUB
+            case IntrinsicKind.AtomicFetchAnd => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_FETCH_AND
+            case IntrinsicKind.AtomicFetchOr => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_FETCH_OR
+            case IntrinsicKind.AtomicFetchXor => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_FETCH_XOR
+            case IntrinsicKind.MutexInit => CHIRFormat_IntrinsicKind.IntrinsicKind_MUTEX_INIT
+            case IntrinsicKind.CjMutexLock => CHIRFormat_IntrinsicKind.IntrinsicKind_CJ_MUTEX_LOCK
+            case IntrinsicKind.MutexTryLock => CHIRFormat_IntrinsicKind.IntrinsicKind_MUTEX_TRY_LOCK
+            case IntrinsicKind.MutexCheckStatus => CHIRFormat_IntrinsicKind.IntrinsicKind_MUTEX_CHECK_STATUS
+            case IntrinsicKind.MutexUnlock => CHIRFormat_IntrinsicKind.IntrinsicKind_MUTEX_UNLOCK
+            case IntrinsicKind.WaitQueueInit => CHIRFormat_IntrinsicKind.IntrinsicKind_WAITQUEUE_INIT
+            case IntrinsicKind.MonitorInit => CHIRFormat_IntrinsicKind.IntrinsicKind_MONITOR_INIT
+            case IntrinsicKind.MoitiorWait => CHIRFormat_IntrinsicKind.IntrinsicKind_MOITIOR_WAIT
+            case IntrinsicKind.MoitiorNotify => CHIRFormat_IntrinsicKind.IntrinsicKind_MOITIOR_NOTIFY
+            case IntrinsicKind.MoitiorNotifyAll => CHIRFormat_IntrinsicKind.IntrinsicKind_MOITIOR_NOTIFY_ALL
+            case IntrinsicKind.MulticonditionWait => CHIRFormat_IntrinsicKind.IntrinsicKind_MULTICONDITION_WAIT
+            case IntrinsicKind.MulticonditionNotify => CHIRFormat_IntrinsicKind.IntrinsicKind_MULTICONDITION_NOTIFY
+            case IntrinsicKind.MulticonditionNotifyAll => CHIRFormat_IntrinsicKind.IntrinsicKind_MULTICONDITION_NOTIFY_ALL
+            case IntrinsicKind.CrossAccessBarrier => CHIRFormat_IntrinsicKind.IntrinsicKind_CROSS_ACCESS_BARRIER
+            case IntrinsicKind.CreateExportHandle => CHIRFormat_IntrinsicKind.IntrinsicKind_CREATE_EXPORT_HANDLE
+            case IntrinsicKind.GetExportedRef => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_EXPORTED_REF
+            case IntrinsicKind.RemoveExportedRef => CHIRFormat_IntrinsicKind.IntrinsicKind_REMOVE_EXPORTED_REF
+            case IntrinsicKind.FfiCjAstLex => CHIRFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_AST_LEX
+            case IntrinsicKind.FfiCjAstParseExpr => CHIRFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_AST_PARSEEXPR
+            case IntrinsicKind.FfiCjAstParseDecl => CHIRFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_AST_PARSEDECL
+            case IntrinsicKind.FfiCjAstParsePropMemberDecl => CHIRFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_AST_PARSE_PROPMEMBERDECL
+            case IntrinsicKind.FfiCjAstParsePriConstructor => CHIRFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_AST_PARSE_PRICONSTRUCTOR
+            case IntrinsicKind.FfiCjAstParsePattern => CHIRFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_AST_PARSE_PATTERN
+            case IntrinsicKind.FfiCjAstParseType => CHIRFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_AST_PARSE_TYPE
+            case IntrinsicKind.FfiCjAstParseTopLevel => CHIRFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_AST_PARSETOPLEVEL
+            case IntrinsicKind.FfiCjAstDiagReport => CHIRFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_AST_DIAGREPORT
+            case IntrinsicKind.FfiCjParentContext => CHIRFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_PARENT_CONTEXT
+            case IntrinsicKind.FfiCjMacroItemInfo => CHIRFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_MACRO_ITEM_INFO
+            case IntrinsicKind.FfiCjGetChildMessages => CHIRFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_GET_CHILD_MESSAGES
+            case IntrinsicKind.FfiCjCheckAddSpace => CHIRFormat_IntrinsicKind.IntrinsicKind_FFI_CJ_CHECK_ADD_SPACE
+            case IntrinsicKind.CgUnsafeBegin => CHIRFormat_IntrinsicKind.IntrinsicKind_CG_UNSAFE_BEGIN
+            case IntrinsicKind.CgUnsafeEnd => CHIRFormat_IntrinsicKind.IntrinsicKind_CG_UNSAFE_END
+            case IntrinsicKind.Strlen => CHIRFormat_IntrinsicKind.IntrinsicKind_STRLEN
+            case IntrinsicKind.MemcpyS => CHIRFormat_IntrinsicKind.IntrinsicKind_MEMCPY_S
+            case IntrinsicKind.MemsetS => CHIRFormat_IntrinsicKind.IntrinsicKind_MEMSET_S
+            case IntrinsicKind.Free => CHIRFormat_IntrinsicKind.IntrinsicKind_FREE
+            case IntrinsicKind.Malloc => CHIRFormat_IntrinsicKind.IntrinsicKind_MALLOC
+            case IntrinsicKind.Strcmp => CHIRFormat_IntrinsicKind.IntrinsicKind_STRCMP
+            case IntrinsicKind.Memcmp => CHIRFormat_IntrinsicKind.IntrinsicKind_MEMCMP
+            case IntrinsicKind.Strncmp => CHIRFormat_IntrinsicKind.IntrinsicKind_STRNCMP
+            case IntrinsicKind.Strcasecmp => CHIRFormat_IntrinsicKind.IntrinsicKind_STRCASECMP
+            case IntrinsicKind.AtomicInt8Load => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT8_LOAD
+            case IntrinsicKind.AtomicInt8Store => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT8_STORE
+            case IntrinsicKind.AtomicInt8Swap => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT8_SWAP
+            case IntrinsicKind.AtomicInt8Cas => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT8_CAS
+            case IntrinsicKind.AtomicInt8FetchAdd => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT8_FETCH_ADD
+            case IntrinsicKind.AtomicInt8FetchSub => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT8_FETCH_SUB
+            case IntrinsicKind.AtomicInt8FetchAnd => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT8_FETCH_AND
+            case IntrinsicKind.AtomicInt8FetchOr => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT8_FETCH_OR
+            case IntrinsicKind.AtomicInt8FetchXor => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT8_FETCH_XOR
+            case IntrinsicKind.AtomicInt16Load => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT16_LOAD
+            case IntrinsicKind.AtomicInt16Store => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT16_STORE
+            case IntrinsicKind.AtomicInt16Swap => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT16_SWAP
+            case IntrinsicKind.AtomicInt16Cas => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT16_CAS
+            case IntrinsicKind.AtomicInt16FetchAdd => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT16_FETCH_ADD
+            case IntrinsicKind.AtomicInt16FetchSub => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT16_FETCH_SUB
+            case IntrinsicKind.AtomicInt16FetchAnd => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT16_FETCH_AND
+            case IntrinsicKind.AtomicInt16FetchOr => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT16_FETCH_OR
+            case IntrinsicKind.AtomicInt16FetchXor => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT16_FETCH_XOR
+            case IntrinsicKind.AtomicInt32Load => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT32_LOAD
+            case IntrinsicKind.AtomicInt32Store => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT32_STORE
+            case IntrinsicKind.AtomicInt32Swap => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT32_SWAP
+            case IntrinsicKind.AtomicInt32Cas => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT32_CAS
+            case IntrinsicKind.AtomicInt32FetchAdd => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT32_FETCH_ADD
+            case IntrinsicKind.AtomicInt32FetchSub => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT32_FETCH_SUB
+            case IntrinsicKind.AtomicInt32FetchAnd => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT32_FETCH_AND
+            case IntrinsicKind.AtomicInt32FetchOr => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT32_FETCH_OR
+            case IntrinsicKind.AtomicInt32FetchXor => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT32_FETCH_XOR
+            case IntrinsicKind.AtomicInt64Load => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT64_LOAD
+            case IntrinsicKind.AtomicInt64Store => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT64_STORE
+            case IntrinsicKind.AtomicInt64Swap => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT64_SWAP
+            case IntrinsicKind.AtomicInt64Cas => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT64_CAS
+            case IntrinsicKind.AtomicInt64FetchAdd => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT64_FETCH_ADD
+            case IntrinsicKind.AtomicInt64FetchSub => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT64_FETCH_SUB
+            case IntrinsicKind.AtomicInt64FetchAnd => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT64_FETCH_AND
+            case IntrinsicKind.AtomicInt64FetchOr => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT64_FETCH_OR
+            case IntrinsicKind.AtomicInt64FetchXor => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_INT64_FETCH_XOR
+            case IntrinsicKind.AtomicUint8Load => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT8_LOAD
+            case IntrinsicKind.AtomicUint8Store => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT8_STORE
+            case IntrinsicKind.AtomicUint8Swap => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT8_SWAP
+            case IntrinsicKind.AtomicUint8Cas => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT8_CAS
+            case IntrinsicKind.AtomicUint8FetchAdd => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT8_FETCH_ADD
+            case IntrinsicKind.AtomicUint8FetchSub => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT8_FETCH_SUB
+            case IntrinsicKind.AtomicUint8FetchAnd => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT8_FETCH_AND
+            case IntrinsicKind.AtomicUint8FetchOr => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT8_FETCH_OR
+            case IntrinsicKind.AtomicUint8FetchXor => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT8_FETCH_XOR
+            case IntrinsicKind.AtomicUint16Load => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT16_LOAD
+            case IntrinsicKind.AtomicUint16Store => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT16_STORE
+            case IntrinsicKind.AtomicUint16Swap => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT16_SWAP
+            case IntrinsicKind.AtomicUint16Cas => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT16_CAS
+            case IntrinsicKind.AtomicUint16FetchAdd => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT16_FETCH_ADD
+            case IntrinsicKind.AtomicUint16FetchSub => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT16_FETCH_SUB
+            case IntrinsicKind.AtomicUint16FetchAnd => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT16_FETCH_AND
+            case IntrinsicKind.AtomicUint16FetchOr => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT16_FETCH_OR
+            case IntrinsicKind.AtomicUint16FetchXor => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT16_FETCH_XOR
+            case IntrinsicKind.AtomicUint32Load => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT32_LOAD
+            case IntrinsicKind.AtomicUint32Store => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT32_STORE
+            case IntrinsicKind.AtomicUint32Swap => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT32_SWAP
+            case IntrinsicKind.AtomicUint32Cas => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT32_CAS
+            case IntrinsicKind.AtomicUint32FetchAdd => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT32_FETCH_ADD
+            case IntrinsicKind.AtomicUint32FetchSub => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT32_FETCH_SUB
+            case IntrinsicKind.AtomicUint32FetchAnd => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT32_FETCH_AND
+            case IntrinsicKind.AtomicUint32FetchOr => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT32_FETCH_OR
+            case IntrinsicKind.AtomicUint32FetchXor => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT32_FETCH_XOR
+            case IntrinsicKind.AtomicUint64Load => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT64_LOAD
+            case IntrinsicKind.AtomicUint64Store => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT64_STORE
+            case IntrinsicKind.AtomicUint64Swap => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT64_SWAP
+            case IntrinsicKind.AtomicUint64Cas => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT64_CAS
+            case IntrinsicKind.AtomicUint64FetchAdd => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT64_FETCH_ADD
+            case IntrinsicKind.AtomicUint64FetchSub => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT64_FETCH_SUB
+            case IntrinsicKind.AtomicUint64FetchAnd => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT64_FETCH_AND
+            case IntrinsicKind.AtomicUint64FetchOr => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT64_FETCH_OR
+            case IntrinsicKind.AtomicUint64FetchXor => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_UINT64_FETCH_XOR
+            case IntrinsicKind.AtomicBoolLoad => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_BOOL_LOAD
+            case IntrinsicKind.AtomicBoolStore => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_BOOL_STORE
+            case IntrinsicKind.AtomicBoolSwap => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_BOOL_SWAP
+            case IntrinsicKind.AtomicBoolCas => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_BOOL_CAS
+            case IntrinsicKind.AtomicReferenceBaseLoad => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_REFERENCEBASE_LOAD
+            case IntrinsicKind.AtomicReferenceBaseStore => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_REFERENCEBASE_STORE
+            case IntrinsicKind.AtomicReferenceBaseSwap => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_REFERENCEBASE_SWAP
+            case IntrinsicKind.AtomicReferenceBaseCas => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_REFERENCEBASE_CAS
+            case IntrinsicKind.AtomicOptionReferenceLoad => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_OPTIONREFERENCE_LOAD
+            case IntrinsicKind.AtomicOptionReferenceStore => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_OPTIONREFERENCE_STORE
+            case IntrinsicKind.AtomicOptionReferenceSwap => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_OPTIONREFERENCE_SWAP
+            case IntrinsicKind.AtomicOptionReferenceCas => CHIRFormat_IntrinsicKind.IntrinsicKind_ATOMIC_OPTIONREFERENCE_CAS
+            case IntrinsicKind.BeginCatch => CHIRFormat_IntrinsicKind.IntrinsicKind_BEGIN_CATCH
+            case IntrinsicKind.Abs => CHIRFormat_IntrinsicKind.IntrinsicKind_ABS
+            case IntrinsicKind.Fabs => CHIRFormat_IntrinsicKind.IntrinsicKind_FABS
+            case IntrinsicKind.Floor => CHIRFormat_IntrinsicKind.IntrinsicKind_FLOOR
+            case IntrinsicKind.Ceil => CHIRFormat_IntrinsicKind.IntrinsicKind_CEIL
+            case IntrinsicKind.Trunc => CHIRFormat_IntrinsicKind.IntrinsicKind_TRUNC
+            case IntrinsicKind.Sin => CHIRFormat_IntrinsicKind.IntrinsicKind_SIN
+            case IntrinsicKind.Cos => CHIRFormat_IntrinsicKind.IntrinsicKind_COS
+            case IntrinsicKind.Exp => CHIRFormat_IntrinsicKind.IntrinsicKind_EXP
+            case IntrinsicKind.Exp2 => CHIRFormat_IntrinsicKind.IntrinsicKind_EXP2
+            case IntrinsicKind.Log => CHIRFormat_IntrinsicKind.IntrinsicKind_LOG
+            case IntrinsicKind.Log2 => CHIRFormat_IntrinsicKind.IntrinsicKind_LOG2
+            case IntrinsicKind.Log10 => CHIRFormat_IntrinsicKind.IntrinsicKind_LOG10
+            case IntrinsicKind.Sqrt => CHIRFormat_IntrinsicKind.IntrinsicKind_SQRT
+            case IntrinsicKind.Round => CHIRFormat_IntrinsicKind.IntrinsicKind_ROUND
+            case IntrinsicKind.Pow => CHIRFormat_IntrinsicKind.IntrinsicKind_POW
+            case IntrinsicKind.Powi => CHIRFormat_IntrinsicKind.IntrinsicKind_POWI
+            case IntrinsicKind.BitCast => CHIRFormat_IntrinsicKind.IntrinsicKind_BIT_CAST
+            case IntrinsicKind.Preinitialize => CHIRFormat_IntrinsicKind.IntrinsicKind_PREINITIALIZE
+            case IntrinsicKind.ObjectAs => CHIRFormat_IntrinsicKind.IntrinsicKind_OBJECT_AS
+            case IntrinsicKind.IsNull => CHIRFormat_IntrinsicKind.IntrinsicKind_IS_NULL
+            case IntrinsicKind.GetTypeForTypeParameter => CHIRFormat_IntrinsicKind.IntrinsicKind_GET_TYPE_FOR_TYPE_PARAMETER
+            case IntrinsicKind.IsSubtypeTypes => CHIRFormat_IntrinsicKind.IntrinsicKind_IS_SUBTYPE_TYPES
         }
     }
 
@@ -1141,7 +1142,7 @@ class CHIRSerializerImpl {
         if (let Some(v) <- obj._objType) {
             objType = getId(v)
         }
-        return PackageFormat_FuncCall.createFuncCall(fbBuilder, base, instTypeArgsVec, objType)
+        return CHIRFormat_FuncCall.createFuncCall(fbBuilder, base, instTypeArgsVec, objType)
     }
 
     // Dispatch Expression
@@ -1151,70 +1152,70 @@ class CHIRSerializerImpl {
 
         return match (obj) {
             case e: AllocateBase =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_ALLOCATEBASE)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_ALLOCATEBASE)
                 let allocatedType = getId(e._allocatedType)
-                PackageFormat_AllocateBase.createAllocateBase(fbBuilder, base, allocatedType)
+                CHIRFormat_AllocateBase.createAllocateBase(fbBuilder, base, allocatedType)
             case e: ApplyBase =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_APPLYBASE)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_APPLYBASE)
                 let funcCallBase = serializeFuncCall(base, exprId, e)
-                return PackageFormat_ApplyBase.createApplyBase(fbBuilder, funcCallBase, e._isSuperCall)
+                return CHIRFormat_ApplyBase.createApplyBase(fbBuilder, funcCallBase, e._isSuperCall)
             case e: BinaryExpressionBase =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_BINARYEXPRESSIONBASE)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_BINARYEXPRESSIONBASE)
                 let overflowStrategy = serializeOverflowStrategy(e._overflow)
-                PackageFormat_BinaryExpressionBase.createBinaryExpressionBase(fbBuilder, base, overflowStrategy)
+                CHIRFormat_BinaryExpressionBase.createBinaryExpressionBase(fbBuilder, base, overflowStrategy)
             case e: Branch =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_BRANCH)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_BRANCH)
                 let sourceExpr = serializeSourceExpr(e._sourceExpr)
-                PackageFormat_Branch.createBranch(fbBuilder, base, sourceExpr)
+                CHIRFormat_Branch.createBranch(fbBuilder, base, sourceExpr)
             case e: Debug =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_DEBUG)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_DEBUG)
                 let srcCodeName = fbBuilder.createString(e._srcCodeName)
-                PackageFormat_Debug.createDebug(fbBuilder, base, srcCodeName)
+                CHIRFormat_Debug.createDebug(fbBuilder, base, srcCodeName)
             case e: Field =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_FIELD)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_FIELD)
                 let path = Array<UInt64>(e.path.size, { i => e.path[i] })
                 let pathVec = if (path.size == 0) { UInt32(0) } else { fbBuilder.createUInt64Vector(path) }
-                PackageFormat_Field.createField(fbBuilder, base, pathVec)
+                CHIRFormat_Field.createField(fbBuilder, base, pathVec)
             case e: FieldByName =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_FIELDBYNAME)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_FIELDBYNAME)
                 let path = Array<UInt32>(e.fieldNames.size, { i => fbBuilder.createString(e.fieldNames[i]) })
                 let pathVec = if (path.size == 0) { UInt32(0) } else { fbBuilder.createVectorOfTables(path) }
-                PackageFormat_FieldByName.createFieldByName(fbBuilder, base, pathVec)
+                CHIRFormat_FieldByName.createFieldByName(fbBuilder, base, pathVec)
             case e: GetElementByName =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_GETELEMENTBYNAME)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_GETELEMENTBYNAME)
                 let path = Array<UInt32>(e.fieldNames.size, { i => fbBuilder.createString(e.fieldNames[i]) })
                 let pathVec = if (path.size == 0) { UInt32(0) } else { fbBuilder.createVectorOfTables(path) }
-                PackageFormat_GetElementByName.createGetElementByName(fbBuilder, base, pathVec)
+                CHIRFormat_GetElementByName.createGetElementByName(fbBuilder, base, pathVec)
             case e: GetElementRef =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_GETELEMENTREF)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_GETELEMENTREF)
                 let path = Array<UInt64>(e.path.size, { i => e.path[i] })
                 let pathVec = if (path.size == 0) { UInt32(0) } else { fbBuilder.createUInt64Vector(path) }
-                PackageFormat_GetElementRef.createGetElementRef(fbBuilder, base, pathVec)
+                CHIRFormat_GetElementRef.createGetElementRef(fbBuilder, base, pathVec)
             case e: GetInstantiateValue =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_GETINSTANTIATEVALUE)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_GETINSTANTIATEVALUE)
                 let instantiateTys = getTypeIdList(e._instantiateTypes)
                 let instantiateTysVec = if (instantiateTys.size == 0) { UInt32(0) } else { fbBuilder.createUInt32Vector(instantiateTys) }
-                PackageFormat_GetInstantiateValue.createGetInstantiateValue(fbBuilder, base, instantiateTysVec)
+                CHIRFormat_GetInstantiateValue.createGetInstantiateValue(fbBuilder, base, instantiateTysVec)
             case e: GetRTTIStatic =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_GETRTTISTATIC)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_GETRTTISTATIC)
                 let rttiType = getId(e._ty)
-                PackageFormat_GetRTTIStatic.createGetRTTIStatic(fbBuilder, base, rttiType)
+                CHIRFormat_GetRTTIStatic.createGetRTTIStatic(fbBuilder, base, rttiType)
             case e: InstanceOf =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_INSTANCEOF)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_INSTANCEOF)
                 let targetType = getId(e.targetType)
-                PackageFormat_InstanceOf.createInstanceOf(fbBuilder, base, targetType)
+                CHIRFormat_InstanceOf.createInstanceOf(fbBuilder, base, targetType)
             case e: IntrinsicBase =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_INTRINSICBASE)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_INTRINSICBASE)
                 let funcCallBase = serializeFuncCall(base, exprId, e)
                 let intrinsicKind = serializeIntrinsicKind(e._calleeKind)
-                PackageFormat_IntrinsicBase.createIntrinsicBase(fbBuilder, funcCallBase, intrinsicKind)
+                CHIRFormat_IntrinsicBase.createIntrinsicBase(fbBuilder, funcCallBase, intrinsicKind)
             case e: InvokeBase =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_INVOKEBASE)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_INVOKEBASE)
                 let funcCallBase = serializeFuncCall(base, exprId, e)
                 let overflowStrategy = serializeOverflowStrategy(e._overflowStrategy)
-                PackageFormat_InvokeBase.createInvokeBase(fbBuilder, funcCallBase, overflowStrategy)
+                CHIRFormat_InvokeBase.createInvokeBase(fbBuilder, funcCallBase, overflowStrategy)
             case e: Lambda =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_LAMBDA)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_LAMBDA)
                 let funcTy = getId(e._funcType)
                 let isLocalFunc = e._isLocalFunc
                 let identifier = fbBuilder.createString(e._identifier)
@@ -1226,40 +1227,40 @@ class CHIRSerializerImpl {
                 let body = getId(e.body)
                 let retVal = getId(e._returnValue.getOrThrow())
                 let isCompileTimeValue = e._isCompileTimeValue
-                PackageFormat_Lambda.createLambda(fbBuilder, base, funcTy, isLocalFunc, identifier, srcCodeName, paramsVec, genericTypeParamsVec, body, retVal, isCompileTimeValue)
+                CHIRFormat_Lambda.createLambda(fbBuilder, base, funcTy, isLocalFunc, identifier, srcCodeName, paramsVec, genericTypeParamsVec, body, retVal, isCompileTimeValue)
             case e: MultiBranch =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_MULTIBRANCH)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_MULTIBRANCH)
                 let caseValues = Array<UInt64>(e.caseValues.size, { i => e.caseValues[i] })
                 let caseValuesVec = if (caseValues.isEmpty()) { UInt32(0) } else { fbBuilder.createUInt64Vector(caseValues) }
-                PackageFormat_MultiBranch.createMultiBranch(fbBuilder, base, caseValuesVec)
+                CHIRFormat_MultiBranch.createMultiBranch(fbBuilder, base, caseValuesVec)
             case e: NumericCastBase =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_NUMERICCASTBASE)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_NUMERICCASTBASE)
                 let overflowStrategy = serializeOverflowStrategy(e._overflow)
-                PackageFormat_NumericCastBase.createNumericCastBase(fbBuilder, base, overflowStrategy)
+                CHIRFormat_NumericCastBase.createNumericCastBase(fbBuilder, base, overflowStrategy)
             case e: RawArrayAllocateBase =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_RAWARRAYALLOCATEBASE)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_RAWARRAYALLOCATEBASE)
                 let elementType = getId(e.elementType)
-                PackageFormat_RawArrayAllocateBase.createRawArrayAllocateBase(fbBuilder, base, elementType)
+                CHIRFormat_RawArrayAllocateBase.createRawArrayAllocateBase(fbBuilder, base, elementType)
             case e: SpawnBase =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_SPAWNBASE)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_SPAWNBASE)
                 let executeClosure: UInt32 = if (let Some(v) <- e._executeClosure) { getId(v) } else { UInt32(0) }
-                PackageFormat_SpawnBase.createSpawnBase(fbBuilder, base, executeClosure)
+                CHIRFormat_SpawnBase.createSpawnBase(fbBuilder, base, executeClosure)
             case e: StoreElementByName =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_STOREELEMENTBYNAME)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_STOREELEMENTBYNAME)
                 let path = Array<UInt32>(e._fieldNames.size, { i => fbBuilder.createString(e._fieldNames[i]) })
                 let pathVec = if (path.size == 0) { UInt32(0) } else { fbBuilder.createVectorOfTables(path) }
-                PackageFormat_StoreElementByName.createStoreElementByName(fbBuilder, base, pathVec)
+                CHIRFormat_StoreElementByName.createStoreElementByName(fbBuilder, base, pathVec)
             case e: StoreElementRef =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_STOREELEMENTREF)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_STOREELEMENTREF)
                 let path = Array<UInt64>(e._path.size, { i => e._path[i] })
                 let pathVec = if (path.size == 0) { UInt32(0) } else { fbBuilder.createUInt64Vector(path) }
-                PackageFormat_StoreElementRef.createStoreElementRef(fbBuilder, base, pathVec)
+                CHIRFormat_StoreElementRef.createStoreElementRef(fbBuilder, base, pathVec)
             case e: UnaryExpressionBase =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_UNARYEXPRESSIONBASE)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_UNARYEXPRESSIONBASE)
                 let overflowStrategy = serializeOverflowStrategy(e._overflow)
-                PackageFormat_UnaryExpressionBase.createUnaryExpressionBase(fbBuilder, base, overflowStrategy)
+                CHIRFormat_UnaryExpressionBase.createUnaryExpressionBase(fbBuilder, base, overflowStrategy)
             case _ =>
-                exprKind[Int64(exprId) - 1] = EnumPackageFormat_ExpressionElemValues(PackageFormat_ExpressionElem.ExpressionElem_EXPRESSION)
+                exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_EXPRESSION)
                 base
         }
     }
@@ -1286,7 +1287,7 @@ class CHIRSerializerImpl {
             UInt32(0)
         }
         let outerDef = getId(obj.outerDef)
-        return PackageFormat_MemberVarInfo.createMemberVarInfo(
+        return CHIRFormat_MemberVarInfo.createMemberVarInfo(
             fbBuilder, name, rawMangledName, typeId, attributes, loc, annoInfo, initializerFunc, outerDef
         )
     }
@@ -1311,19 +1312,19 @@ class CHIRSerializerImpl {
         let varInitializationFunc: UInt32 = if (let Some(v) <- obj._instanceVarInitFunc) { getId(v) } else { UInt32(0) }
         let implementedInterfaces = Array<UInt32>(obj.implementedInterfaceTypes.size, { i => getId(obj.implementedInterfaceTypes[i]) })
         let implementedInterfacesVec = if (implementedInterfaces.isEmpty()) { UInt32(0) } else { fbBuilder.createUInt32Vector(implementedInterfaces) }
-        return PackageFormat_CustomTypeDef.createCustomTypeDef(
+        return CHIRFormat_CustomTypeDef.createCustomTypeDef(
             fbBuilder, base, kind, customTypeDefID, srcCodeIdentifier, identifier, packageName, typeId, genericDecl,
             methodsVec, implementedInterfacesVec, instanceMemberVarsVec, staticMemberVarsVec, annoInfo, vtableVec,
             varInitializationFunc
         )
     }
 
-    private func serializeCustomDefKind(kind: CustomDefKind): PackageFormat_CustomDefKind {
+    private func serializeCustomDefKind(kind: CustomDefKind): CHIRFormat_CustomDefKind {
         return match (kind) {
-            case CustomDefKind.ClassLike => PackageFormat_CustomDefKind.CustomDefKind_CLASS
-            case CustomDefKind.Enum => PackageFormat_CustomDefKind.CustomDefKind_ENUM
-            case CustomDefKind.Extend => PackageFormat_CustomDefKind.CustomDefKind_EXTEND
-            case CustomDefKind.Struct => PackageFormat_CustomDefKind.CustomDefKind_STRUCT
+            case CustomDefKind.ClassLike => CHIRFormat_CustomDefKind.CustomDefKind_CLASS
+            case CustomDefKind.Enum => CHIRFormat_CustomDefKind.CustomDefKind_ENUM
+            case CustomDefKind.Extend => CHIRFormat_CustomDefKind.CustomDefKind_EXTEND
+            case CustomDefKind.Struct => CHIRFormat_CustomDefKind.CustomDefKind_STRUCT
         }
     }
 
@@ -1333,7 +1334,7 @@ class CHIRSerializerImpl {
         let mangledName = fbBuilder.createString(ctor.identifier)
         let funcType = getId(ctor.funcType)
         let annoInfo = serializeAnnoInfo(ctor._annoInfo)
-        return PackageFormat_EnumCtorInfo.createEnumCtorInfo(fbBuilder, identifier, mangledName, funcType, annoInfo)
+        return CHIRFormat_EnumCtorInfo.createEnumCtorInfo(fbBuilder, identifier, mangledName, funcType, annoInfo)
     }
 
     // Dispatch CustomTypeDef
@@ -1343,11 +1344,11 @@ class CHIRSerializerImpl {
 
         return match (obj) {
             case d: StructDef =>
-                defKind[Int64(defId) - 1] = EnumPackageFormat_CustomTypeDefElemValues(PackageFormat_CustomTypeDefElem.CustomTypeDefElem_STRUCTDEF)
+                defKind[Int64(defId) - 1] = EnumCHIRFormat_CustomTypeDefElemValues(CHIRFormat_CustomTypeDefElem.CustomTypeDefElem_STRUCTDEF)
                 let isCStruct: Bool = d.isCStruct
-                PackageFormat_StructDef.createStructDef(fbBuilder, base, isCStruct)
+                CHIRFormat_StructDef.createStructDef(fbBuilder, base, isCStruct)
             case d: EnumDef =>
-                defKind[Int64(defId) - 1] = EnumPackageFormat_CustomTypeDefElemValues(PackageFormat_CustomTypeDefElem.CustomTypeDefElem_ENUMDEF)
+                defKind[Int64(defId) - 1] = EnumCHIRFormat_CustomTypeDefElemValues(CHIRFormat_CustomTypeDefElem.CustomTypeDefElem_ENUMDEF)
                 let ctors = ArrayList<UInt32>()
                 for (ctor in d.constructors) {
                     ctors.add(serializeEnumCtorInfo(ctor))
@@ -1355,9 +1356,9 @@ class CHIRSerializerImpl {
                 let ctorsArray = Array<UInt32>(ctors.size, { i => ctors[i] })
                 let ctorsVec = if (ctors.isEmpty()) { UInt32(0) } else { fbBuilder.createVectorOfTables(ctorsArray) }
                 let isExhaustive = d.isExhaustive
-                PackageFormat_EnumDef.createEnumDef(fbBuilder, base, ctorsVec, !isExhaustive)
+                CHIRFormat_EnumDef.createEnumDef(fbBuilder, base, ctorsVec, !isExhaustive)
             case d: ClassLikeDef =>
-                defKind[Int64(defId) - 1] = EnumPackageFormat_CustomTypeDefElemValues(PackageFormat_CustomTypeDefElem.CustomTypeDefElem_CLASSDEF)
+                defKind[Int64(defId) - 1] = EnumCHIRFormat_CustomTypeDefElemValues(CHIRFormat_CustomTypeDefElem.CustomTypeDefElem_CLASSDEF)
                 let superClass: UInt32 = if (d.superClass.isSome()) { getId(d.superClass.getOrThrow()) } else { UInt32(0) }
                 let annotationTargetsVec: UInt32 = if (let Some(targets) <- d._annotationTargets) {
                     let ids = getValueIdList(targets)
@@ -1365,13 +1366,13 @@ class CHIRSerializerImpl {
                 } else {
                     UInt32(0)
                 }
-                PackageFormat_ClassDef.createClassDef(fbBuilder, base, d.isClass(), d.isAnnotation, annotationTargetsVec, superClass)
+                CHIRFormat_ClassDef.createClassDef(fbBuilder, base, d.isClass(), d.isAnnotation, annotationTargetsVec, superClass)
             case d: ExtendDef =>
-                defKind[Int64(defId) - 1] = EnumPackageFormat_CustomTypeDefElemValues(PackageFormat_CustomTypeDefElem.CustomTypeDefElem_EXTENDDEF)
+                defKind[Int64(defId) - 1] = EnumCHIRFormat_CustomTypeDefElemValues(CHIRFormat_CustomTypeDefElem.CustomTypeDefElem_EXTENDDEF)
                 let extendedType: UInt32 = getId(d.extendedType)
                 let genericParams = getTypeIdList(d._genericTypeParams)
                 let genericParamsVec = if (genericParams.isEmpty()) { UInt32(0) } else { fbBuilder.createUInt32Vector(genericParams) }
-                PackageFormat_ExtendDef.createExtendDef(fbBuilder, base, extendedType, genericParamsVec)
+                CHIRFormat_ExtendDef.createExtendDef(fbBuilder, base, extendedType, genericParamsVec)
             case _ => throw CHIRException("Invalid custom type definition.")
         }
     }
@@ -1475,7 +1476,7 @@ class CHIRSerializerImpl {
         // Create CHIRPackage root table.
         let packageInitFunc: UInt32 = if (let Some(v) <- pkg._packageInitFunc) { getId(v) } else { UInt32(0) }
         let packageLiteralInitFunc: UInt32 = if (let Some(v) <- pkg._packageLiteralInitFunc) { getId(v) } else { UInt32(0) }
-        let rootTable = PackageFormat_CHIRPackage.createCHIRPackage(
+        let rootTable = CHIRFormat_CHIRPackage.createCHIRPackage(
             fbBuilder,
             name,
             path,
@@ -1489,7 +1490,7 @@ class CHIRSerializerImpl {
             defsTypeVec,
             defsVec,
             packageInitFunc,
-            PackageFormat_Phase.Phase_RAW,
+            CHIRFormat_Phase.Phase_RAW,
             packageLiteralInitFunc
         )
 

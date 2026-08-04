@@ -12,23 +12,9 @@ src/stdx/encoding/json/native/*.a
 src/stdx/encoding/json/native/json_api.h
 
 third_party/zlib
-third_party/flatbuffers
 
 third_party/boundscheck-v1.1.16
-src/stdx/syntax/NodeFormat_generated.cj
-src/stdx/syntax/table.cj
-src/stdx/syntax/flatbuffer_object.cj
-src/stdx/syntax/decode.cj
-src/stdx/syntax/builder.cj
-src/stdx/syntax/constants.cj
-src/stdx/syntax/exception.cj
+src/stdx/chir/StdxChirFormat_generated.cj
+src/stdx/syntax/StdxSyntaxFormat_generated.cj
 build-script-cache
 cjpm.lock
-
-src/stdx/chir/PackageFormat_generated.cj
-src/stdx/chir/table.cj
-src/stdx/chir/flatbuffer_object.cj
-src/stdx/chir/decode.cj
-src/stdx/chir/builder.cj
-src/stdx/chir/constants.cj
-src/stdx/chir/exception.cj

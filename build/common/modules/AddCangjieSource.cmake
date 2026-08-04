@@ -77,6 +77,11 @@ function(add_cangjie_macro_library_in_local target_name)
         "${multi_value_args}"
         ${ARGN})
 
+    # std.ast (SDK) depends on private flatbuffers; ensure it is built into CANGJIE_PATH first.
+    if(TARGET cangjieCJNATIVEFlatbuffers AND NOT ("${CANGJIELIB_PACKAGE_NAME}" STREQUAL "flatbuffers"))
+        list(APPEND CANGJIELIB_DEPENDS cangjieCJNATIVEFlatbuffers)
+    endif()
+
     # Do not use ${CMAKE_EXECUTABLE_SUFFIX} here, because its value is determined by the target platform, not the host.
     # Determine the suffix according to the host instead.
     set(cangjie_compiler_tool "cjc$<$<BOOL:${CMAKE_HOST_WIN32}>:.exe>")
@@ -194,7 +199,8 @@ function(add_cangjie_library target_name
     set(options
         IS_PACKAGE
         IS_CJNATIVE_BACKEND
-        NO_SUB_PKG)
+        NO_SUB_PKG
+        NO_INSTALL_CJO)
     set(one_value_args
         OUTPUT_NAME
         OUTPUT_DIR
@@ -208,6 +214,11 @@ function(add_cangjie_library target_name
         "${one_value_args}"
         "${multi_value_args}"
         ${ARGN})
+
+    # std.ast (SDK) depends on private flatbuffers; ensure it is built into CANGJIE_PATH first.
+    if(TARGET cangjieCJNATIVEFlatbuffers AND NOT ("${CANGJIELIB_PACKAGE_NAME}" STREQUAL "flatbuffers"))
+        list(APPEND CANGJIELIB_DEPENDS cangjieCJNATIVEFlatbuffers)
+    endif()
 
     # pre-process source files: optional explicit SOURCES (globs or paths relative to
     # SOURCE_DIR); otherwise only top-level *.cj (subdirectories are not included).
@@ -483,6 +494,12 @@ function(add_cangjie_library target_name
                 COMMAND ${CMAKE_COMMAND} -E remove_directory tmp
                 BYPRODUCTS ${output_full_name_prefix}.o)
         endif()
+    endif()
+
+    # Skip installing package interface/bitcode (still builds them for dependents).
+    # Used for private packages such as flatbuffers that must not be shipped.
+    if(CANGJIELIB_NO_INSTALL_CJO)
+        return()
     endif()
 
     # Install
