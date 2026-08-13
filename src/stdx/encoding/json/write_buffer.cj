@@ -45,8 +45,16 @@ class WriteBuffer {
         }
         _buffer = Array<Byte>(cap, repeat: BLANK)
     }
+    exclave init(this @local!, capacity: Int64) {
+        let cap = if (capacity > MIN_CAPACITY) {
+            capacity
+        } else {
+            MIN_CAPACITY
+        }
+        _buffer = Array<Byte>(cap, repeat: BLANK)
+    }
 
-    prop size: Int64 {
+    prop size: Int64 @local? {
         get() {
             return _size
         }
@@ -185,6 +193,136 @@ class WriteBuffer {
     func getAndClear(): Array<Byte> {
         let ret = _buffer[0.._size]
         _buffer = Array<Byte>(0, repeat: BLANK)
+        _size = 0
+        return ret
+    }
+
+
+
+    exclave func checkAndExpend(this @local!, addition: Int64): Unit {
+        let minCapacity = _size + addition
+        let oldCapacity: Int64 = _buffer.size
+        if (minCapacity < oldCapacity) {
+            return
+        }
+
+        var newCapacity: Int64 = oldCapacity + (oldCapacity >> 1)
+        if (newCapacity < minCapacity) {
+            newCapacity = minCapacity
+        }
+        let newArr: Array<Byte> @local! = Array<Byte>(newCapacity, repeat: BLANK)
+        _buffer.copyTo(newArr, 0, 0, _size)
+        _buffer = newArr
+    }
+
+    exclave func append(this @local!, arr: Array<Byte> @local?): WriteBuffer @local! {
+        checkAndExpend(arr.size)
+
+        // Optimized: Always use copyTo for better performance
+        // Modern copyTo implementations are optimized even for small arrays
+        arr.copyTo(_buffer, 0, _size, arr.size)
+        _size += arr.size
+        return this
+    }
+
+    exclave func append(this @local!, str: String @local?): WriteBuffer @local! {
+        append(unsafe { str.rawData() })
+        return this
+    }
+
+    exclave func append(this @local!, byte: Byte): WriteBuffer @local! {
+        checkAndExpend(1)
+        _buffer[_size] = byte
+        _size++
+        return this
+    }
+
+    exclave func append(this @local!, n: Int64): WriteBuffer @local! {
+        checkAndExpend(22)
+        unsafe {
+            let buff = acquireArrayRawData<Byte>(_buffer)
+            let len = CJ_JSON_WriteBufferAppendInt(buff.pointer + _size, n)
+            releaseArrayRawData(buff)
+            _size += len
+        }
+        return this
+    }
+
+    exclave func append(this @local!, fl: Float64): WriteBuffer @local! {
+        unsafe {
+            let p: CPointer<UInt8> = CJ_CORE_Float64ToCPointer(fl)
+            if (p.isNull()) {
+                return this
+            }
+            let cpSize = Int64(strlen(p))
+            checkAndExpend(cpSize)
+            let dest = acquireArrayRawData(_buffer)
+            memcpy_s(dest.pointer + _size, UIntNative(_buffer.size - _size), p, UIntNative(cpSize))
+            releaseArrayRawData(dest)
+            LibC.free(p)
+            _size += cpSize
+        }
+
+        // the result of CJ_CORE_Float64ToCPointer have at least 6 decimal points
+        // there is no out-of-bounds risk
+        while (_buffer[_size - 1] == b'0') {
+            _size--
+        }
+        if (_buffer[_size - 1] == b'.') {
+            _size--
+        }
+        return this
+    }
+
+    exclave func append(this @local!, b: Bool): WriteBuffer @local! {
+        if (b) {
+            append("true")
+        } else {
+            append("false")
+        }
+    }
+
+    exclave func appendBlank(this @local!, n: Int64): WriteBuffer @local! {
+        checkAndExpend(n)
+        _size += n
+        return this
+    }
+
+    exclave func removetail(this @local!): WriteBuffer @local! {
+        if (_size > 0) {
+            _size--
+        }
+        return this
+    }
+
+    exclave func appendEscape(this @local!, str: String @local?, htmlSafe!: Bool = true) {
+        var escapenum = 0
+
+        unsafe {
+            let input = acquireArrayRawData(str.rawData())
+            escapenum = CJ_JSON_StringEscapeCharNumGet(input.pointer, str.size, htmlSafe)
+            releaseArrayRawData(input)
+        }
+
+        if (escapenum == 0) {
+            append(str)
+            return this
+        } else {
+            checkAndExpend(str.size + escapenum)
+            unsafe {
+                let input = acquireArrayRawData(str.rawData())
+                let buff = acquireArrayRawData<Byte>(_buffer)
+                let len = CJ_JSON_ReplaceEscapeChar(input.pointer, str.size, buff.pointer + _size, htmlSafe)
+                releaseArrayRawData(input)
+                releaseArrayRawData(buff)
+                _size += len
+                return this
+            }
+        }
+    }
+    exclave func getAndClear(this @local!): Array<Byte> @local! {
+        let ret = _buffer[0.._size]
+        _buffer = Array<Byte>(0, repeat: BLANK) @local!
         _size = 0
         return ret
     }

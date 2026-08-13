@@ -16,6 +16,7 @@ package stdx.chir
  */
 public class StructDef <: CustomTypeDef & Equatable<StructDef> {
     internal var _isCStruct: Bool = false
+    internal var _isCopy: Bool = false
 
     /**
      * Gets or sets whether this struct is a C struct.
@@ -29,6 +30,19 @@ public class StructDef <: CustomTypeDef & Equatable<StructDef> {
         }
         set(v) {
             _isCStruct = v
+        }
+    }
+
+    /**
+     * Gets or sets whether this struct implements Copyable.
+     * @type { Bool }
+     */
+    public mut prop isCopy: Bool {
+        get() {
+            return _isCopy
+        }
+        set(v) {
+            _isCopy = v
         }
     }
 

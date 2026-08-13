@@ -25,6 +25,9 @@ public enum JsonKind {
  * JsonValue abstract class used for JSON manipulations.
  */
 sealed abstract class JsonValue <: ToString {
+    public init() {}
+    public exclave init(this @local!) {}
+
     /**
      * Convert JsonValue to String.
      *
@@ -35,6 +38,10 @@ sealed abstract class JsonValue <: ToString {
      * @throws JsonException if there exists JsonValue which cannot be converted to String.
      */
     public func toString(): String
+
+    public open func toString(this @local?): String @local! {
+        throw Exception()
+    }
 
     /**
      * Convert JsonValue to json-String.
@@ -79,6 +86,9 @@ sealed abstract class JsonValue <: ToString {
     public static func fromStr(s: String): JsonValue {
         parseString(s)
     }
+    public static exclave func fromStrLocal(s: String): JsonValue @local! {
+        parseStringLocal(s)
+    }
 
     /**
      * Determine the JSON type to which the JsonValue belongs.
@@ -88,6 +98,30 @@ sealed abstract class JsonValue <: ToString {
      * @since 0.17.4
      */
     public func kind(): JsonKind
+    public func kind(this @local?): JsonKind
+
+    public func estimateCapacity(): Int64 {
+        return calculateCapacity()
+    }
+    public func estimateCapacity(this @local?): Int64 {
+        return calculateCapacity()
+    }
+
+    /**
+     * Calculate capacity (to be overridden by subclasses)
+     */
+    protected func calculateCapacity(): Int64
+    protected func calculateCapacity(this @local?): Int64
+
+    /**
+     * Invalidate cached capacity when structure changes
+     */
+    protected func invalidateCapacity(): Unit {
+        return
+    }
+    protected func invalidateCapacity(this @local!): Unit {
+        return
+    }
 
     /**
      * Convert JsonValue to JsonNull. If the failure occurs, Exception will be throwed.
