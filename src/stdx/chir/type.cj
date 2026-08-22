@@ -163,7 +163,7 @@ internal enum TypeKind {
  * Local modal qualifier on a type.
  */
 @Derive[Hashable, Equatable]
-public enum LocalModal {
+public enum Mode {
     | Absent
     | Maybe
     | Must
@@ -175,15 +175,15 @@ public enum LocalModal {
 public class ModalInfo <: Hashable & Equatable<ModalInfo> {
     /**
      * The local modal qualifier.
-     * @type { LocalModal }
+     * @type { Mode }
      */
-    public let local: LocalModal
+    public let local: Mode
 
     /**
      * Creates modal metadata with the given local qualifier.
      * @param local The local modal qualifier (default: Absent).
      */
-    public init(local!: LocalModal = LocalModal.Absent) {
+    public init(local!: Mode = Mode.Absent) {
         this.local = local
     }
 
@@ -209,7 +209,7 @@ public class ModalInfo <: Hashable & Equatable<ModalInfo> {
      * @return true if local is not Absent.
      */
     public func isModal(): Bool {
-        return local != LocalModal.Absent
+        return local != Mode.Absent
     }
 
     /**
@@ -218,8 +218,8 @@ public class ModalInfo <: Hashable & Equatable<ModalInfo> {
      * @return true if this is a sub-modal of other.
      */
     public func isSubModal(other: ModalInfo): Bool {
-        return (local == LocalModal.Absent && other.local == LocalModal.Maybe) ||
-            (local == LocalModal.Must && other.local == LocalModal.Maybe)
+        return (local == Mode.Absent && other.local == Mode.Maybe) ||
+            (local == Mode.Must && other.local == Mode.Maybe)
     }
 
     /**
@@ -228,9 +228,9 @@ public class ModalInfo <: Hashable & Equatable<ModalInfo> {
      */
     public func toString(): String {
         return match (local) {
-            case LocalModal.Absent => "@~local"
-            case LocalModal.Maybe => "@local?"
-            case LocalModal.Must => "@local!"
+            case Mode.Absent => "@~local"
+            case Mode.Maybe => "@local?"
+            case Mode.Must => "@local!"
         }
     }
 }

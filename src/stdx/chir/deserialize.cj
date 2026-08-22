@@ -159,17 +159,17 @@ class CHIRDeserializerImpl {
         }
     }
 
-    private func convertLocalModal(local: PackageFormat_Mode): LocalModal {
+    private func convertMode(local: PackageFormat_Mode): Mode {
         return match (local) {
-            case PackageFormat_Mode.Mode_NONE => LocalModal.Absent
-            case PackageFormat_Mode.Mode_MAYBE => LocalModal.Maybe
-            case PackageFormat_Mode.Mode_MUST => LocalModal.Must
+            case PackageFormat_Mode.Mode_NONE => Mode.Absent
+            case PackageFormat_Mode.Mode_MAYBE => Mode.Maybe
+            case PackageFormat_Mode.Mode_MUST => Mode.Must
         }
     }
 
     private func readModalInfo(base: PackageFormat_Type): ModalInfo {
         if (let Some(m) <- base.GetModal()) {
-            return ModalInfo(local: convertLocalModal(m.GetLocal()))
+            return ModalInfo(local: convertMode(m.GetLocal()))
         }
         return ModalInfo()
     }

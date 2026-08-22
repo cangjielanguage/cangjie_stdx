@@ -286,11 +286,11 @@ class CHIRSerializerImpl {
         return PackageFormat_Base.createBase(fbBuilder, annoTypesVec, annosVec, locOffset, attributes)
     }
 
-    private func serializeLocalModal(local: LocalModal): PackageFormat_Mode {
+    private func serializeMode(local: Mode): PackageFormat_Mode {
         return match (local) {
-            case LocalModal.Absent => PackageFormat_Mode.Mode_NONE
-            case LocalModal.Maybe => PackageFormat_Mode.Mode_MAYBE
-            case LocalModal.Must => PackageFormat_Mode.Mode_MUST
+            case Mode.Absent => PackageFormat_Mode.Mode_NONE
+            case Mode.Maybe => PackageFormat_Mode.Mode_MAYBE
+            case Mode.Must => PackageFormat_Mode.Mode_MUST
         }
     }
 
@@ -298,7 +298,7 @@ class CHIRSerializerImpl {
         if (!modal.isModal()) {
             return UInt32(0)
         }
-        return PackageFormat_ModalInfo.createModalInfo(fbBuilder, serializeLocalModal(modal.local))
+        return PackageFormat_ModalInfo.createModalInfo(fbBuilder, serializeMode(modal.local))
     }
 
     private func serializeType(obj: Type): UInt32 {
