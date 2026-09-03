@@ -59,21 +59,19 @@ class CollectAspects {
         if (annoInstances.isEmpty()) {
             return true
         }
-        let whiteList1 = ["InsertAtEntry", "InsertAtExit"]
-        let whiteList2 = ["ReplaceFuncBody"]
-        var inWhiteList1 = false
-        var inWhiteList2 = false
+        var hasInsertAnno = false
+        var hasReplaceBodyAnno = false
         var result = true
         for (anno in annoInstances) {
-            let isInsertAnno = whiteList1.contains(anno.classSrcCodeName)
-            let isReplaceBodyAnno = whiteList2.contains(anno.classSrcCodeName)
-            inWhiteList1 ||= isInsertAnno
-            inWhiteList2 ||= isReplaceBodyAnno
-            if (inWhiteList1 && inWhiteList2) {
+            let isInsert = isInsertAnno(anno.classSrcCodeName)
+            let isReplaceBody = isReplaceBodyAnno(anno.classSrcCodeName)
+            hasInsertAnno ||= isInsert
+            hasReplaceBodyAnno ||= isReplaceBody
+            if (hasInsertAnno && hasReplaceBodyAnno) {
                 printError("Function '${f.srcCodeName}' cannot have both @InsertAtEntry/@InsertAtExit and @ReplaceFuncBody annotations.")
                 return false
             }
-            if (!isInsertAnno && !isReplaceBodyAnno) {
+            if (!isInsert && !isReplaceBody) {
                 continue
             }
             if (!globalVarsArePrimitiveLiterals(pkg)) {
@@ -86,10 +84,10 @@ class CollectAspects {
             if (!checkAnnotationArgs(f, anno)) {
                 return false
             }
-            if (isInsertAnno && !checkInsertAnnoFuncType(f, anno.argValues)) {
+            if (isInsert && !checkInsertAnnoFuncType(f, anno.argValues)) {
                 return false
             }
-            if (isReplaceBodyAnno && !checkReplaceBodyAnnoFuncType(f, anno.argValues)) {
+            if (isReplaceBody && !checkReplaceBodyAnnoFuncType(f, anno.argValues)) {
                 return false
             }
             let insert = Insert(
@@ -98,7 +96,7 @@ class CollectAspects {
                 f.parameters.size,
                 f.isMemberMethod(),
                 f.isStatic())
-            let funcTypeStr = if (isInsertAnno) {
+            let funcTypeStr = if (isInsert) {
                 anno.argValues[5]
             } else {
                 f.parameters[f.parameters.size - 1].ty.qualifiedName

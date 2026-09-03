@@ -13,6 +13,9 @@ import stdx.chir.*
 
 protected const ANNO_INFO_FILE_SUFFIX = ".annoinfo"
 protected const PACKAGE_NAME_CONNECTOR = "-"
+protected const INSERT_AT_ENTRY_ANNO_CLASS_NAME = "InsertAtEntry"
+protected const INSERT_AT_EXIT_ANNO_CLASS_NAME = "InsertAtExit"
+protected const REPLACE_FUNC_BODY_ANNO_CLASS_NAME = "ReplaceFuncBody"
 
 @Annotation
 public class InsertAtEntry {
@@ -127,4 +130,12 @@ protected func mapArrayTo<T, R>(array: Array<T>, f: (T) -> R): Array<R> {
         result.add(f(i))
     }
     return result.toArray()
+}
+
+protected func isInsertAnno(item: String): Bool {
+    return item == INSERT_AT_ENTRY_ANNO_CLASS_NAME || item == INSERT_AT_EXIT_ANNO_CLASS_NAME
+}
+
+protected func isReplaceBodyAnno(item: String): Bool {
+    return item == REPLACE_FUNC_BODY_ANNO_CLASS_NAME
 }

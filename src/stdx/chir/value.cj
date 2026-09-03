@@ -415,13 +415,12 @@ public class Block <: Value & Equatable<Block> {
         if (let Some(bb) <- user._owner) {
             var stillPred = false
             for (u in _users) {
-                if (u.isTerminator()) {
-                    if (let Some(ownerBb) <- u._owner) {
-                        if (ownerBb == bb) {
-                            stillPred = true
-                            break
-                        }
-                    }
+                if (!u.isTerminator()) {
+                    continue
+                }
+                if (let Some(ownerBb) <- u._owner && ownerBb == bb) {
+                    stillPred = true
+                    break
                 }
             }
             if (!stillPred) {
