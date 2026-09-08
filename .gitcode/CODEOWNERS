@@ -17,6 +17,7 @@ OAT.xml @xuanjz
 /src/stdx/net/ @PigHardWorking
 
 /src/stdx/syntax/ @mini-tang
+/schema/StdxSyntaxFormat.fbs @mini-tang
 
 #stdx docs
 /doc/ @luojianing @renyi43

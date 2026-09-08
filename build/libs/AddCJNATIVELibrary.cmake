@@ -663,6 +663,37 @@ else()
     include(LibraryDependencies)
 endif()
 
+# Private flatbuffers package for the local CANGJIE_PATH.
+# SDK std.ast depends on flatbuffers but does not install it; every stdx cjc
+# compile that pulls std.ast (directly or via deriving/macros) needs this .cjo.
+# Not installed for end users (NO_INSTALL_CJO).
+if(NOT CANGJIE_CJPM_BUILD_TYPE)
+    add_cangjie_library(
+        cangjie${BACKEND_TYPE}Flatbuffers
+        NO_SUB_PKG
+        IS_PACKAGE
+        IS_CJNATIVE_BACKEND
+        NO_INSTALL_CJO
+        PACKAGE_NAME "flatbuffers"
+        SOURCE_DIR $ENV{CANGJIE_HOME}/third_party/flatbuffers/cangjie
+        DEPENDS ${FLATBUFFERS_DEPENDENCIES})
+    # C archive used only to FORCE_LINK into chir/syntax shared libraries.
+    if(NOT CANGJIE_BUILD_WITHOUT_CHIR OR NOT CANGJIE_BUILD_WITHOUT_SYNTAX)
+        add_library(cangjie-flatbuffers STATIC ${output_cj_object_dir}/flatbuffers.o)
+        set_target_properties(cangjie-flatbuffers PROPERTIES LINKER_LANGUAGE C)
+        set_source_files_properties(${output_cj_object_dir}/flatbuffers.o PROPERTIES GENERATED TRUE)
+        add_dependencies(cangjie-flatbuffers cangjie${BACKEND_TYPE}Flatbuffers)
+        # Hide Cangjie package `flatbuffers` symbols force-linked into
+        # libstdx.chir.so / libstdx.syntax.so. std.ast embeds the same package;
+        # DEFAULT visibility would allow ELF interposition across the three DSOs.
+        # Darwin uses two-level namespace; MinGW exports all symbols.
+        set(EXCLUDE_FLATBUFFERS_OPTION)
+        if(NOT DARWIN AND NOT MINGW)
+            set(EXCLUDE_FLATBUFFERS_OPTION ${LINKER_OPTION_PREFIX}--exclude-libs=libcangjie-flatbuffers.a)
+        endif()
+    endif()
+endif()
+
 add_cangjie_library(
     cangjie${BACKEND_TYPE}Stdx
     NO_SUB_PKG
@@ -698,20 +729,36 @@ if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CANGJIE_BUILD_WITHOUT_CHIR)
 
     make_cangjie_lib(
         chir IS_SHARED
-        DEPENDS cangjie${BACKEND_TYPE}Chir
+        DEPENDS cangjie${BACKEND_TYPE}Chir cangjie-flatbuffers cangjie${BACKEND_TYPE}Flatbuffers
         CANGJIE_STD_LIB_LINK
             std-core
             std-collection
             std-fs
-        OBJECTS ${output_cj_object_dir}/stdx/chir.o)
+        OBJECTS ${output_cj_object_dir}/stdx/chir.o
+        FORCE_LINK_ARCHIVES cangjie-flatbuffers
+        FLAGS ${EXCLUDE_FLATBUFFERS_OPTION})
     add_library(stdx.chir STATIC ${output_cj_object_dir}/stdx/chir.o)
     set_target_properties(stdx.chir PROPERTIES LINKER_LANGUAGE C)
+    add_dependencies(stdx.chir cangjie${BACKEND_TYPE}Chir cangjie-flatbuffers)
     install(TARGETS stdx.chir DESTINATION ${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx)
+    if(NOT DARWIN AND NOT MINGW AND NOT WIN32)
+        get_target_property(_stdx_chir_so chir CJ_LIB_OUTPUT_FILE)
+        add_custom_command(
+            TARGET chir POST_BUILD
+            COMMAND ${CMAKE_COMMAND}
+                -DLIB=${_stdx_chir_so}
+                -DNM=${CMAKE_NM}
+                -P ${CMAKE_CURRENT_LIST_DIR}/CheckFlatbuffersSymbolsHidden.cmake
+            COMMENT "Checking Cangjie flatbuffers symbols are hidden in libstdx.chir"
+            VERBATIM)
+    endif()
 endif()
 
 # plugin / CHIR compiler plugins (also built for cross-compiled target packages).
 # Macro packaging follows actors.macros: add_cangjie_library + make_cangjie_lib(IS_MACRO)
 # so the shipped lib-macro_stdx.plugin.* is a real target-platform shared library.
+# Not built under cjpm (depends on chir, which is excluded from cjpm); keep this block
+# separate from CMAKE_BUILD_STAGE=postBuild so cjpm postBuild cannot nest here.
 if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CANGJIE_BUILD_WITHOUT_CHIR
     AND NOT CANGJIE_BUILD_WITHOUT_PLUGIN)
     add_cangjie_library(
@@ -732,6 +779,7 @@ if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CANGJIE_BUILD_WITHOUT_CHIR
         CANGJIE_STD_LIB_LINK std-core std-collection
         OBJECTS ${output_cj_object_dir}/stdx/plugin.manager.o)
 
+    # Target-arch package + shipped lib-macro (make_cangjie_lib IS_MACRO).
     add_cangjie_library(
         cangjie${BACKEND_TYPE}PluginMacro
         IS_PACKAGE
@@ -742,52 +790,60 @@ if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CANGJIE_BUILD_WITHOUT_CHIR
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/plugin
         DEPENDS ${PLUGIN_MACRO_DEPENDENCIES})
 
-    if(NOT CMAKE_BUILD_STAGE STREQUAL "postBuild")
-        make_cangjie_lib(
-            plugin IS_SHARED IS_MACRO
-            DEPENDS cangjie${BACKEND_TYPE}PluginMacro plugin.manager
-            CANGJIE_STDX_LIB_DEPENDS plugin.manager
-            CANGJIE_STD_LIB_LINK std-core std-ast std-collection std-convert
-            OBJECTS ${output_cj_object_dir}/stdx/plugin.o)
+    make_cangjie_lib(
+        plugin IS_SHARED IS_MACRO
+        DEPENDS cangjie${BACKEND_TYPE}PluginMacro plugin.manager
+        CANGJIE_STDX_LIB_DEPENDS plugin.manager
+        CANGJIE_STD_LIB_LINK std-core std-ast std-collection std-convert
+        OBJECTS ${output_cj_object_dir}/stdx/plugin.o)
 
-        # Compile-time macro for host cjc must live under modules/ next to stdx.plugin.cjo.
-        # Native: same arch as shipped lib-macro — stage by copy (no second --compile-macro).
-        # Cross: host cjc cannot load target DLL — build host-arch deps + --compile-macro.
-        if(CMAKE_CROSSCOMPILING)
-            make_host_cangjie_shared_lib(
-                chir
-                SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/chir
-                STD_LINK std-core std-collection std-fs
-                DEPENDS cangjie${BACKEND_TYPE}Chir)
-            make_host_cangjie_shared_lib(
-                plugin.manager
-                SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/plugin/manager
-                STDX_DEP chir
-                STD_LINK std-core std-collection
-                DEPENDS cangjie${BACKEND_TYPE}PluginManager host_stdx_chir)
-            add_cangjie_macro_library_in_local(
-                cangjie${BACKEND_TYPE}PluginMacroHost
-                PACKAGE_NAME "plugin"
-                MODULE_NAME "stdx"
-                SOURCES ${PLUGIN_SRCS}
-                SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/plugin
-                DEPENDS cangjie${BACKEND_TYPE}PluginManager host_stdx_plugin_manager
-                LINK_LIBS -lstdx.plugin.manager)
-        else()
-            set(_plugin_macro_lib
-                "${CMAKE_BINARY_DIR}/lib/${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/lib-macro_stdx.plugin${CMAKE_SHARED_LIBRARY_SUFFIX}")
-            set(_plugin_macro_modules
-                "${output_cj_object_dir}/stdx/lib-macro_stdx.plugin${CMAKE_SHARED_LIBRARY_SUFFIX}")
-            add_custom_command(
-                OUTPUT ${_plugin_macro_modules}
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    ${_plugin_macro_lib} ${_plugin_macro_modules}
-                DEPENDS ${_plugin_macro_lib} plugin
-                COMMENT "Staging lib-macro_stdx.plugin into modules/ for compile-time use")
-            add_custom_target(
-                cangjie${BACKEND_TYPE}PluginMacroHost ALL
-                DEPENDS ${_plugin_macro_modules})
+    # Compile-time macro for host cjc must live under modules/ next to stdx.plugin.cjo.
+    # Use a distinct target name (PluginMacroHost) so it never collides with PluginMacro.
+    # Native: same arch as shipped lib-macro — stage by copy (no second --compile-macro).
+    # Cross: host cjc cannot load target DLL — build host-arch deps + --compile-macro.
+    if(CMAKE_CROSSCOMPILING)
+        # Host DSO must force-link a host-arch flatbuffers archive; the target-arch
+        # libcangjie-flatbuffers.a cannot satisfy symbols in host libstdx.chir.so.
+        make_host_cangjie_flatbuffers_archive()
+        set(_host_chir_exclude)
+        if(NOT CMAKE_HOST_APPLE AND NOT CMAKE_HOST_WIN32)
+            set(_host_chir_exclude -Wl,--exclude-libs=libcangjie-flatbuffers.a)
         endif()
+        make_host_cangjie_shared_lib(
+            chir
+            SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/chir
+            STD_LINK std-core std-collection std-fs
+            FORCE_LINK_ARCHIVES ${STDX_HOST_FLATBUFFERS_ARCHIVE}
+            FLAGS ${_host_chir_exclude}
+            DEPENDS cangjie${BACKEND_TYPE}Chir host_cangjie_flatbuffers ${STDX_HOST_FLATBUFFERS_ARCHIVE})
+        make_host_cangjie_shared_lib(
+            plugin.manager
+            SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/plugin/manager
+            STDX_DEP chir
+            STD_LINK std-core std-collection
+            DEPENDS cangjie${BACKEND_TYPE}PluginManager host_stdx_chir)
+        add_cangjie_macro_library_in_local(
+            cangjie${BACKEND_TYPE}PluginMacroHost
+            PACKAGE_NAME "plugin"
+            MODULE_NAME "stdx"
+            SOURCES ${PLUGIN_SRCS}
+            SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/plugin
+            DEPENDS cangjie${BACKEND_TYPE}PluginManager host_stdx_plugin_manager
+            LINK_LIBS -lstdx.plugin.manager)
+    else()
+        set(_plugin_macro_lib
+            "${CMAKE_BINARY_DIR}/lib/${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/lib-macro_stdx.plugin${CMAKE_SHARED_LIBRARY_SUFFIX}")
+        set(_plugin_macro_modules
+            "${output_cj_object_dir}/stdx/lib-macro_stdx.plugin${CMAKE_SHARED_LIBRARY_SUFFIX}")
+        add_custom_command(
+            OUTPUT ${_plugin_macro_modules}
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${_plugin_macro_lib} ${_plugin_macro_modules}
+            DEPENDS ${_plugin_macro_lib} plugin
+            COMMENT "Staging lib-macro_stdx.plugin into modules/ for compile-time use")
+        add_custom_target(
+            cangjie${BACKEND_TYPE}PluginMacroHost ALL
+            DEPENDS ${_plugin_macro_modules})
     endif()
 endif()
 
@@ -859,7 +915,9 @@ if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CANGJIE_BUILD_WITHOUT_CHIR AND NOT CANGJI
     set_target_properties(stdx.aspect_cj PROPERTIES LINKER_LANGUAGE C)
     install(TARGETS stdx.aspect_cj DESTINATION ${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx)
 
-    if(NOT CMAKE_BUILD_STAGE STREQUAL "postBuild" AND NOT CANGJIE_BUILD_WITHOUT_PLUGIN)
+    # aspect plugins need PluginMacroHost from the non-cjpm plugin block above;
+    # do not nest CMAKE_BUILD_STAGE=postBuild here (that path is cjpm-only).
+    if(NOT CANGJIE_BUILD_WITHOUT_PLUGIN)
         # Host cjc loads macros from modules/; PluginMacroHost stages that .so
         # (native: copy from lib/; cross: --compile-macro).
         list(APPEND ASPECT_CJ_PLUGINS_DEPENDENCIES cangjie${BACKEND_TYPE}PluginMacroHost)
@@ -1207,19 +1265,34 @@ if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CANGJIE_BUILD_WITHOUT_SYNTAX)
         DEPENDS
             cangjie${BACKEND_TYPE}Syntax
             stdx.syntaxFFI
+            cangjie-flatbuffers
+            cangjie${BACKEND_TYPE}Flatbuffers
         CANGJIE_STD_LIB_LINK std-core std-collection std-sync std-convert std-fs std-sort std-ast
         OBJECTS ${output_cj_object_dir}/stdx/syntax.o
-        FORCE_LINK_ARCHIVES stdx.syntaxFFI
+        FORCE_LINK_ARCHIVES stdx.syntaxFFI cangjie-flatbuffers
         FLAGS ${syntaxFFI_flags}
             -lstdx.syntaxFFI
             $<$<BOOL:${OHOS}>:-lunwind>
             $<$<NOT:$<BOOL:${WIN32}>>:-ldl>
+            ${EXCLUDE_FLATBUFFERS_OPTION}
         )
     get_target_property(SYNTAXFFI_OBJS stdx.syntaxFFI SOURCES)
     add_library(stdx.syntax STATIC ${SYNTAXFFI_OBJS} ${output_cj_object_dir}/stdx/syntax.o)
     target_link_libraries(stdx.syntax stdx.syntaxFFI)
     set_target_properties(stdx.syntax PROPERTIES LINKER_LANGUAGE C)
+    add_dependencies(stdx.syntax cangjie${BACKEND_TYPE}Syntax cangjie-flatbuffers)
     install(TARGETS stdx.syntax DESTINATION ${output_triple_name}_cjnative/static/stdx)
+    if(NOT DARWIN AND NOT MINGW AND NOT WIN32)
+        get_target_property(_stdx_syntax_so syntax CJ_LIB_OUTPUT_FILE)
+        add_custom_command(
+            TARGET syntax POST_BUILD
+            COMMAND ${CMAKE_COMMAND}
+                -DLIB=${_stdx_syntax_so}
+                -DNM=${CMAKE_NM}
+                -P ${CMAKE_CURRENT_LIST_DIR}/CheckFlatbuffersSymbolsHidden.cmake
+            COMMENT "Checking Cangjie flatbuffers symbols are hidden in libstdx.syntax"
+            VERBATIM)
+    endif()
 
     add_cangjie_library(
         cangjie${BACKEND_TYPE}Syntax

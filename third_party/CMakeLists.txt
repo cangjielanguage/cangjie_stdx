@@ -27,6 +27,5 @@ endif()
 # Handle third-party dependencies
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
-if(NOT CANGJIE_CJPM_BUILD_TYPE)
-    include(Flatbuffer)
-endif()
+# FlatBuffers toolchain comes from $CANGJIE_HOME (see CangjieFlatbuffers.cmake).
+# Do not build an in-tree flatbuffers ExternalProject.

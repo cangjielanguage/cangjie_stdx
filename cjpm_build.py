@@ -294,11 +294,7 @@ CJPM_DIR = find_ancestor_and_cwd("cjpm")
 
 STDX_DIR = os.path.dirname(os.path.abspath(__file__))
 BUILD_DIR = os.path.join(STDX_DIR, "build_temp")
-SYNTAX_DIR = os.path.join(STDX_DIR, "src/stdx/syntax")
-CHIR_DIR = os.path.join(STDX_DIR, "src/stdx/chir")
-PLUGIN_DIR = os.path.join(STDX_DIR, "src/stdx/plugin")
 FUZZ_DIR = os.path.join(STDX_DIR, "src/stdx/fuzz")
-ASPECT_CJ_DIR = os.path.join(STDX_DIR, "src/stdx/aspect_cj")
 CMAKE_BUILD_DIR = os.path.join(BUILD_DIR, "build")
 CMAKE_OUTPUT_DIR = os.path.join(CJPM_DIR, "target/" + BUILD_TYPE_CJPM)
 LOG_DIR = os.path.join(BUILD_DIR, "logs")
@@ -921,16 +917,20 @@ def clean(args):
             shutil.rmtree(abs_file_path, ignore_errors=False, onerror=redo_with_write)
         if os.path.isfile(abs_file_path):
             os.remove(abs_file_path)
+    # Flatbuffers-generated Cangjie sources live under src/; remove them on clean.
+    generated_files = [
+        os.path.join(STDX_DIR, "src", "stdx", "syntax", "StdxSyntaxFormat_generated.cj"),
+        os.path.join(STDX_DIR, "src", "stdx", "chir", "StdxChirFormat_generated.cj"),
+    ]
+    for generated_file in generated_files:
+        if os.path.isfile(generated_file):
+            os.remove(generated_file)
     LOG.info("end clean\n")
 
 
 def cleanLibs():
     LOG.info("begin clean libs...\n")
     output_dirs = []
-    output_dirs.append(ASPECT_CJ_DIR)
-    output_dirs.append(SYNTAX_DIR)
-    output_dirs.append(CHIR_DIR)
-    output_dirs.append(PLUGIN_DIR)
     if IS_WINDOWS and not DEVECO_OH_NATIVE_HOME:
         output_dirs.append(FUZZ_DIR)
     for file_path in output_dirs:

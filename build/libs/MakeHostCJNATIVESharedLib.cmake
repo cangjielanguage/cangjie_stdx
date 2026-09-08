@@ -73,10 +73,13 @@ if(CMAKE_CROSSCOMPILING)
     endif()
 
     # Compile a stdx package for the host (no --target) and link a host shared library.
-    # make_host_cangjie_shared_lib(<name> SOURCE_DIR <dir> [STDX_DEP ...] [STD_LINK ...] DEPENDS ...)
+    # make_host_cangjie_shared_lib(<name> SOURCE_DIR <dir>
+    #     [STDX_DEP ...] [STD_LINK ...] [FORCE_LINK_ARCHIVES ...] [FLAGS ...] DEPENDS ...)
+    # FORCE_LINK_ARCHIVES: absolute paths (or CMake targets) whole-archived into the host DSO.
+    # FLAGS: extra host linker flags (e.g. --exclude-libs after whole-archive).
     function(make_host_cangjie_shared_lib lib_name)
         set(one_value_args SOURCE_DIR)
-        set(multi_value_args DEPENDS STDX_DEP STD_LINK)
+        set(multi_value_args DEPENDS STDX_DEP STD_LINK FORCE_LINK_ARCHIVES FLAGS)
         cmake_parse_arguments(HOSTLIB "" "${one_value_args}" "${multi_value_args}" ${ARGN})
 
         set(_host_a "${STDX_HOST_STDX_MOD_DIR}/stdx.${lib_name}.a")
@@ -106,6 +109,21 @@ if(CMAKE_CROSSCOMPILING)
                 -install_name "@rpath/libstdx.${lib_name}${STDX_HOST_SHLIB_SUFFIX}")
         endif()
         list(APPEND _host_link_flags ${_host_debug_or_strip_flags})
+
+        set(_host_force_link)
+        foreach(_archive IN LISTS HOSTLIB_FORCE_LINK_ARCHIVES)
+            set(_archive_path "${_archive}")
+            if(TARGET ${_archive})
+                set(_archive_path "$<TARGET_FILE:${_archive}>")
+            endif()
+            if(CMAKE_HOST_APPLE)
+                list(APPEND _host_force_link -force_load "${_archive_path}")
+            else()
+                list(APPEND _host_force_link
+                    -Wl,--whole-archive "${_archive_path}" -Wl,--no-whole-archive)
+            endif()
+        endforeach()
+        list(APPEND _host_force_link ${HOSTLIB_FLAGS})
 
         set(_host_link_libs)
         foreach(_dep IN LISTS HOSTLIB_STDX_DEP)
@@ -151,6 +169,7 @@ if(CMAKE_CROSSCOMPILING)
                 ${_host_link_flags}
                 -o ${_host_so}
                 ${_host_o}
+                ${_host_force_link}
                 -L${STDX_HOST_STDX_LIB_DIR}
                 -L${STDX_HOST_RUNTIME_LIB_PATH}
                 -L${STDX_HOST_CJ_LIB_PATH}
@@ -161,5 +180,58 @@ if(CMAKE_CROSSCOMPILING)
 
         add_custom_target(${_host_target} ALL DEPENDS ${_host_so})
         set_target_properties(${_host_target} PROPERTIES CJ_LIB_OUTPUT_FILE ${_host_so})
+    endfunction()
+
+    # Host-arch static archive of the private flatbuffers package (for FORCE_LINK into host DSOs).
+    # Target-arch libcangjie-flatbuffers.a cannot be linked into a host .so/.dylib/.dll.
+    function(make_host_cangjie_flatbuffers_archive)
+        set(_fb_src "$ENV{CANGJIE_HOME}/third_party/flatbuffers/cangjie")
+        if(NOT EXISTS "${_fb_src}")
+            message(FATAL_ERROR "Host flatbuffers sources not found: ${_fb_src}")
+        endif()
+        set(_host_fb_a "${STDX_HOST_STDX_MOD_DIR}/flatbuffers.a")
+        set(_host_fb_lib "${STDX_HOST_STDX_LIB_DIR}/libcangjie-flatbuffers.a")
+        set(_host_fb_extract "${STDX_HOST_STDX_MOD_DIR}/.extract_host_flatbuffers")
+        set(_host_fb_o "${STDX_HOST_STDX_MOD_DIR}/flatbuffers.o")
+
+        if(CMAKE_BUILD_TYPE MATCHES "^(Debug|RelWithDebInfo)$")
+            set(_host_fb_opt -g)
+        else()
+            set(_host_fb_opt -O2)
+        endif()
+
+        string(TOLOWER "${TARGET_TRIPLE_DIRECTORY_PREFIX}_cjnative" _target_cj_lib_dir)
+        set(_target_cangjie_path "${CMAKE_BINARY_DIR}/modules/${_target_cj_lib_dir}")
+        set(_host_library_path
+            "${CMAKE_BINARY_DIR}/lib${STDX_HOST_PATH_SEP}$ENV{LIBRARY_PATH}")
+
+        add_custom_command(
+            OUTPUT ${_host_fb_lib}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${STDX_HOST_STDX_MOD_DIR}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${STDX_HOST_STDX_LIB_DIR}
+            COMMAND ${CMAKE_COMMAND} -E env
+                "CANGJIE_PATH=${_target_cangjie_path}"
+                "LIBRARY_PATH=${_host_library_path}"
+                ${STDX_HOST_CJC}
+                --no-sub-pkg
+                --trimpath ${_fb_src}/
+                --output-type=staticlib
+                -Woff=all
+                ${_host_fb_opt}
+                -p ${_fb_src}
+                --output ${_host_fb_a}
+            COMMAND ${CMAKE_COMMAND}
+                -DHOST_AR=${STDX_HOST_AR}
+                -DARCHIVE=${_host_fb_a}
+                -DOUTPUT_O=${_host_fb_o}
+                -DEXTRACT_DIR=${_host_fb_extract}
+                -P ${STDX_HOST_EXTRACT_OBJECT_SCRIPT}
+            COMMAND ${STDX_HOST_AR} rcs ${_host_fb_lib} ${_host_fb_o}
+            DEPENDS cangjie${BACKEND_TYPE}Flatbuffers
+            COMMENT "Generating host libcangjie-flatbuffers.a"
+            VERBATIM)
+
+        add_custom_target(host_cangjie_flatbuffers ALL DEPENDS ${_host_fb_lib})
+        set(STDX_HOST_FLATBUFFERS_ARCHIVE "${_host_fb_lib}" PARENT_SCOPE)
     endfunction()
 endif()

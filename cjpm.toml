@@ -20,7 +20,7 @@
   output-type = "static"
   compile-option = "-Woff=all"
   link-option = "-L target/release/stdx -L target/debug/stdx -L target/mock/release/stdx -L target/mock/debug/stdx"
-  exclude = ["build_temp", "third_party/zlib", "third_party/flatbuffers"]
+  exclude = ["build_temp", "third_party/zlib"]
 
 [package.package-configuration."stdx.compress.zlib"]
   compile-option = "-lstdx.compress.zlibFFI"
@@ -55,23 +55,46 @@
 [package.package-configuration."stdx.net.http"]
   compile-option = "-lcangjie-dynamicLoader-opensslFFI"
 
+# Private flatbuffers for chir/syntax only:
+# pre-build compiles $CANGJIE_HOME/third_party/flatbuffers/cangjie into
+# build-script-cache/flatbuffers-private/ (NOT target/). Users must not depend on flatbuffers.
+[package.package-configuration."stdx.chir"]
+  compile-option = "-L build-script-cache/flatbuffers-private/flatbuffers --link-options=-Wl,--whole-archive -lflatbuffers --link-options=-Wl,--no-whole-archive"
+
+[package.package-configuration."stdx.syntax"]
+  compile-option = "-L build-script-cache/flatbuffers-private/flatbuffers --link-options=-Wl,--whole-archive -lflatbuffers --link-options=-Wl,--no-whole-archive"
+
 [target.x86_64-unknown-linux-gnu]
   link-option = "-L target/linux_ohos_aarch64_cjnative/static/stdx -L target/linux_x86_64_cjnative/static/stdx -L target/mock/linux_x86_64_cjnative/static/stdx -lstdx.fuzzFFI"
+  [target.x86_64-unknown-linux-gnu.bin-dependencies.package-option]
+    flatbuffers = "./build-script-cache/flatbuffers-private/flatbuffers/flatbuffers.cjo"
 
 [target.aarch64-unknown-linux-gnu]
   link-option = "-L target/linux_ohos_aarch64_cjnative/static/stdx -L target/linux_aarch64_cjnative/static/stdx -L target/mock/linux_aarch64_cjnative/static/stdx -lstdx.fuzzFFI"
+  [target.aarch64-unknown-linux-gnu.bin-dependencies.package-option]
+    flatbuffers = "./build-script-cache/flatbuffers-private/flatbuffers/flatbuffers.cjo"
 
 [target.aarch64-apple-darwin]
   link-option = "-L target/darwin_aarch64_cjnative/static/stdx -L /tmp/stdx/target/release/stdx -L target/mock/darwin_aarch64_cjnative/static/stdx -undefined suppress -flat_namespace -lstdx.fuzzFFI"
+  [target.aarch64-apple-darwin.bin-dependencies.package-option]
+    flatbuffers = "./build-script-cache/flatbuffers-private/flatbuffers/flatbuffers.cjo"
 
 [target.x86_64-apple-darwin]
   link-option = "-L target/darwin_x86_64_cjnative/static/stdx -L /tmp/stdx/target/release/stdx -L target/mock/darwin_x86_64_cjnative/static/stdx -undefined suppress -flat_namespace -lstdx.fuzzFFI"
+  [target.x86_64-apple-darwin.bin-dependencies.package-option]
+    flatbuffers = "./build-script-cache/flatbuffers-private/flatbuffers/flatbuffers.cjo"
 
 [target.x86_64-w64-mingw32]
   link-option = "-L target/windows_x86_64_cjnative/static/stdx -L target/mock/windows_x86_64_cjnative/static/stdx -lpthread -lws2_32 -lcrypt32"
+  [target.x86_64-w64-mingw32.bin-dependencies.package-option]
+    flatbuffers = "./build-script-cache/flatbuffers-private/flatbuffers/flatbuffers.cjo"
 
 [target.x86_64-linux-ohos]
   compile-option = "-B \"${DEVECO_CANGJIE_HOME}/build-tools/third_party/llvm/bin\" -B \"${DEVECO_OH_NATIVE_HOME}/sysroot/usr/lib/x86_64-linux-ohos\" -L \"${DEVECO_OH_NATIVE_HOME}/sysroot/usr/lib/x86_64-linux-ohos\" -L \"${DEVECO_OH_NATIVE_HOME}/llvm/lib/clang/15.0.4/lib/x86_64-linux-ohos\" -L \"${DEVECO_OH_NATIVE_HOME}/llvm/lib/x86_64-linux-ohos\" --sysroot \"${DEVECO_OH_NATIVE_HOME}/sysroot\""
+  [target.x86_64-linux-ohos.bin-dependencies.package-option]
+    flatbuffers = "./build-script-cache/flatbuffers-private/flatbuffers/flatbuffers.cjo"
 
 [target.aarch64-linux-ohos]
   compile-option = "-L target/release/stdx -L target/debug/stdx -B \"${DEVECO_CANGJIE_HOME}/build-tools/third_party/llvm/bin\" -B \"${DEVECO_OH_NATIVE_HOME}/sysroot/usr/lib/aarch64-linux-ohos\" -L \"${DEVECO_OH_NATIVE_HOME}/sysroot/usr/lib/aarch64-linux-ohos\" -L \"${DEVECO_OH_NATIVE_HOME}/llvm/lib/clang/15.0.4/lib/aarch64-linux-ohos\" -L \"${DEVECO_OH_NATIVE_HOME}/llvm/lib/aarch64-linux-ohos\" --sysroot \"${DEVECO_OH_NATIVE_HOME}/sysroot\""
+  [target.aarch64-linux-ohos.bin-dependencies.package-option]
+    flatbuffers = "./build-script-cache/flatbuffers-private/flatbuffers/flatbuffers.cjo"

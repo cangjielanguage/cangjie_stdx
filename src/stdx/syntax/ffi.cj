@@ -10,6 +10,7 @@ package stdx.syntax
 
 public import std.ast.{Tokens, Token, TokenKind}
 import std.collection.ArrayList
+import flatbuffers.*
 
 /*
  * The api used comes from lsp.so, which is a dynamic package.
@@ -44,7 +45,7 @@ struct ParseRes {
     let errMsg: CPointer<UInt8> = CPointer<UInt8>()
 }
 
-unsafe func parse(input: Tokens, nativeParse: (CPointer<UInt8>) -> CPointer<ParseRes>): NodeFormat_Node {
+unsafe func parse(input: Tokens, nativeParse: (CPointer<UInt8>) -> CPointer<ParseRes>): SyntaxFormat_Node {
     let tokensBytes: Array<UInt8> = input.toBytes()
     let pTokensBytes: CPointer<UInt8> = unsafePointerCastFromUint8Array(tokensBytes)
     if (pTokensBytes.isNull()) {
@@ -62,14 +63,14 @@ unsafe func parse(input: Tokens, nativeParse: (CPointer<UInt8>) -> CPointer<Pars
      */
     try {
         let pNode = parseResultRaw.read().node
-        let node = genNodeFormatNode(pNode, pTokensBytes)
+        let node = genSyntaxFormatNode(pNode, pTokensBytes)
         return node
     } finally {
         LibC.free(parseResultRaw)
     }
 }
 
-func genNodeFormatNode(pNode: CPointer<UInt8>, pTokensBytes: CPointer<UInt8>) {
+func genSyntaxFormatNode(pNode: CPointer<UInt8>, pTokensBytes: CPointer<UInt8>) {
     if (pNode.isNull()) {
         unsafe { LibC.free(pTokensBytes) }
         throw IllegalArgumentException("Negative or zero length.\n")
@@ -87,7 +88,7 @@ func genNodeFormatNode(pNode: CPointer<UInt8>, pTokensBytes: CPointer<UInt8>) {
         LibC.free(pNode)
         LibC.free(pTokensBytes)
     }
-    return NodeFormat_Node(flatBuf[BUFFER_HEADER_SIZE..], 0)
+    return SyntaxFormat_Node(flatBuf[BUFFER_HEADER_SIZE..], 0)
 }
 
 // ======================== PART TWO: CPointer<UInt8>/Array casting APIs ========================

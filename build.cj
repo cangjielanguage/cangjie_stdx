@@ -119,7 +119,20 @@ main(): Int64 {
 }
 
 public func stagePreBuild(pyCommand: String): Int64 {
-    return execute(pyCommand, "cjpm_build.py", "build", "--build-stage", "preBuild")
+    let ret = execute(pyCommand, "cjpm_build.py", "build", "--build-stage", "preBuild")
+    if (ret != 0) {
+        return ret
+    }
+    // cjpm cmake skips chir/syntax targets, so flatc-generated CJ sources must be produced here
+    // before cjpm compiles those packages (preBuild clean removes any stale copies).
+    let genRet = generateFlatbuffersCjSources()
+    if (genRet != 0) {
+        return genRet
+    }
+    // Build a private, temporary flatbuffers static library from the compiler SDK sources.
+    // Artifacts stay under build-script-cache/ (not target/), and are only consumed by
+    // stdx.chir / stdx.syntax via bin-dependencies. Users must not depend on flatbuffers.
+    return buildPrivateFlatbuffers()
 }
 
 public func stagePostBuild(pyCommand: String): Int64 {
@@ -127,5 +140,97 @@ public func stagePostBuild(pyCommand: String): Int64 {
 }
 
 public func stagePreClean(pyCommand: String): Int64 {
+    // Drop the private flatbuffers cache along with other cjpm clean work.
+    try {
+        let cacheDir = Path("build-script-cache/flatbuffers-private")
+        if (exists(cacheDir)) {
+            remove(cacheDir)
+        }
+    } catch (_: Exception) {}
     return execute(pyCommand, "cjpm_build.py", "clean")
+}
+
+/**
+ * Run flatc from the compiler SDK to emit StdxSyntaxFormat_generated.cj and
+ * StdxChirFormat_generated.cj into the package source trees.
+ */
+func generateFlatbuffersCjSources(): Int64 {
+    let home = getVariable("CANGJIE_HOME") ?? ""
+    if (home.isEmpty()) {
+        println("Error: CANGJIE_HOME is not set; cannot generate flatbuffers Cangjie sources.")
+        return 1
+    }
+    let flatc = home + "/third_party/flatbuffers/bin/flatc"
+    if (!exists(Path(flatc))) {
+        println("Error: flatc not found: ${flatc}")
+        return 1
+    }
+
+    // Local schema for stdx.syntax; chir schema is shipped with the compiler SDK.
+    let jobs: Array<(String, String)> = [
+        ("schema/StdxSyntaxFormat.fbs", "src/stdx/syntax"),
+        (home + "/schema/StdxChirFormat.fbs", "src/stdx/chir")
+    ]
+    for ((schema, outDir) in jobs) {
+        if (!exists(Path(schema))) {
+            println("Error: flatbuffers schema not found: ${schema}")
+            return 1
+        }
+        println("generating flatbuffers Cangjie sources from ${schema} ...")
+        let code = execute(flatc, "--no-warnings", "--cangjie", "-o", outDir, schema)
+        if (code != 0) {
+            println("Error: flatc failed for ${schema} (exit ${code})")
+            return code
+        }
+    }
+    return 0
+}
+
+/**
+ * Compiles $CANGJIE_HOME/third_party/flatbuffers/cangjie into
+ * build-script-cache/flatbuffers-private/flatbuffers/{flatbuffers.cjo,libflatbuffers.a}.
+ */
+func buildPrivateFlatbuffers(): Int64 {
+    let home = getVariable("CANGJIE_HOME") ?? ""
+    if (home.isEmpty()) {
+        println("Error: CANGJIE_HOME is not set; cannot build private flatbuffers library.")
+        return 1
+    }
+    let srcDir = home + "/third_party/flatbuffers/cangjie"
+    if (!exists(Path(srcDir))) {
+        println("Error: flatbuffers sources not found: ${srcDir}")
+        return 1
+    }
+
+    let outDir = "build-script-cache/flatbuffers-private/flatbuffers"
+    let outLib = outDir + "/libflatbuffers.a"
+    let outCjo = outDir + "/flatbuffers.cjo"
+
+    try {
+        Directory.create(Path(outDir), recursive: true)
+    } catch (e: Exception) {
+        println("Error: failed to create ${outDir}: ${e}")
+        return 1
+    }
+
+    println("building private flatbuffers from ${srcDir} ...")
+    let code = execute(
+        "cjc",
+        "--no-sub-pkg",
+        "--output-type=staticlib",
+        "-p",
+        srcDir,
+        "--output",
+        outLib,
+        "-O2")
+    if (code != 0) {
+        println("Error: failed to build private flatbuffers (cjc exit ${code})")
+        return code
+    }
+    if (!exists(Path(outLib)) || !exists(Path(outCjo))) {
+        println("Error: private flatbuffers artifacts missing under ${outDir}")
+        return 1
+    }
+    println("private flatbuffers ready: ${outDir}")
+    return 0
 }
