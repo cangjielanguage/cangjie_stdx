@@ -1,25 +1,7 @@
 # stdx
-/.gitcode/ @xuanjz
+/.gitcode/ @kkkkkkkbbbbbbb
 OAT.xml @xuanjz
 
 *.md @luojianing
 
-/src/stdx/chir/ @Mr_Kang_Yi
-/src/stdx/compress/ @jiyaun_99
-/src/stdx/encoding/ @jiyaun_99
-/src/stdx/serialization/ @jiyaun_99
-
-/src/stdx/crypto/ @chongweizhi
-
-/src/stdx/log/ @ChaosJohn
-/src/stdx/logger/ @ChaosJohn
-
-/src/stdx/net/ @PigHardWorking
-
-/src/stdx/syntax/ @mini-tang
-
-#stdx docs
-/doc/ @luojianing @renyi43
-
-/doc/libs_stdx/chir/ @Mr_Kang_Yi @luojianing
-/doc/libs_stdx_en/chir/ @Mr_Kang_Yi @luojianing
+/src/stdx @Mr_Kang_Yi
