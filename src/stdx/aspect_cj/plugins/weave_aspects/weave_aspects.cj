@@ -22,9 +22,7 @@ class WeaveAspects {
     var pkgInitFuncMangledNames = HashMap<String, String>()
 
     public override func run(pkg: Package): Bool {
-        if (!readAnnoInfo(pkg.name)) {
-            return false
-        }
+        readAnnoInfo(pkg.name)
         callUpstreamPkgInitFunc(pkg)
         for (f in pkg.functions) {
             if (f.body.isNone()) {
@@ -132,9 +130,19 @@ class WeaveAspects {
             if (pkgName == pkg.name) {
                 continue
             }
-            let funcType = FuncType.get(Array<Type>(), UnitType.get())
-            let importedInitFunc = pkg.addFunction(funcType, initFuncMangledName, "", pkgName)
-            importedInitFunc.setImported(true)
+            // Reuse an existing declaration when present (e.g. target already imported the
+            // aspect package) to avoid duplicated CHIR identifiers. Always emit the apply:
+            // presence of the symbol does not guarantee the current package init already
+            // calls it (indirect import / opt / DCE). Package inits are expected to be
+            // idempotent, so an extra apply is safe.
+            let importedInitFunc = if (let Some(existing) <- pkg.getSpecifiedFunction(initFuncMangledName)) {
+                existing
+            } else {
+                let funcType = FuncType.get(Array<Type>(), UnitType.get())
+                let added = pkg.addFunction(funcType, initFuncMangledName, "", pkgName)
+                added.setImported(true)
+                added
+            }
             let funcCallCxt = FuncCallContext(Array<Value>(), Array<Type>(), None)
             builder.createApply(importedInitFunc, funcCallCxt)
         }
@@ -187,7 +195,7 @@ class WeaveAspects {
         return false
     }
 
-    private func readAnnoInfo(curPkgName: String): Bool {
+    private func readAnnoInfo(curPkgName: String): Unit {
         Directory.walk(
             Path("."),
             {
@@ -231,7 +239,6 @@ class WeaveAspects {
                 return true
             }
         )
-        return true
     }
 }
 
