@@ -286,6 +286,21 @@ class CHIRSerializerImpl {
         return PackageFormat_Base.createBase(fbBuilder, annoTypesVec, annosVec, locOffset, attributes)
     }
 
+    private func serializeMode(local: Mode): PackageFormat_Mode {
+        return match (local) {
+            case Mode.Absent => PackageFormat_Mode.Mode_NONE
+            case Mode.Maybe => PackageFormat_Mode.Mode_MAYBE
+            case Mode.Must => PackageFormat_Mode.Mode_MUST
+        }
+    }
+
+    private func serializeModalInfo(modal: ModalInfo): UInt32 {
+        if (!modal.isModal()) {
+            return UInt32(0)
+        }
+        return PackageFormat_ModalInfo.createModalInfo(fbBuilder, serializeMode(modal.local))
+    }
+
     private func serializeType(obj: Type): UInt32 {
         let kind = serializeTypeKind(obj._kind)
         let argTys = getTypeIdList(obj._typeArgs)
@@ -294,7 +309,8 @@ class CHIRSerializerImpl {
         } else {
             fbBuilder.createUInt32Vector(argTys)
         }
-        return PackageFormat_Type.createType(fbBuilder, kind, argTysVec)
+        let modal = serializeModalInfo(obj.modalInfo)
+        return PackageFormat_Type.createType(fbBuilder, kind, argTysVec, modal)
     }
 
     private func serializeTypeKind(kind: TypeKind): PackageFormat_CHIRTypeKind {
@@ -589,10 +605,10 @@ class CHIRSerializerImpl {
         let blocksVec = if (blocks.size == 0) { UInt32(0) } else { fbBuilder.createUInt32Vector(blocks) }
         var ownedFunc: UInt32 = 0
         var ownedExpression: UInt32 = 0
-        if (obj.owner.isFunction()) {
-            ownedFunc = getId(obj.owner)
-        } else {
-            ownedExpression = getId((obj.owner as LocalVar).getOrThrow().expr)
+        if (let Some(expr) <- obj._ownerExpression) {
+            ownedExpression = getId(expr)
+        } else if (let Some(f) <- obj._ownerFunc) {
+            ownedFunc = getId(f)
         }
         valueKind[Int64(valueId) - 1] = EnumPackageFormat_ValueElemValues(PackageFormat_ValueElem.ValueElem_BLOCKGROUP)
         return PackageFormat_BlockGroup.createBlockGroup(fbBuilder, base, entryBlock, blocksVec, ownedFunc, ownedExpression)
@@ -679,6 +695,7 @@ class CHIRSerializerImpl {
             case ExprKind.Branch => PackageFormat_CHIRExprKind.CHIRExprKind_BRANCH
             case ExprKind.MultiBranch => PackageFormat_CHIRExprKind.CHIRExprKind_MULTIBRANCH
             case ExprKind.Exit => PackageFormat_CHIRExprKind.CHIRExprKind_EXIT
+            case ExprKind.Exclave => PackageFormat_CHIRExprKind.CHIRExprKind_EXCLAVE
 
             case ExprKind.TryApply => PackageFormat_CHIRExprKind.CHIRExprKind_TRYAPPLY
             case ExprKind.TryInvoke => PackageFormat_CHIRExprKind.CHIRExprKind_TRYINVOKE
@@ -760,6 +777,8 @@ class CHIRSerializerImpl {
             case ExprKind.GetInstantiateValue => PackageFormat_CHIRExprKind.CHIRExprKind_GETINSTANTIATEVALUE
             case ExprKind.GetRtti => PackageFormat_CHIRExprKind.CHIRExprKind_GETRTTI
             case ExprKind.GetRttiStatic => PackageFormat_CHIRExprKind.CHIRExprKind_GETRTTISTATIC
+            case ExprKind.StartRegion => PackageFormat_CHIRExprKind.CHIRExprKind_STARTREGION
+            case ExprKind.EndRegion => PackageFormat_CHIRExprKind.CHIRExprKind_ENDREGION
             case _ => throw CHIRException("Unknown Expr Kind: ${kind.toString()}")
         }
     }

@@ -160,6 +160,82 @@ internal enum TypeKind {
 }
 
 /**
+ * Local modal qualifier on a type.
+ */
+@Derive[Hashable, Equatable]
+public enum Mode {
+    | Absent
+    | Maybe
+    | Must
+}
+
+/**
+ * Modal metadata carried by a CHIR type.
+ */
+public class ModalInfo <: Hashable & Equatable<ModalInfo> {
+    /**
+     * The local modal qualifier.
+     * @type { Mode }
+     */
+    public let local: Mode
+
+    /**
+     * Creates modal metadata with the given local qualifier.
+     * @param local The local modal qualifier (default: Absent).
+     */
+    public init(local!: Mode = Mode.Absent) {
+        this.local = local
+    }
+
+    public operator func ==(other: ModalInfo): Bool {
+        return local == other.local
+    }
+
+    public func hashCode(): Int64 {
+        return local.hashCode()
+    }
+
+    /**
+     * Checks whether this modal equals or is a sub-modal of another.
+     * @param other The modal to compare against.
+     * @return true if equal or a sub-modal of other.
+     */
+    public func isEqualOrSubModal(other: ModalInfo): Bool {
+        return this == other || isSubModal(other)
+    }
+
+    /**
+     * Checks whether this type carries modal metadata.
+     * @return true if local is not Absent.
+     */
+    public func isModal(): Bool {
+        return local != Mode.Absent
+    }
+
+    /**
+     * Checks whether this modal is a sub-modal of another.
+     * @param other The modal to compare against.
+     * @return true if this is a sub-modal of other.
+     */
+    public func isSubModal(other: ModalInfo): Bool {
+        return (local == Mode.Absent && other.local == Mode.Maybe) ||
+            (local == Mode.Must && other.local == Mode.Maybe)
+    }
+
+    /**
+     * Converts this modal metadata to its string representation.
+     * @return A string representation of the modal qualifier.
+     */
+    public func toString(): String {
+        return match (local) {
+            case Mode.Absent => "@~local"
+            case Mode.Maybe => "@local?"
+            case Mode.Must => "@local!"
+        }
+    }
+}
+
+/**
  * Abstract base class representing a type in the type system.
  *
  * This class provides the foundation for all types in Cangjie, including
@@ -170,6 +246,7 @@ sealed abstract class Type <: ToString & Hashable & Equatable<Type> {
     internal var _hashCode: Int64 = 0
     internal let _kind: TypeKind
     internal let _typeArgs: ArrayList<Type>
+    internal let _modal: ModalInfo
 
     /**
      * Gets the qualified name of this type.
@@ -215,14 +292,26 @@ sealed abstract class Type <: ToString & Hashable & Equatable<Type> {
         }
     }
 
-    internal init(kind: TypeKind) {
-        this._kind = kind
-        this._typeArgs = ArrayList<Type>()
+    /**
+     * Gets the modal metadata of this type.
+     * @type { ModalInfo }
+     */
+    public prop modalInfo: ModalInfo {
+        get() {
+            return _modal
+        }
     }
 
-    internal init(kind: TypeKind, args: ArrayList<Type>) {
+    internal init(kind: TypeKind, modal!: ModalInfo = ModalInfo()) {
+        this._kind = kind
+        this._typeArgs = ArrayList<Type>()
+        this._modal = modal
+    }
+
+    internal init(kind: TypeKind, args: ArrayList<Type>, modal!: ModalInfo = ModalInfo()) {
         this._kind = kind
         this._typeArgs = args
+        this._modal = modal
     }
 
     /**
@@ -230,6 +319,14 @@ sealed abstract class Type <: ToString & Hashable & Equatable<Type> {
      */
     public func dump(): Unit {
         println(toString())
+    }
+
+    /**
+     * Returns the data type with modal metadata stripped.
+     * @return The same type shape with default (non-modal) metadata.
+     */
+    public func getDataType(): Type {
+        return withModal(ModalInfo())
     }
 
     /**
@@ -453,23 +550,27 @@ sealed abstract class Type <: ToString & Hashable & Equatable<Type> {
             }
         }
         visited.add((this, parent))
+        if (!this.modalInfo.isEqualOrSubModal(parent.modalInfo)) {
+            return false
+        }
         if (this.isRefType() && parent.isRefType()) {
             let subBaseType = (this as RefType).getOrThrow().baseType
             let parentBaseType = (parent as RefType).getOrThrow().baseType
             return subBaseType.isEqualOrSubTypeOf(parentBaseType, visited: visited)
         }
-        let subDeref = this.stripAllRefs()
-        let parentDeref = parent.stripAllRefs()
+        let subDeref = this.stripAllRefs().getDataType()
+        let parentDeref = parent.stripAllRefs().getDataType()
         // we can't think class-A and class-A& is equal
         if ((this.isRefType() || parent.isRefType()) && subDeref == parentDeref) {
             return false
         }
         // Nothing type is all types' sub type, Any type is all types' parent type
-        if (subDeref.isNothingType() || parentDeref.isAnyTypeInStd()) {
+        if (subDeref == parentDeref || subDeref.isNothingType() || parentDeref.isAnyTypeInStd()) {
             return true
         }
+        // invalid type shouldn't be compared, just return false
         // if parent type is generic type, that means it can be any type, even if it has upper bounds
-        if (parentDeref.isGenericType()) {
+        if (subDeref._kind == TypeKind.Invalid || parentDeref._kind == TypeKind.Invalid || parentDeref.isGenericType()) {
             return false
         }
         if (parentDeref.isCTypeInStd()) {
@@ -506,9 +607,9 @@ sealed abstract class Type <: ToString & Hashable & Equatable<Type> {
             return closureTypeIsEqualOrSubTypeOf((subDeref as ClassLikeType).getOrThrow(), (parentDeref as ClassLikeType).getOrThrow(), visited)
         }
         var allParentTypes = Array<ClassLikeType>()
-        if (let Some(bt) <- (this as BuiltinType)) {
+        if (let Some(bt) <- (subDeref as BuiltinType)) {
             allParentTypes = bt.getSuperTypesRecusively(visited: visited)
-        } else if (let Some(ct) <- (this as CustomType)) {
+        } else if (let Some(ct) <- (subDeref as CustomType)) {
             allParentTypes = ct.getSuperTypesRecusively(visited: visited)
         }
         for (parentType in allParentTypes) {
@@ -566,6 +667,14 @@ sealed abstract class Type <: ToString & Hashable & Equatable<Type> {
     public func isIntType(): Bool {
         let kindId = this._kind.toUInt()
         return kindId >= TypeKind.`Int8`.toUInt() && kindId <= TypeKind.`UIntNative`.toUInt()
+    }
+
+    /**
+     * Checks whether this type carries modal metadata.
+     * @return true if the type has non-none modal info.
+     */
+    public func isModal(): Bool {
+        return _modal.isModal()
     }
 
     /**
@@ -752,6 +861,80 @@ sealed abstract class Type <: ToString & Hashable & Equatable<Type> {
         return _kind.toString()
     }
 
+    /**
+     * Returns an equivalent type carrying the given modal metadata.
+     *
+     * For reference and box types, modal is applied to the underlying data type.
+     * @param modal The modal metadata to attach.
+     * @return A cached type instance with the requested modal metadata.
+     */
+    public func withModal(modal: ModalInfo): Type {
+        if (isRefType()) {
+            return RefType.get((this as RefType).getOrThrow().baseType.withModal(modal))
+        }
+        if (isBoxType()) {
+            return BoxType.get((this as BoxType).getOrThrow().baseType.withModal(modal))
+        }
+        if (_modal == modal) {
+            return this
+        }
+        return match (_kind) {
+            case TypeKind.`Int8` => IntType.getInt8(modal: modal)
+            case TypeKind.`Int16` => IntType.getInt16(modal: modal)
+            case TypeKind.`Int32` => IntType.getInt32(modal: modal)
+            case TypeKind.`Int64` => IntType.getInt64(modal: modal)
+            case TypeKind.`IntNative` => IntType.getIntNative(modal: modal)
+            case TypeKind.`UInt8` => IntType.getUInt8(modal: modal)
+            case TypeKind.`UInt16` => IntType.getUInt16(modal: modal)
+            case TypeKind.`UInt32` => IntType.getUInt32(modal: modal)
+            case TypeKind.`UInt64` => IntType.getUInt64(modal: modal)
+            case TypeKind.`UIntNative` => IntType.getUIntNative(modal: modal)
+            case TypeKind.`Float16` => FloatType.getFloat16(modal: modal)
+            case TypeKind.`Float32` => FloatType.getFloat32(modal: modal)
+            case TypeKind.`Float64` => FloatType.getFloat64(modal: modal)
+            case TypeKind.`Bool` => BoolType.get(modal: modal)
+            case TypeKind.`Rune` => RuneType.get(modal: modal)
+            case TypeKind.`Unit` => UnitType.get(modal: modal)
+            case TypeKind.`Nothing` => NothingType.get(modal: modal)
+            case TypeKind.CString => CStringType.get(modal: modal)
+            case TypeKind.CPointer =>
+                CPointerType.get((this as CPointerType).getOrThrow().elementType, modal: modal)
+            case TypeKind.Tuple =>
+                TupleType.get((this as TupleType).getOrThrow().elementTypes, modal: modal)
+            case TypeKind.Func =>
+                let ft = (this as FuncType).getOrThrow()
+                FuncType.get(ft.paramTypes, ft.returnType, varArg: ft.hasVarArg, cFunc: ft.isCFunc, modal: modal)
+            case TypeKind.ClassLike =>
+                let ct = (this as ClassLikeType).getOrThrow()
+                ClassLikeType.get(ct.classLikeDef, ct.genericTypeArgs, modal: modal)
+            case TypeKind.Struct =>
+                let st = (this as StructType).getOrThrow()
+                StructType.get(st.structDef, st.genericTypeArgs, modal: modal)
+            case TypeKind.Enum =>
+                let et = (this as EnumType).getOrThrow()
+                EnumType.get(et.enumDef, et.genericTypeArgs, modal: modal)
+            case TypeKind.RawArray =>
+                let rt = (this as RawArrayType).getOrThrow()
+                RawArrayType.get(rt.elementType, rt.dims, modal: modal)
+            case TypeKind.`VArray` =>
+                let vt = (this as VArrayType).getOrThrow()
+                VArrayType.get(vt.elementType, vt.size, modal: modal)
+            case TypeKind.Generic =>
+                let gt = (this as GenericType).getOrThrow()
+                GenericType.get(gt._identifier, gt.srcCodeName, modal: modal)
+            case TypeKind.`This` => ThisType.get(modal: modal)
+            case TypeKind.Invalid => InvalidType.get()
+            case _ => throw CHIRException("withModal not supported for type kind: ${_kind}")
+        }
+    }
+
+    internal func formatWithModal(baseStr: String): String {
+        if (!isModal()) {
+            return baseStr
+        }
+        return baseStr + " " + _modal.toString()
+    }
+
     internal func calculateGeneric2InstTypeMap(instType: Type): (Bool, HashMap<GenericType, Type>) {
         var result: HashMap<GenericType, Type> = HashMap<GenericType, Type>()
         if (!calculateGeneric2InstTypeMapImpl(instType, result)) {
@@ -801,7 +984,7 @@ sealed abstract class Type <: ToString & Hashable & Equatable<Type> {
     }
 
     internal func setHashCode(): Unit {
-        _hashCode = toString().hashCode()
+        _hashCode = formatWithModal(toString()).hashCode()
     }
 
     private func qualifiedNameOfCustomType(t: CustomType): String {
@@ -894,12 +1077,12 @@ public class BoxType <: Type & Equatable<BoxType> {
 sealed abstract class BuiltinType <: Type & Equatable<BuiltinType> {
     internal let _extends = ArrayList<ExtendDef>()
 
-    internal init(kind: TypeKind) {
-        super(kind)
+    internal init(kind: TypeKind, modal!: ModalInfo = ModalInfo()) {
+        super(kind, modal: modal)
     }
 
-    internal init(kind: TypeKind, typeArgs: ArrayList<Type>) {
-        super(kind, typeArgs)
+    internal init(kind: TypeKind, typeArgs: ArrayList<Type>, modal!: ModalInfo = ModalInfo()) {
+        super(kind, typeArgs, modal: modal)
     }
 
     /**
@@ -944,18 +1127,28 @@ sealed abstract class BuiltinType <: Type & Equatable<BuiltinType> {
  */
 public class BoolType <: BuiltinType & Equatable<BoolType> {
     private static let BOOL_TYPE = BoolType()
+    private static var MODAL_CACHE = HashMap<ModalInfo, BoolType>()
 
-    private init() {
-        super(TypeKind.`Bool`)
+    private init(modal!: ModalInfo = ModalInfo()) {
+        super(TypeKind.`Bool`, modal: modal)
         setHashCode()
     }
 
     /**
-     * Gets the singleton instance of BoolType.
+     * Gets the singleton instance of BoolType, optionally with modal metadata.
+     * @param modal The modal metadata (default: none).
      * @return The BoolType instance.
      */
-    public static func get(): BoolType {
-        return BOOL_TYPE
+    public static func get(modal!: ModalInfo = ModalInfo()): BoolType {
+        if (!modal.isModal()) {
+            return BOOL_TYPE
+        }
+        if (let Some(v) <- MODAL_CACHE.get(modal)) {
+            return v
+        }
+        let result = BoolType(modal: modal)
+        MODAL_CACHE[modal] = result
+        return result
     }
 
     /**
@@ -975,8 +1168,8 @@ public class BoolType <: BuiltinType & Equatable<BoolType> {
  * The class maintains a cache of all CPointer types to ensure uniqueness.
  */
 public class CPointerType <: BuiltinType & Equatable<CPointerType> {
-    //                          elementType -> CPointerType
-    private static var CACHE = HashMap<Type, CPointerType>()
+    //                          elementType -> (modal -> CPointerType)
+    private static var CACHE = HashMap<Type, HashMap<ModalInfo, CPointerType>>()
 
     /**
      * Gets the element type that this CPointerType points to.
@@ -988,24 +1181,31 @@ public class CPointerType <: BuiltinType & Equatable<CPointerType> {
         }
     }
 
-    private init(elementType: Type) {
-        super(TypeKind.CPointer, ArrayList<Type>([elementType]))
+    private init(elementType: Type, modal!: ModalInfo = ModalInfo()) {
+        super(TypeKind.CPointer, ArrayList<Type>([elementType]), modal: modal)
         setHashCode()
     }
 
     /**
      * Gets or creates a CPointerType for the given element type.
      *
-     * This method ensures that only one CPointerType instance exists for each element type.
+     * This method ensures that only one CPointerType instance exists for each element type and modal combination.
      * @param elementType The type that the pointer points to.
+     * @param modal The modal metadata (default: none).
      * @return The CPointerType instance for the given element type.
      */
-    public static func get(elementType: Type): CPointerType {
-        if (let Some(cPointer) <- CACHE.get(elementType)) {
-            return cPointer
+    public static func get(elementType: Type, modal!: ModalInfo = ModalInfo()): CPointerType {
+        if (let Some(cPointerTypes) <- CACHE.get(elementType)) {
+            if (let Some(cPointer) <- cPointerTypes.get(modal)) {
+                return cPointer
+            } else {
+                let newCPointerType = CPointerType(elementType, modal: modal)
+                cPointerTypes[modal] = newCPointerType
+                return newCPointerType
+            }
         }
-        let newCPointerType = CPointerType(elementType)
-        CACHE[elementType] = newCPointerType
+        let newCPointerType = CPointerType(elementType, modal: modal)
+        CACHE[elementType] = HashMap<ModalInfo, CPointerType>((modal, newCPointerType))
         return newCPointerType
     }
 
@@ -1023,9 +1223,11 @@ public class CPointerType <: BuiltinType & Equatable<CPointerType> {
 
     protected override func getExtendDefs(): Array<ExtendDef> {
         var result: ArrayList<ExtendDef> = ArrayList<ExtendDef>()
-        for ((_, cpType) in CACHE) {
-            if (this.isEqualOrInstantiatedTypeOf(cpType)) {
-                result.add(all: cpType._extends)
+        for ((_, cPointerTypes) in CACHE) {
+            for ((_, cpType) in cPointerTypes) {
+                if (this.isEqualOrInstantiatedTypeOf(cpType)) {
+                    result.add(all: cpType._extends)
+                }
             }
         }
         return result.toArray()
@@ -1049,18 +1251,28 @@ public class CPointerType <: BuiltinType & Equatable<CPointerType> {
  */
 public class CStringType <: BuiltinType & Equatable<CStringType> {
     private static let C_STRING_TYPE = CStringType()
+    private static var MODAL_CACHE = HashMap<ModalInfo, CStringType>()
 
-    private init() {
-        super(TypeKind.CString)
+    private init(modal!: ModalInfo = ModalInfo()) {
+        super(TypeKind.CString, modal: modal)
         setHashCode()
     }
 
     /**
-     * Gets the singleton instance of CStringType.
+     * Gets the singleton instance of CStringType, optionally with modal metadata.
+     * @param modal The modal metadata (default: none).
      * @return The CStringType instance.
      */
-    public static func get(): CStringType {
-        return C_STRING_TYPE
+    public static func get(modal!: ModalInfo = ModalInfo()): CStringType {
+        if (!modal.isModal()) {
+            return C_STRING_TYPE
+        }
+        if (let Some(v) <- MODAL_CACHE.get(modal)) {
+            return v
+        }
+        let result = CStringType(modal: modal)
+        MODAL_CACHE[modal] = result
+        return result
     }
 
     /**
@@ -1080,18 +1292,28 @@ public class CStringType <: BuiltinType & Equatable<CStringType> {
  */
 public class NothingType <: BuiltinType & Equatable<NothingType> {
     private static let NOTHING_TYPE = NothingType()
+    private static var MODAL_CACHE = HashMap<ModalInfo, NothingType>()
 
-    private init() {
-        super(TypeKind.`Nothing`)
+    private init(modal!: ModalInfo = ModalInfo()) {
+        super(TypeKind.`Nothing`, modal: modal)
         setHashCode()
     }
 
     /**
-     * Gets the singleton instance of NothingType.
+     * Gets the singleton instance of NothingType, optionally with modal metadata.
+     * @param modal The modal metadata (default: none).
      * @return The NothingType instance.
      */
-    public static func get(): NothingType {
-        return NOTHING_TYPE
+    public static func get(modal!: ModalInfo = ModalInfo()): NothingType {
+        if (!modal.isModal()) {
+            return NOTHING_TYPE
+        }
+        if (let Some(v) <- MODAL_CACHE.get(modal)) {
+            return v
+        }
+        let result = NothingType(modal: modal)
+        MODAL_CACHE[modal] = result
+        return result
     }
 
     /**
@@ -1111,8 +1333,8 @@ public class NothingType <: BuiltinType & Equatable<NothingType> {
  * integer and floating-point types.
  */
 sealed abstract class NumericType <: BuiltinType & Equatable<NumericType> {
-    internal init(kind: TypeKind) {
-        super(kind)
+    internal init(kind: TypeKind, modal!: ModalInfo = ModalInfo()) {
+        super(kind, modal: modal)
     }
 
     /**
@@ -1134,34 +1356,60 @@ public class FloatType <: NumericType & Equatable<FloatType> {
     private static let FLOAT16_TYPE = FloatType(TypeKind.`Float16`)
     private static let FLOAT32_TYPE = FloatType(TypeKind.`Float32`)
     private static let FLOAT64_TYPE = FloatType(TypeKind.`Float64`)
+    private static var MODAL_CACHE = HashMap<UInt32, HashMap<ModalInfo, FloatType>>()
 
-    private init(kind: TypeKind) {
-        super(kind)
+    private init(kind: TypeKind, modal!: ModalInfo = ModalInfo()) {
+        super(kind, modal: modal)
         setHashCode()
     }
 
+    private static func getByKind(kind: TypeKind, modal: ModalInfo): FloatType {
+        if (!modal.isModal()) {
+            return match (kind) {
+                case TypeKind.`Float16` => FLOAT16_TYPE
+                case TypeKind.`Float32` => FLOAT32_TYPE
+                case TypeKind.`Float64` => FLOAT64_TYPE
+                case _ => throw CHIRException("Invalid FloatType kind: ${kind}")
+            }
+        }
+        if (let Some(modalTypes) <- MODAL_CACHE.get(kind.toUInt())) {
+            if (let Some(v) <- modalTypes.get(modal)) {
+                return v
+            }
+            let result = FloatType(kind, modal: modal)
+            modalTypes[modal] = result
+            return result
+        }
+        let result = FloatType(kind, modal: modal)
+        MODAL_CACHE[kind.toUInt()] = HashMap<ModalInfo, FloatType>((modal, result))
+        return result
+    }
+
     /**
-     * Gets the Float16 type instance.
+     * Gets the Float16 type instance, optionally with modal metadata.
+     * @param modal The modal metadata (default: none).
      * @return The Float16 type.
      */
-    public static func getFloat16(): FloatType {
-        return FLOAT16_TYPE
+    public static func getFloat16(modal!: ModalInfo = ModalInfo()): FloatType {
+        getByKind(TypeKind.`Float16`, modal)
     }
 
     /**
-     * Gets the Float32 type instance.
+     * Gets the Float32 type instance, optionally with modal metadata.
+     * @param modal The modal metadata (default: none).
      * @return The Float32 type.
      */
-    public static func getFloat32(): FloatType {
-        return FLOAT32_TYPE
+    public static func getFloat32(modal!: ModalInfo = ModalInfo()): FloatType {
+        getByKind(TypeKind.`Float32`, modal)
     }
 
     /**
-     * Gets the Float64 type instance.
+     * Gets the Float64 type instance, optionally with modal metadata.
+     * @param modal The modal metadata (default: none).
      * @return The Float64 type.
      */
-    public static func getFloat64(): FloatType {
-        return FLOAT64_TYPE
+    public static func getFloat64(modal!: ModalInfo = ModalInfo()): FloatType {
+        getByKind(TypeKind.`Float64`, modal)
     }
 
     /**
@@ -1190,90 +1438,130 @@ public class IntType <: NumericType & Equatable<IntType> {
     private static let UINT64_TYPE = IntType(TypeKind.`UInt64`)
     private static let UINT8_TYPE = IntType(TypeKind.`UInt8`)
     private static let UINT_NATIVE_TYPE = IntType(TypeKind.`UIntNative`)
+    private static var MODAL_CACHE = HashMap<UInt32, HashMap<ModalInfo, IntType>>()
 
-    private init(kind: TypeKind) {
-        super(kind)
+    private init(kind: TypeKind, modal!: ModalInfo = ModalInfo()) {
+        super(kind, modal: modal)
         setHashCode()
     }
 
+    private static func getByKind(kind: TypeKind, modal: ModalInfo): IntType {
+        if (!modal.isModal()) {
+            return match (kind) {
+                case TypeKind.`Int8` => INT8_TYPE
+                case TypeKind.`Int16` => INT16_TYPE
+                case TypeKind.`Int32` => INT32_TYPE
+                case TypeKind.`Int64` => INT64_TYPE
+                case TypeKind.`IntNative` => INT_NATIVE_TYPE
+                case TypeKind.`UInt8` => UINT8_TYPE
+                case TypeKind.`UInt16` => UINT16_TYPE
+                case TypeKind.`UInt32` => UINT32_TYPE
+                case TypeKind.`UInt64` => UINT64_TYPE
+                case TypeKind.`UIntNative` => UINT_NATIVE_TYPE
+                case _ => throw CHIRException("Invalid IntType kind: ${kind}")
+            }
+        }
+        if (let Some(modalTypes) <- MODAL_CACHE.get(kind.toUInt())) {
+            if (let Some(v) <- modalTypes.get(modal)) {
+                return v
+            }
+            let result = IntType(kind, modal: modal)
+            modalTypes[modal] = result
+            return result
+        }
+        let result = IntType(kind, modal: modal)
+        MODAL_CACHE[kind.toUInt()] = HashMap<ModalInfo, IntType>((modal, result))
+        return result
+    }
+
     /**
-     * Gets the Int16 type instance.
+     * Gets the Int16 type instance, optionally with modal metadata.
+     * @param modal The modal metadata (default: none).
      * @return The Int16 type.
      */
-    public static func getInt16(): IntType {
-        return INT16_TYPE
+    public static func getInt16(modal!: ModalInfo = ModalInfo()): IntType {
+        getByKind(TypeKind.`Int16`, modal)
     }
 
     /**
-     * Gets the Int32 type instance.
+     * Gets the Int32 type instance, optionally with modal metadata.
+     * @param modal The modal metadata (default: none).
      * @return The Int32 type.
      */
-    public static func getInt32(): IntType {
-        return INT32_TYPE
+    public static func getInt32(modal!: ModalInfo = ModalInfo()): IntType {
+        getByKind(TypeKind.`Int32`, modal)
     }
 
     /**
-     * Gets the Int64 type instance.
+     * Gets the Int64 type instance, optionally with modal metadata.
+     * @param modal The modal metadata (default: none).
      * @return The Int64 type.
      */
-    public static func getInt64(): IntType {
-        return INT64_TYPE
+    public static func getInt64(modal!: ModalInfo = ModalInfo()): IntType {
+        getByKind(TypeKind.`Int64`, modal)
     }
 
     /**
-     * Gets the Int8 type instance.
+     * Gets the Int8 type instance, optionally with modal metadata.
+     * @param modal The modal metadata (default: none).
      * @return The Int8 type.
      */
-    public static func getInt8(): IntType {
-        return INT8_TYPE
+    public static func getInt8(modal!: ModalInfo = ModalInfo()): IntType {
+        getByKind(TypeKind.`Int8`, modal)
     }
 
     /**
-     * Gets the IntNative type instance.
+     * Gets the IntNative type instance, optionally with modal metadata.
+     * @param modal The modal metadata (default: none).
      * @return The IntNative type.
      */
-    public static func getIntNative(): IntType {
-        return INT_NATIVE_TYPE
+    public static func getIntNative(modal!: ModalInfo = ModalInfo()): IntType {
+        getByKind(TypeKind.`IntNative`, modal)
     }
 
     /**
-     * Gets the UInt16 type instance.
+     * Gets the UInt16 type instance, optionally with modal metadata.
+     * @param modal The modal metadata (default: none).
      * @return The UInt16 type.
      */
-    public static func getUInt16(): IntType {
-        return UINT16_TYPE
+    public static func getUInt16(modal!: ModalInfo = ModalInfo()): IntType {
+        getByKind(TypeKind.`UInt16`, modal)
     }
 
     /**
-     * Gets the UInt32 type instance.
+     * Gets the UInt32 type instance, optionally with modal metadata.
+     * @param modal The modal metadata (default: none).
      * @return The UInt32 type.
      */
-    public static func getUInt32(): IntType {
-        return UINT32_TYPE
+    public static func getUInt32(modal!: ModalInfo = ModalInfo()): IntType {
+        getByKind(TypeKind.`UInt32`, modal)
     }
 
     /**
-     * Gets the UInt64 type instance.
+     * Gets the UInt64 type instance, optionally with modal metadata.
+     * @param modal The modal metadata (default: none).
      * @return The UInt64 type.
      */
-    public static func getUInt64(): IntType {
-        return UINT64_TYPE
+    public static func getUInt64(modal!: ModalInfo = ModalInfo()): IntType {
+        getByKind(TypeKind.`UInt64`, modal)
     }
 
     /**
-     * Gets the UInt8 type instance.
+     * Gets the UInt8 type instance, optionally with modal metadata.
+     * @param modal The modal metadata (default: none).
      * @return The UInt8 type.
      */
-    public static func getUInt8(): IntType {
-        return UINT8_TYPE
+    public static func getUInt8(modal!: ModalInfo = ModalInfo()): IntType {
+        getByKind(TypeKind.`UInt8`, modal)
     }
 
     /**
-     * Gets the UIntNative type instance.
+     * Gets the UIntNative type instance, optionally with modal metadata.
+     * @param modal The modal metadata (default: none).
      * @return The UIntNative type.
      */
-    public static func getUIntNative(): IntType {
-        return UINT_NATIVE_TYPE
+    public static func getUIntNative(modal!: ModalInfo = ModalInfo()): IntType {
+        getByKind(TypeKind.`UIntNative`, modal)
     }
 
     /**
@@ -1301,8 +1589,8 @@ public class IntType <: NumericType & Equatable<IntType> {
  * The class maintains a cache of all raw array types to ensure uniqueness.
  */
 public class RawArrayType <: BuiltinType & Equatable<RawArrayType> {
-    //                          element type -> (dims, RawArrayType)
-    private static var CACHE = HashMap<Type, HashMap<UInt32, RawArrayType>>()
+    //                          element type -> (dims -> (modal -> RawArrayType))
+    private static var CACHE = HashMap<Type, HashMap<UInt32, HashMap<ModalInfo, RawArrayType>>>()
     internal let _dims: UInt32
 
     /**
@@ -1325,8 +1613,8 @@ public class RawArrayType <: BuiltinType & Equatable<RawArrayType> {
         }
     }
 
-    private init(elementType: Type, dims: UInt32) {
-        super(TypeKind.RawArray, ArrayList<Type>([elementType]))
+    private init(elementType: Type, dims: UInt32, modal!: ModalInfo = ModalInfo()) {
+        super(TypeKind.RawArray, ArrayList<Type>([elementType]), modal: modal)
         this._dims = dims
         setHashCode()
     }
@@ -1334,23 +1622,31 @@ public class RawArrayType <: BuiltinType & Equatable<RawArrayType> {
     /**
      * Gets or creates a RawArrayType for the given element type and dimensions.
      *
-     * This method ensures that only one RawArrayType instance exists for each element type and dimension combination.
+     * This method ensures that only one RawArrayType instance exists for each element type, dimension, and modal combination.
      * @param elementType The element type of the array.
      * @param dims The number of dimensions.
+     * @param modal The modal metadata (default: none).
      * @return The RawArrayType instance.
      */
-    public static func get(elementType: Type, dims: UInt32): RawArrayType {
+    public static func get(elementType: Type, dims: UInt32, modal!: ModalInfo = ModalInfo()): RawArrayType {
         if (let Some(rawArrayTypes) <- CACHE.get(elementType)) {
             if (let Some(rawArrayType) <- rawArrayTypes.get(dims)) {
-                return rawArrayType
+                if (let Some(v) <- rawArrayType.get(modal)) {
+                    return v
+                } else {
+                    let newRawArrayType = RawArrayType(elementType, dims, modal: modal)
+                    rawArrayType[modal] = newRawArrayType
+                    return newRawArrayType
+                }
             } else {
-                let newRawArrayType = RawArrayType(elementType, dims)
-                rawArrayTypes[dims] = newRawArrayType
+                let newRawArrayType = RawArrayType(elementType, dims, modal: modal)
+                rawArrayTypes[dims] = HashMap<ModalInfo, RawArrayType>((modal, newRawArrayType))
                 return newRawArrayType
             }
         }
-        let newRawArrayType = RawArrayType(elementType, dims)
-        CACHE[elementType] = HashMap<UInt32, RawArrayType>((dims, newRawArrayType))
+        let newRawArrayType = RawArrayType(elementType, dims, modal: modal)
+        CACHE[elementType] = HashMap<UInt32, HashMap<ModalInfo, RawArrayType>>(
+            (dims, HashMap<ModalInfo, RawArrayType>((modal, newRawArrayType))))
         return newRawArrayType
     }
 
@@ -1387,18 +1683,28 @@ public class RawArrayType <: BuiltinType & Equatable<RawArrayType> {
  */
 public class RuneType <: BuiltinType & Equatable<RuneType> {
     private static let RUNE_TYPE = RuneType()
+    private static var MODAL_CACHE = HashMap<ModalInfo, RuneType>()
 
-    private init() {
-        super(TypeKind.`Rune`)
+    private init(modal!: ModalInfo = ModalInfo()) {
+        super(TypeKind.`Rune`, modal: modal)
         setHashCode()
     }
 
     /**
-     * Gets the singleton instance of RuneType.
+     * Gets the singleton instance of RuneType, optionally with modal metadata.
+     * @param modal The modal metadata (default: none).
      * @return The RuneType instance.
      */
-    public static func get(): RuneType {
-        return RUNE_TYPE
+    public static func get(modal!: ModalInfo = ModalInfo()): RuneType {
+        if (!modal.isModal()) {
+            return RUNE_TYPE
+        }
+        if (let Some(v) <- MODAL_CACHE.get(modal)) {
+            return v
+        }
+        let result = RuneType(modal: modal)
+        MODAL_CACHE[modal] = result
+        return result
     }
 
     /**
@@ -1418,18 +1724,28 @@ public class RuneType <: BuiltinType & Equatable<RuneType> {
  */
 public class UnitType <: BuiltinType & Equatable<UnitType> {
     private static let UNIT_TYPE = UnitType()
+    private static var MODAL_CACHE = HashMap<ModalInfo, UnitType>()
 
-    private init() {
-        super(TypeKind.`Unit`)
+    private init(modal!: ModalInfo = ModalInfo()) {
+        super(TypeKind.`Unit`, modal: modal)
         setHashCode()
     }
 
     /**
-     * Gets the singleton instance of UnitType.
+     * Gets the singleton instance of UnitType, optionally with modal metadata.
+     * @param modal The modal metadata (default: none).
      * @return The UnitType instance.
      */
-    public static func get(): UnitType {
-        return UNIT_TYPE
+    public static func get(modal!: ModalInfo = ModalInfo()): UnitType {
+        if (!modal.isModal()) {
+            return UNIT_TYPE
+        }
+        if (let Some(v) <- MODAL_CACHE.get(modal)) {
+            return v
+        }
+        let result = UnitType(modal: modal)
+        MODAL_CACHE[modal] = result
+        return result
     }
 
     /**
@@ -1449,7 +1765,8 @@ public class UnitType <: BuiltinType & Equatable<UnitType> {
  * The class maintains a cache of all VArray types to ensure uniqueness.
  */
 public class VArrayType <: BuiltinType & Equatable<VArrayType> {
-    private static var CACHE = HashMap<Type, HashMap<Int64, VArrayType>>()
+    //                          element type -> (size -> (modal -> VArrayType))
+    private static var CACHE = HashMap<Type, HashMap<Int64, HashMap<ModalInfo, VArrayType>>>()
     internal let _size: Int64
 
     /**
@@ -1472,8 +1789,8 @@ public class VArrayType <: BuiltinType & Equatable<VArrayType> {
         }
     }
 
-    private init(elementType: Type, size: Int64) {
-        super(TypeKind.`VArray`, ArrayList<Type>([elementType]))
+    private init(elementType: Type, size: Int64, modal!: ModalInfo = ModalInfo()) {
+        super(TypeKind.`VArray`, ArrayList<Type>([elementType]), modal: modal)
         this._size = size
         setHashCode()
     }
@@ -1481,23 +1798,31 @@ public class VArrayType <: BuiltinType & Equatable<VArrayType> {
     /**
      * Gets or creates a VArrayType for the given element type and size.
      *
-     * This method ensures that only one VArrayType instance exists for each element type and size combination.
+     * This method ensures that only one VArrayType instance exists for each element type, size, and modal combination.
      * @param elementType The element type of the array.
      * @param size The size of the array.
+     * @param modal The modal metadata (default: none).
      * @return The VArrayType instance.
      */
-    public static func get(elementType: Type, size: Int64): VArrayType {
+    public static func get(elementType: Type, size: Int64, modal!: ModalInfo = ModalInfo()): VArrayType {
         if (let Some(vArrayTypes) <- CACHE.get(elementType)) {
             if (let Some(vArrayType) <- vArrayTypes.get(size)) {
-                return vArrayType
+                if (let Some(v) <- vArrayType.get(modal)) {
+                    return v
+                } else {
+                    let newVArrayType = VArrayType(elementType, size, modal: modal)
+                    vArrayType[modal] = newVArrayType
+                    return newVArrayType
+                }
             } else {
-                let newVArrayType = VArrayType(elementType, size)
-                vArrayTypes[size] = newVArrayType
+                let newVArrayType = VArrayType(elementType, size, modal: modal)
+                vArrayTypes[size] = HashMap<ModalInfo, VArrayType>((modal, newVArrayType))
                 return newVArrayType
             }
         }
-        let newVArrayType = VArrayType(elementType, size)
-        CACHE[elementType] = HashMap<Int64, VArrayType>((size, newVArrayType))
+        let newVArrayType = VArrayType(elementType, size, modal: modal)
+        CACHE[elementType] = HashMap<Int64, HashMap<ModalInfo, VArrayType>>(
+            (size, HashMap<ModalInfo, VArrayType>((modal, newVArrayType))))
         return newVArrayType
     }
 
@@ -1587,8 +1912,8 @@ sealed abstract class CustomType <: Type & Equatable<CustomType> {
         }
     }
 
-    internal init(kind: TypeKind, def: CustomTypeDef, genericTypeParams: ArrayList<Type>) {
-        super(kind, genericTypeParams)
+    internal init(kind: TypeKind, def: CustomTypeDef, genericTypeParams: ArrayList<Type>, modal!: ModalInfo = ModalInfo()) {
+        super(kind, genericTypeParams, modal: modal)
         this._def = def
     }
 
@@ -1723,8 +2048,8 @@ sealed abstract class CustomType <: Type & Equatable<CustomType> {
  * The class maintains a cache of all class types to ensure uniqueness.
  */
 public class ClassLikeType <: CustomType & Equatable<ClassLikeType> {
-    //                    def -> (generic type args signature -> ClassLikeType)
-    private static var CACHE = HashMap<ClassLikeDef, HashMap<String, ClassLikeType>>()
+    //                    def -> (generic type args signature -> (modal -> ClassLikeType))
+    private static var CACHE = HashMap<ClassLikeDef, HashMap<String, HashMap<ModalInfo, ClassLikeType>>>()
 
     /**
      * Gets the ClassLikeDef associated with this class type.
@@ -1736,32 +2061,40 @@ public class ClassLikeType <: CustomType & Equatable<ClassLikeType> {
         }
     }
 
-    private init(def: ClassLikeDef, genericTypeParams: ArrayList<Type>) {
-        super(TypeKind.ClassLike, def, genericTypeParams)
+    private init(def: ClassLikeDef, genericTypeParams: ArrayList<Type>, modal!: ModalInfo = ModalInfo()) {
+        super(TypeKind.ClassLike, def, genericTypeParams, modal: modal)
         setHashCode()
     }
 
     /**
      * Gets or creates a ClassLikeType for the given class definition and generic type parameters.
      *
-     * This method ensures that only one ClassLikeType instance exists for each class definition and generic type parameter combination.
+     * This method ensures that only one ClassLikeType instance exists for each class definition, generic type parameter, and modal combination.
      * @param def The class definition.
      * @param genericTypeParams The generic type parameters.
+     * @param modal The modal metadata (default: none).
      * @return The ClassLikeType instance.
      */
-    public static func get(def: ClassLikeDef, genericTypeParams: Array<Type>): ClassLikeType {
+    public static func get(def: ClassLikeDef, genericTypeParams: Array<Type>, modal!: ModalInfo = ModalInfo()): ClassLikeType {
         let key = typeVecToString("<", genericTypeParams, ">")
         if (let Some(classTypes) <- CACHE.get(def)) {
-            if (let Some(classType) <- classTypes.get(key)) {
-                return classType
+            if (let Some(modalTypes) <- classTypes.get(key)) {
+                if (let Some(classType) <- modalTypes.get(modal)) {
+                    return classType
+                } else {
+                    let newClassType = ClassLikeType(def, ArrayList<Type>.of(genericTypeParams), modal: modal)
+                    modalTypes[modal] = newClassType
+                    return newClassType
+                }
             } else {
-                let newClassType = ClassLikeType(def, ArrayList<Type>.of(genericTypeParams))
-                classTypes[key] = newClassType
+                let newClassType = ClassLikeType(def, ArrayList<Type>.of(genericTypeParams), modal: modal)
+                classTypes[key] = HashMap<ModalInfo, ClassLikeType>((modal, newClassType))
                 return newClassType
             }
         }
-        let newClassType = ClassLikeType(def, ArrayList<Type>.of(genericTypeParams))
-        CACHE[def] = HashMap<String, ClassLikeType>((key, newClassType))
+        let newClassType = ClassLikeType(def, ArrayList<Type>.of(genericTypeParams), modal: modal)
+        CACHE[def] = HashMap<String, HashMap<ModalInfo, ClassLikeType>>(
+            (key, HashMap<ModalInfo, ClassLikeType>((modal, newClassType))))
         return newClassType
     }
 
@@ -1799,8 +2132,8 @@ public class ClassLikeType <: CustomType & Equatable<ClassLikeType> {
  * The class maintains a cache of all enum types to ensure uniqueness.
  */
 public class EnumType <: CustomType & Equatable<EnumType> {
-    //              def -> (generic type args signature -> EnumType)
-    private static var CACHE = HashMap<EnumDef, HashMap<String, EnumType>>()
+    //              def -> (generic type args signature -> (modal -> EnumType))
+    private static var CACHE = HashMap<EnumDef, HashMap<String, HashMap<ModalInfo, EnumType>>>()
 
     /**
      * Gets the EnumDef associated with this enum type.
@@ -1812,32 +2145,40 @@ public class EnumType <: CustomType & Equatable<EnumType> {
         }
     }
 
-    private init(def: EnumDef, genericTypeParams: ArrayList<Type>) {
-        super(TypeKind.Enum, def, genericTypeParams)
+    private init(def: EnumDef, genericTypeParams: ArrayList<Type>, modal!: ModalInfo = ModalInfo()) {
+        super(TypeKind.Enum, def, genericTypeParams, modal: modal)
         setHashCode()
     }
 
     /**
      * Gets or creates an EnumType for the given enum definition and generic type parameters.
      *
-     * This method ensures that only one EnumType instance exists for each enum definition and generic type parameter combination.
+     * This method ensures that only one EnumType instance exists for each enum definition, generic type parameter, and modal combination.
      * @param def The enum definition.
      * @param genericTypeParams The generic type parameters.
+     * @param modal The modal metadata (default: none).
      * @return The EnumType instance.
      */
-    public static func get(def: EnumDef, genericTypeParams: Array<Type>): EnumType {
+    public static func get(def: EnumDef, genericTypeParams: Array<Type>, modal!: ModalInfo = ModalInfo()): EnumType {
         let key = typeVecToString("<", genericTypeParams, ">")
         if (let Some(enumTypes) <- CACHE.get(def)) {
-            if (let Some(enumType) <- enumTypes.get(key)) {
-                return enumType
+            if (let Some(modalTypes) <- enumTypes.get(key)) {
+                if (let Some(enumType) <- modalTypes.get(modal)) {
+                    return enumType
+                } else {
+                    let newEnumType = EnumType(def, ArrayList<Type>.of(genericTypeParams), modal: modal)
+                    modalTypes[modal] = newEnumType
+                    return newEnumType
+                }
             } else {
-                let newEnumType = EnumType(def, ArrayList<Type>.of(genericTypeParams))
-                enumTypes[key] = newEnumType
+                let newEnumType = EnumType(def, ArrayList<Type>.of(genericTypeParams), modal: modal)
+                enumTypes[key] = HashMap<ModalInfo, EnumType>((modal, newEnumType))
                 return newEnumType
             }
         }
-        let newEnumType = EnumType(def, ArrayList<Type>.of(genericTypeParams))
-        CACHE[def] = HashMap<String, EnumType>((key, newEnumType))
+        let newEnumType = EnumType(def, ArrayList<Type>.of(genericTypeParams), modal: modal)
+        CACHE[def] = HashMap<String, HashMap<ModalInfo, EnumType>>(
+            (key, HashMap<ModalInfo, EnumType>((modal, newEnumType))))
         return newEnumType
     }
 
@@ -1858,8 +2199,8 @@ public class EnumType <: CustomType & Equatable<EnumType> {
  * The class maintains a cache of all struct types to ensure uniqueness.
  */
 public class StructType <: CustomType & Equatable<StructType> {
-    //                def -> (generic type args signature -> StructType)
-    private static var CACHE = HashMap<StructDef, HashMap<String, StructType>>()
+    //                def -> (generic type args signature -> (modal -> StructType))
+    private static var CACHE = HashMap<StructDef, HashMap<String, HashMap<ModalInfo, StructType>>>()
 
     /**
      * Gets the StructDef associated with this struct type.
@@ -1871,32 +2212,40 @@ public class StructType <: CustomType & Equatable<StructType> {
         }
     }
 
-    private init(def: StructDef, genericTypeParams: ArrayList<Type>) {
-        super(TypeKind.Struct, def, genericTypeParams)
+    private init(def: StructDef, genericTypeParams: ArrayList<Type>, modal!: ModalInfo = ModalInfo()) {
+        super(TypeKind.Struct, def, genericTypeParams, modal: modal)
         setHashCode()
     }
 
     /**
      * Gets or creates a StructType for the given struct definition and generic type parameters.
      *
-     * This method ensures that only one StructType instance exists for each struct definition and generic type parameter combination.
+     * This method ensures that only one StructType instance exists for each struct definition, generic type parameter, and modal combination.
      * @param def The struct definition.
      * @param genericTypeParams The generic type parameters.
+     * @param modal The modal metadata (default: none).
      * @return The StructType instance.
      */
-    public static func get(def: StructDef, genericTypeParams: Array<Type>): StructType {
+    public static func get(def: StructDef, genericTypeParams: Array<Type>, modal!: ModalInfo = ModalInfo()): StructType {
         let key = typeVecToString("<", genericTypeParams, ">")
         if (let Some(structTypes) <- CACHE.get(def)) {
-            if (let Some(structType) <- structTypes.get(key)) {
-                return structType
+            if (let Some(modalTypes) <- structTypes.get(key)) {
+                if (let Some(structType) <- modalTypes.get(modal)) {
+                    return structType
+                } else {
+                    let newStructType = StructType(def, ArrayList<Type>.of(genericTypeParams), modal: modal)
+                    modalTypes[modal] = newStructType
+                    return newStructType
+                }
             } else {
-                let newStructType = StructType(def, ArrayList<Type>.of(genericTypeParams))
-                structTypes[key] = newStructType
+                let newStructType = StructType(def, ArrayList<Type>.of(genericTypeParams), modal: modal)
+                structTypes[key] = HashMap<ModalInfo, StructType>((modal, newStructType))
                 return newStructType
             }
         }
-        let newStructType = StructType(def, ArrayList<Type>.of(genericTypeParams))
-        CACHE[def] = HashMap<String, StructType>((key, newStructType))
+        let newStructType = StructType(def, ArrayList<Type>.of(genericTypeParams), modal: modal)
+        CACHE[def] = HashMap<String, HashMap<ModalInfo, StructType>>(
+            (key, HashMap<ModalInfo, StructType>((modal, newStructType))))
         return newStructType
     }
 
@@ -1917,8 +2266,8 @@ public class StructType <: CustomType & Equatable<StructType> {
  * The class maintains a cache of all function types to ensure uniqueness.
  */
 public class FuncType <: Type & Equatable<FuncType> {
-    //                             signature -> FuncType
-    private static var CACHE = HashMap<String, FuncType>()
+    //                             signature -> (modal -> FuncType)
+    private static var CACHE = HashMap<String, HashMap<ModalInfo, FuncType>>()
     private let _hasVarArg: Bool
     private let _isCFunc: Bool
 
@@ -1962,8 +2311,8 @@ public class FuncType <: Type & Equatable<FuncType> {
         }
     }
 
-    private init(paramTypes: ArrayList<Type>, retType: Type, varArg: Bool, cFunc: Bool) {
-        super(TypeKind.Func, paramTypes)
+    private init(paramTypes: ArrayList<Type>, retType: Type, varArg: Bool, cFunc: Bool, modal!: ModalInfo = ModalInfo()) {
+        super(TypeKind.Func, paramTypes, modal: modal)
         this._hasVarArg = varArg
         this._isCFunc = cFunc
         _typeArgs.add(retType)
@@ -1973,22 +2322,29 @@ public class FuncType <: Type & Equatable<FuncType> {
     /**
      * Gets or creates a FuncType for the given parameter types and return type.
      *
-     * This method ensures that only one FuncType instance exists for each function signature.
+     * This method ensures that only one FuncType instance exists for each function signature and modal combination.
      * @param paramTypes The parameter types.
      * @param retType The return type.
      * @param varArg Whether the function has variable arguments (default: false).
      * @param cFunc Whether this is a C function (default: false).
+     * @param modal The modal metadata (default: none).
      * @return The FuncType instance.
      */
-    public static func get(paramTypes: Array<Type>, retType: Type, varArg!: Bool = false, cFunc!: Bool = false): FuncType {
+    public static func get(paramTypes: Array<Type>, retType: Type, varArg!: Bool = false, cFunc!: Bool = false,
+        modal!: ModalInfo = ModalInfo()): FuncType {
         var key = typeVecToString("(", paramTypes, ")") + "->" + retType.toString()
         key += if (varArg) { "|1" } else { "|0" }
         key += if (cFunc)  { "|1" } else { "|0" }
-        if (let Some(funcType) <- CACHE.get(key)) {
-            return funcType
+        if (let Some(modalTypes) <- CACHE.get(key)) {
+            if (let Some(funcType) <- modalTypes.get(modal)) {
+                return funcType
+            }
+            let newFuncType = FuncType(ArrayList<Type>.of(paramTypes), retType, varArg, cFunc, modal: modal)
+            modalTypes[modal] = newFuncType
+            return newFuncType
         }
-        let newFuncType = FuncType(ArrayList<Type>.of(paramTypes), retType, varArg, cFunc)
-        CACHE[key] = newFuncType
+        let newFuncType = FuncType(ArrayList<Type>.of(paramTypes), retType, varArg, cFunc, modal: modal)
+        CACHE[key] = HashMap<ModalInfo, FuncType>((modal, newFuncType))
         return newFuncType
     }
 
@@ -2036,8 +2392,8 @@ public class FuncType <: Type & Equatable<FuncType> {
  * The class maintains a cache of all generic types to ensure uniqueness.
  */
 public class GenericType <: Type & Equatable<GenericType> {
-    //                            identifier -> GenericType
-    private static var CACHE = HashMap<String, GenericType>()
+    //                            identifier -> (modal -> GenericType)
+    private static var CACHE = HashMap<String, HashMap<ModalInfo, GenericType>>()
     internal let _identifier: String
     internal var _upperBounds: ArrayList<Type> = ArrayList<Type>()
     private let _srcCodeName: String
@@ -2073,8 +2429,8 @@ public class GenericType <: Type & Equatable<GenericType> {
         }
     }
 
-    private init(identifier: String, srcCodeName: String) {
-        super(TypeKind.Generic)
+    private init(identifier: String, srcCodeName: String, modal!: ModalInfo = ModalInfo()) {
+        super(TypeKind.Generic, modal: modal)
         this._identifier = identifier
         this._srcCodeName = srcCodeName
         setHashCode()
@@ -2083,17 +2439,23 @@ public class GenericType <: Type & Equatable<GenericType> {
     /**
      * Gets or creates a GenericType for the given identifier.
      *
-     * This method ensures that only one GenericType instance exists for each identifier.
+     * This method ensures that only one GenericType instance exists for each identifier and modal combination.
      * @param identifier The internal identifier of the generic type.
      * @param srcCodeName The source code identifier of the generic type.
+     * @param modal The modal metadata (default: none).
      * @return The GenericType instance.
      */
-    public static func get(identifier: String, srcCodeName: String): GenericType {
-        if (let Some(gType) <- CACHE.get(identifier)) {
-            return gType
+    public static func get(identifier: String, srcCodeName: String, modal!: ModalInfo = ModalInfo()): GenericType {
+        if (let Some(modalTypes) <- CACHE.get(identifier)) {
+            if (let Some(gType) <- modalTypes.get(modal)) {
+                return gType
+            }
+            let newGType = GenericType(identifier, srcCodeName, modal: modal)
+            modalTypes[modal] = newGType
+            return newGType
         }
-        let newGType = GenericType(identifier, srcCodeName)
-        CACHE[identifier] = newGType
+        let newGType = GenericType(identifier, srcCodeName, modal: modal)
+        CACHE[identifier] = HashMap<ModalInfo, GenericType>((modal, newGType))
         return newGType
     }
 
@@ -2217,18 +2579,28 @@ public class RefType <: Type & Equatable<RefType> {
  */
 public class ThisType <: Type & Equatable<ThisType> {
     private static let THIS_TYPE = ThisType()
+    private static var MODAL_CACHE = HashMap<ModalInfo, ThisType>()
 
-    private init() {
-        super(TypeKind.`This`)
+    private init(modal!: ModalInfo = ModalInfo()) {
+        super(TypeKind.`This`, modal: modal)
         setHashCode()
     }
 
     /**
-     * Gets the singleton instance of ThisType.
+     * Gets the singleton instance of ThisType, optionally with modal metadata.
+     * @param modal The modal metadata (default: none).
      * @return The ThisType instance.
      */
-    public static func get(): ThisType {
-        return THIS_TYPE
+    public static func get(modal!: ModalInfo = ModalInfo()): ThisType {
+        if (!modal.isModal()) {
+            return THIS_TYPE
+        }
+        if (let Some(v) <- MODAL_CACHE.get(modal)) {
+            return v
+        }
+        let result = ThisType(modal: modal)
+        MODAL_CACHE[modal] = result
+        return result
     }
 
     /**
@@ -2248,8 +2620,8 @@ public class ThisType <: Type & Equatable<ThisType> {
  * The class maintains a cache of all tuple types to ensure uniqueness.
  */
 public class TupleType <: Type & Equatable<TupleType> {
-    //                             signature -> TupleType
-    private static var CACHE = HashMap<String, TupleType>()
+    //                             signature -> (modal -> TupleType)
+    private static var CACHE = HashMap<String, HashMap<ModalInfo, TupleType>>()
 
     /**
      * Gets the element types of this tuple.
@@ -2261,25 +2633,31 @@ public class TupleType <: Type & Equatable<TupleType> {
         }
     }
 
-    private init(elementType: ArrayList<Type>) {
-        super(TypeKind.Tuple, elementType)
+    private init(elementType: ArrayList<Type>, modal!: ModalInfo = ModalInfo()) {
+        super(TypeKind.Tuple, elementType, modal: modal)
         setHashCode()
     }
 
     /**
      * Gets or creates a TupleType for the given element types.
      *
-     * This method ensures that only one TupleType instance exists for each element type combination.
+     * This method ensures that only one TupleType instance exists for each element type and modal combination.
      * @param elementTypes The element types of the tuple.
+     * @param modal The modal metadata (default: none).
      * @return The TupleType instance.
      */
-    public static func get(elementTypes: Array<Type>): TupleType {
+    public static func get(elementTypes: Array<Type>, modal!: ModalInfo = ModalInfo()): TupleType {
         let key = typeVecToString("(", elementTypes, ")")
-        if (let Some(tupleType) <- CACHE.get(key)) {
-            return tupleType
+        if (let Some(modalTypes) <- CACHE.get(key)) {
+            if (let Some(tupleType) <- modalTypes.get(modal)) {
+                return tupleType
+            }
+            let newTupleType = TupleType(ArrayList<Type>.of(elementTypes), modal: modal)
+            modalTypes[modal] = newTupleType
+            return newTupleType
         }
-        let newTupleType = TupleType(ArrayList<Type>.of(elementTypes))
-        CACHE[key] = newTupleType
+        let newTupleType = TupleType(ArrayList<Type>.of(elementTypes), modal: modal)
+        CACHE[key] = HashMap<ModalInfo, TupleType>((modal, newTupleType))
         return newTupleType
     }
 

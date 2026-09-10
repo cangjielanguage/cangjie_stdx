@@ -159,27 +159,42 @@ class CHIRDeserializerImpl {
         }
     }
 
-    private func getBasicTypeFromBuilder(typeFormat: PackageFormat_CHIRTypeKind) : Option<Type> {
+    private func convertMode(local: PackageFormat_Mode): Mode {
+        return match (local) {
+            case PackageFormat_Mode.Mode_NONE => Mode.Absent
+            case PackageFormat_Mode.Mode_MAYBE => Mode.Maybe
+            case PackageFormat_Mode.Mode_MUST => Mode.Must
+        }
+    }
+
+    private func readModalInfo(base: PackageFormat_Type): ModalInfo {
+        if (let Some(m) <- base.GetModal()) {
+            return ModalInfo(local: convertMode(m.GetLocal()))
+        }
+        return ModalInfo()
+    }
+
+    private func getBasicTypeFromBuilder(typeFormat: PackageFormat_CHIRTypeKind, modal: ModalInfo): Option<Type> {
         return match (typeFormat) {
-            case PackageFormat_CHIRTypeKind.CHIRTypeKind_BOOLEAN => BoolType.get()
-            case PackageFormat_CHIRTypeKind.CHIRTypeKind_INT8 => IntType.getInt8()
-            case PackageFormat_CHIRTypeKind.CHIRTypeKind_INT16 => IntType.getInt16()
-            case PackageFormat_CHIRTypeKind.CHIRTypeKind_INT32 => IntType.getInt32()
-            case PackageFormat_CHIRTypeKind.CHIRTypeKind_INT64 => IntType.getInt64()
-            case PackageFormat_CHIRTypeKind.CHIRTypeKind_INT_NATIVE => IntType.getIntNative()
-            case PackageFormat_CHIRTypeKind.CHIRTypeKind_UINT8 => IntType.getUInt8()
-            case PackageFormat_CHIRTypeKind.CHIRTypeKind_UINT16 => IntType.getUInt16()
-            case PackageFormat_CHIRTypeKind.CHIRTypeKind_UINT32 => IntType.getUInt32()
-            case PackageFormat_CHIRTypeKind.CHIRTypeKind_UINT64 => IntType.getUInt64()
-            case PackageFormat_CHIRTypeKind.CHIRTypeKind_UINT_NATIVE => IntType.getUIntNative()
-            case PackageFormat_CHIRTypeKind.CHIRTypeKind_FLOAT16 => FloatType.getFloat16()
-            case PackageFormat_CHIRTypeKind.CHIRTypeKind_FLOAT32 => FloatType.getFloat32()
-            case PackageFormat_CHIRTypeKind.CHIRTypeKind_FLOAT64 => FloatType.getFloat64()
-            case PackageFormat_CHIRTypeKind.CHIRTypeKind_C_STRING => CStringType.get()
-            case PackageFormat_CHIRTypeKind.CHIRTypeKind_UNIT => UnitType.get()
-            case PackageFormat_CHIRTypeKind.CHIRTypeKind_NOTHING => NothingType.get()
-            case PackageFormat_CHIRTypeKind.CHIRTypeKind_RUNE => RuneType.get()
-            case PackageFormat_CHIRTypeKind.CHIRTypeKind_THIS => ThisType.get()
+            case PackageFormat_CHIRTypeKind.CHIRTypeKind_BOOLEAN => BoolType.get(modal: modal)
+            case PackageFormat_CHIRTypeKind.CHIRTypeKind_INT8 => IntType.getInt8(modal: modal)
+            case PackageFormat_CHIRTypeKind.CHIRTypeKind_INT16 => IntType.getInt16(modal: modal)
+            case PackageFormat_CHIRTypeKind.CHIRTypeKind_INT32 => IntType.getInt32(modal: modal)
+            case PackageFormat_CHIRTypeKind.CHIRTypeKind_INT64 => IntType.getInt64(modal: modal)
+            case PackageFormat_CHIRTypeKind.CHIRTypeKind_INT_NATIVE => IntType.getIntNative(modal: modal)
+            case PackageFormat_CHIRTypeKind.CHIRTypeKind_UINT8 => IntType.getUInt8(modal: modal)
+            case PackageFormat_CHIRTypeKind.CHIRTypeKind_UINT16 => IntType.getUInt16(modal: modal)
+            case PackageFormat_CHIRTypeKind.CHIRTypeKind_UINT32 => IntType.getUInt32(modal: modal)
+            case PackageFormat_CHIRTypeKind.CHIRTypeKind_UINT64 => IntType.getUInt64(modal: modal)
+            case PackageFormat_CHIRTypeKind.CHIRTypeKind_UINT_NATIVE => IntType.getUIntNative(modal: modal)
+            case PackageFormat_CHIRTypeKind.CHIRTypeKind_FLOAT16 => FloatType.getFloat16(modal: modal)
+            case PackageFormat_CHIRTypeKind.CHIRTypeKind_FLOAT32 => FloatType.getFloat32(modal: modal)
+            case PackageFormat_CHIRTypeKind.CHIRTypeKind_FLOAT64 => FloatType.getFloat64(modal: modal)
+            case PackageFormat_CHIRTypeKind.CHIRTypeKind_C_STRING => CStringType.get(modal: modal)
+            case PackageFormat_CHIRTypeKind.CHIRTypeKind_UNIT => UnitType.get(modal: modal)
+            case PackageFormat_CHIRTypeKind.CHIRTypeKind_NOTHING => NothingType.get(modal: modal)
+            case PackageFormat_CHIRTypeKind.CHIRTypeKind_RUNE => RuneType.get(modal: modal)
+            case PackageFormat_CHIRTypeKind.CHIRTypeKind_THIS => ThisType.get(modal: modal)
             case _ => None
         }
     }
@@ -221,8 +236,8 @@ class CHIRDeserializerImpl {
         }
     }
 
-    private func getBasicTypeFromBuilder(typeFormat: UInt32) : Option<Type> {
-        return getBasicTypeFromBuilder(EnumValuesPackageFormat_CHIRTypeKind(UInt8(typeFormat)))
+    private func getBasicTypeFromBuilder(typeFormat: UInt32, modal!: ModalInfo = ModalInfo()): Option<Type> {
+        return getBasicTypeFromBuilder(EnumValuesPackageFormat_CHIRTypeKind(UInt8(typeFormat)), modal)
     }
 
     private func getType(id: UInt32): Type {
@@ -236,8 +251,9 @@ class CHIRDeserializerImpl {
             case PackageFormat_TypeElem.TypeElem_TYPE =>
                 let t = pkgFormat.GetTypesAsType(id - 1).getOrThrow()
                 let kind = t.GetKind()
+                let modal = readModalInfo(t)
                 // some types, that don't have argTys, can be directly constructed from kind
-                let basicType = getBasicTypeFromBuilder(kind)
+                let basicType = getBasicTypeFromBuilder(kind, modal)
                 if (let Some(ty) <- basicType) {
                     ty
                 } else {
@@ -245,56 +261,66 @@ class CHIRDeserializerImpl {
                     let tk = convertTypeKind(kind)
                     match (tk) {
                         case TypeKind.Tuple =>
-                            TupleType.get(argTys.toArray())
+                            TupleType.get(argTys.toArray(), modal: modal)
                         case TypeKind.Ref =>
                             RefType.get(argTys[0])
                         case TypeKind.Box =>
                             BoxType.get(argTys[0])
                         case TypeKind.CPointer =>
-                            CPointerType.get(argTys[0])
+                            CPointerType.get(argTys[0], modal: modal)
                         case _ => throw IllegalArgumentException("Unsupported TYPE kind: ${tk}")
                     }
                 }
             case PackageFormat_TypeElem.TypeElem_RAWARRAYTYPE =>
                 let rawArrayType = pkgFormat.GetTypesAsRawArrayType(id - 1).getOrThrow()
-                let elemTy = getType(rawArrayType.GetBase().getOrThrow().GetArgTys().first.getOrThrow())
+                let base = rawArrayType.GetBase().getOrThrow()
+                let modal = readModalInfo(base)
+                let elemTy = getType(base.GetArgTys().first.getOrThrow())
                 let dims = rawArrayType.GetDims()
-                RawArrayType.get(elemTy, dims)
+                RawArrayType.get(elemTy, dims, modal: modal)
             case PackageFormat_TypeElem.TypeElem_VARRAYTYPE =>
                 let varrayType = pkgFormat.GetTypesAsVArrayType(id - 1).getOrThrow()
-                let elemTy = getType(varrayType.GetBase().getOrThrow().GetArgTys().first.getOrThrow())
+                let base = varrayType.GetBase().getOrThrow()
+                let modal = readModalInfo(base)
+                let elemTy = getType(base.GetArgTys().first.getOrThrow())
                 let size = varrayType.GetSize()
-                VArrayType.get(elemTy, size)
+                VArrayType.get(elemTy, size, modal: modal)
             case PackageFormat_TypeElem.TypeElem_FUNCTYPE =>
                 let funcType = pkgFormat.GetTypesAsFuncType(id - 1).getOrThrow()
-                let argTyIndices = funcType.GetBase().getOrThrow().GetArgTys()
+                let base = funcType.GetBase().getOrThrow()
+                let modal = readModalInfo(base)
+                let argTyIndices = base.GetArgTys()
                 let retTy = getType(argTyIndices.last.getOrThrow())
                 let argTys = collectArrayList<Type>(getTypeAs<Type>(argTyIndices.slice(0, argTyIndices.size - 1))).toArray()
                 let hasVarArg = funcType.GetHasVarArg()
                 let isCFuncType = funcType.GetIsCFuncType()
-                FuncType.get(argTys, retTy, varArg: hasVarArg, cFunc: isCFuncType)
+                FuncType.get(argTys, retTy, varArg: hasVarArg, cFunc: isCFuncType, modal: modal)
             case PackageFormat_TypeElem.TypeElem_CUSTOMTYPE =>
                 let customType = pkgFormat.GetTypesAsCustomType(id - 1).getOrThrow()
-                let typeKind = convertTypeKind(customType.GetBase().getOrThrow().GetKind())
+                let base = customType.GetBase().getOrThrow()
+                let modal = readModalInfo(base)
+                let typeKind = convertTypeKind(base.GetKind())
                 let def = customType.GetCustomTypeDef()
-                let typeArgs = getType(customType.GetBase().getOrThrow().GetArgTys())
+                let typeArgs = getType(base.GetArgTys())
                 match (typeKind) {
                     case TypeKind.ClassLike =>
                         let classDef = getCustomTypeDefAs<ClassLikeDef>(def)
-                        ClassLikeType.get(classDef, typeArgs)
+                        ClassLikeType.get(classDef, typeArgs, modal: modal)
                     case TypeKind.Struct =>
                         let structDef = getCustomTypeDefAs<StructDef>(def)
-                        StructType.get(structDef, typeArgs)
+                        StructType.get(structDef, typeArgs, modal: modal)
                     case TypeKind.Enum =>
                         let enumDef = getCustomTypeDefAs<EnumDef>(def)
-                        EnumType.get(enumDef, typeArgs)
+                        EnumType.get(enumDef, typeArgs, modal: modal)
                     case _ => throw IllegalArgumentException("Illegal custom type kind: ${typeKind}")
                 }
             case PackageFormat_TypeElem.TypeElem_GENERICTYPE =>
                 let genericType = pkgFormat.GetTypesAsGenericType(id - 1).getOrThrow()
+                let base = genericType.GetBase().getOrThrow()
+                let modal = readModalInfo(base)
                 let identifier = genericType.GetIdentifier()
                 let srcCodeIdentifier = genericType.GetSrcCodeIdentifier()
-                let result = GenericType.get(identifier, srcCodeIdentifier)
+                let result = GenericType.get(identifier, srcCodeIdentifier, modal: modal)
                 genericTypeConfig.add((result, genericType))
                 result
             case PackageFormat_TypeElem.TypeElem_NONE =>
@@ -647,10 +673,12 @@ class CHIRDeserializerImpl {
         var result: BlockGroup
         if (let Some(owner) <- tryGetValueAs<Function>(blockGroupFormat.GetOwnedFunc())) {
             result = BlockGroup("", owner)
-        } else if (let Some(owner) <- tryGetExpressionAs<Lambda>(blockGroupFormat.GetOwnedExpression())) {
-            result = BlockGroup("", owner._result.getOrThrow())
+        } else if (let Some(lambda) <- tryGetExpressionAs<Lambda>(blockGroupFormat.GetOwnedExpression())) {
+            result = BlockGroup("", lambda)
+        } else if (let Some(owner) <- tryGetExpressionAs<Exclave>(blockGroupFormat.GetOwnedExpression())) {
+            result = BlockGroup("", owner)
         } else {
-            throw CHIRException("Invalid owner, neither Function or Lambda")
+            throw CHIRException("Invalid owner, neither Function, Lambda, nor Exclave")
         }
         return result
     }
@@ -896,6 +924,7 @@ class CHIRDeserializerImpl {
             case PackageFormat_CHIRExprKind.CHIRExprKind_BRANCH => ExprKind.Branch
             case PackageFormat_CHIRExprKind.CHIRExprKind_MULTIBRANCH => ExprKind.MultiBranch
             case PackageFormat_CHIRExprKind.CHIRExprKind_EXIT => ExprKind.Exit
+            case PackageFormat_CHIRExprKind.CHIRExprKind_EXCLAVE => ExprKind.Exclave
             case PackageFormat_CHIRExprKind.CHIRExprKind_TRYAPPLY => ExprKind.TryApply
             case PackageFormat_CHIRExprKind.CHIRExprKind_TRYINVOKE => ExprKind.TryInvoke
             case PackageFormat_CHIRExprKind.CHIRExprKind_TRYINTRINSIC => ExprKind.TryIntrinsic
@@ -969,6 +998,8 @@ class CHIRDeserializerImpl {
             case PackageFormat_CHIRExprKind.CHIRExprKind_INTRINSIC => ExprKind.Intrinsic
             case PackageFormat_CHIRExprKind.CHIRExprKind_GETRTTI => ExprKind.GetRtti
             case PackageFormat_CHIRExprKind.CHIRExprKind_GETRTTISTATIC => ExprKind.GetRttiStatic
+            case PackageFormat_CHIRExprKind.CHIRExprKind_STARTREGION => ExprKind.StartRegion
+            case PackageFormat_CHIRExprKind.CHIRExprKind_ENDREGION => ExprKind.EndRegion
         }
     }
 
@@ -1391,6 +1422,12 @@ class CHIRDeserializerImpl {
                 Constant(getValueAs<LiteralValue>(operands[0]))
             case ExprKind.Exit =>
                 Exit()
+            case ExprKind.Exclave =>
+                Exclave()
+            case ExprKind.StartRegion =>
+                StartRegion()
+            case ExprKind.EndRegion =>
+                EndRegion()
             case ExprKind.GetException =>
                 GetException()
             case ExprKind.GetRtti =>

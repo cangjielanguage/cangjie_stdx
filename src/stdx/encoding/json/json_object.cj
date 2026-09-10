@@ -68,6 +68,8 @@ func jsonObjectToFormattedString(
  * JsonNull class used for encapsulate JSON data: null.
  */
 public class JsonNull <: JsonValue { // cjlint-ignore !G.ENU.01
+    public init() {}
+    public exclave init(this @local!) {}
 
     /**
      * Determine the JSON type to which the JsonNull belongs.
@@ -79,6 +81,19 @@ public class JsonNull <: JsonValue { // cjlint-ignore !G.ENU.01
     public func kind(): JsonKind {
         return JsNull
     }
+    public func kind(this @local?): JsonKind {
+        return JsNull
+    }
+
+    /**
+     * Optimized: Calculate capacity for null
+     */
+    protected func calculateCapacity(): Int64 {
+        return 4  // "null"
+    }
+    protected func calculateCapacity(this @local?): Int64 {
+        return 4  // "null"
+    }
 
     /**
      * Convert JsonNull to String.
@@ -89,6 +104,9 @@ public class JsonNull <: JsonValue { // cjlint-ignore !G.ENU.01
      */
     public func toString(): String {
         return "null"
+    }
+    public exclave func toString(this @local?): String @local! {
+        "null".toLocal()
     }
 
     /**
@@ -139,6 +157,9 @@ public class JsonBool <: JsonValue { // cjlint-ignore !G.ENU.01
     public init(bv: Bool) {
         this.value = bv
     }
+    public exclave init(this @local!, bv: Bool) {
+        this.value = bv
+    }
 
     /**
      * Get the value data of the JsonBool.
@@ -148,6 +169,9 @@ public class JsonBool <: JsonValue { // cjlint-ignore !G.ENU.01
      * @since 0.17.4
      */
     public func getValue(): Bool {
+        return value
+    }
+    public func getValue(this @local?): Bool {
         return value
     }
 
@@ -161,6 +185,19 @@ public class JsonBool <: JsonValue { // cjlint-ignore !G.ENU.01
     public func kind(): JsonKind {
         return JsBool
     }
+    public func kind(this @local?): JsonKind {
+        return JsBool
+    }
+
+    /**
+     * Optimized: Calculate capacity for bool
+     */
+    protected func calculateCapacity(): Int64 {
+        return 5  // max of "true" and "false"
+    }
+    protected func calculateCapacity(this @local?): Int64 {
+        return 5  // max of "true" and "false"
+    }
 
     /**
      * Convert JsonBool to String.
@@ -170,7 +207,10 @@ public class JsonBool <: JsonValue { // cjlint-ignore !G.ENU.01
      * @since 0.17.4
      */
     public func toString(): String {
-        return jsonPrimitiveToString(value)
+        return value.toString()
+    }
+    public exclave func toString(this @local?): String @local! {
+        value.toString()
     }
 
     /**
@@ -221,6 +261,9 @@ public class JsonInt <: JsonValue {
     public init(iv: Int64) {
         this.value = iv
     }
+    public exclave init(this @local!, iv: Int64) {
+        value = iv
+    }
 
     /**
      * Get the value data of the JsonInt.
@@ -230,6 +273,9 @@ public class JsonInt <: JsonValue {
      * @since 0.17.4
      */
     public func getValue(): Int64 {
+        return value
+    }
+    public func getValue(this @local?): Int64 {
         return value
     }
 
@@ -243,6 +289,19 @@ public class JsonInt <: JsonValue {
     public func kind(): JsonKind {
         return JsInt
     }
+    public func kind(this @local?): JsonKind {
+        return JsInt
+    }
+
+    /**
+     * Optimized: Calculate capacity for int
+     */
+    protected func calculateCapacity(): Int64 {
+        return 22  // max length of Int64 string
+    }
+    protected func calculateCapacity(this @local?): Int64 {
+        return 22  // max length of Int64 string
+    }
 
     /**
      * Convert JsonInt to String.
@@ -252,7 +311,10 @@ public class JsonInt <: JsonValue {
      * @since 0.17.4
      */
     public func toString(): String {
-        return jsonPrimitiveToString(value)
+        return value.toString()
+    }
+    public exclave func toString(this @local?): String @local! {
+        value.toString()
     }
 
     /**
@@ -303,6 +365,9 @@ public class JsonFloat <: JsonValue {
     public init(fv: Float64) {
         this.value = fv
     }
+    public exclave init(this @local!, fv: Float64) {
+        value = fv
+    }
 
     /**
      * Create a new JsonFloat object.
@@ -326,6 +391,9 @@ public class JsonFloat <: JsonValue {
     public func getValue(): Float64 {
         return value
     }
+    public func getValue(this @local?): Float64 {
+        return value
+    }
 
     /**
      * Determine the JSON type to which the JsonFloat belongs.
@@ -337,6 +405,19 @@ public class JsonFloat <: JsonValue {
     public func kind(): JsonKind {
         return JsFloat
     }
+    public func kind(this @local?): JsonKind {
+        return JsFloat
+    }
+
+    /**
+     * Optimized: Calculate capacity for float
+     */
+    protected func calculateCapacity(): Int64 {
+        return 200  // conservative estimate for float representation
+    }
+    protected func calculateCapacity(this @local?): Int64 {
+        return 200  // conservative estimate for float representation
+    }
 
     /**
      * Convert JsonFloat to String.
@@ -346,7 +427,10 @@ public class JsonFloat <: JsonValue {
      * @since 0.17.4
      */
     public func toString(): String {
-        return jsonPrimitiveToString(value)
+        return value.toString()
+    }
+    public exclave func toString(this @local?): String @local! {
+        value.toString()
     }
 
     /**
@@ -397,6 +481,9 @@ public class JsonString <: JsonValue { // cjlint-ignore !G.ENU.01
     public init(sv: String) {
         this.value = sv
     }
+    public exclave init(this @local!, sv: String @local!) {
+        value = sv
+    }
 
     /**
      * Get the value data of the JsonString.
@@ -407,6 +494,12 @@ public class JsonString <: JsonValue { // cjlint-ignore !G.ENU.01
      */
     public func getValue(): String {
         return value
+    }
+    public func getValue(this @local!): String @local! {
+        value
+    }
+    public func getValue(this @local?): String @local? {
+        value
     }
 
     /**
@@ -419,6 +512,32 @@ public class JsonString <: JsonValue { // cjlint-ignore !G.ENU.01
     public func kind(): JsonKind {
         return JsString
     }
+    public func kind(this @local?): JsonKind {
+        return JsString
+    }
+
+    /**
+     * Optimized: Calculate capacity for string
+     */
+    protected func calculateCapacity(): Int64 {
+        var escapenum: Int64 = 0
+        unsafe {
+            let input = acquireArrayRawData(value.rawData())
+            escapenum = CJ_JSON_StringEscapeCharNumGet(input.pointer, value.size, true)
+            releaseArrayRawData(input)
+        }
+        return value.size + 2 + escapenum  // 2 bytes for the surrounding JSON quotes
+    }
+
+    protected func calculateCapacity(this @local?): Int64 {
+        var escapenum: Int64 = 0
+        unsafe {
+            let input = acquireArrayRawData(value.rawData())
+            escapenum = CJ_JSON_StringEscapeCharNumGet(input.pointer, value.size, true)
+            releaseArrayRawData(input)
+        }
+        return value.size + 2 + escapenum  // 2 bytes for the surrounding JSON quotes
+    }
 
     /**
      * Convert JsonString to String.
@@ -430,7 +549,12 @@ public class JsonString <: JsonValue { // cjlint-ignore !G.ENU.01
     public func toString(): String {
         let buff = WriteBuffer(value.size + 2)
         jsonWriteWithoutFormat(this, buff)
-        return bufferToString(buff)
+        return unsafe { String.fromUtf8Unchecked(buff.getAndClear()) }
+    }
+    public exclave func toString(this @local?): String @local! {
+        let buff = WriteBuffer(value.size + 2) @local!
+        jsonWriteWithoutFormat(this, buff)
+        unsafe { String.fromUtf8UncheckedLocal(buff.getAndClear()) }
     }
 
     /**
@@ -485,8 +609,14 @@ public class JsonArray <: JsonValue {
     init(capacity: Int64) {
         items = ArrayList<JsonValue>(capacity)
     }
+    exclave init(this @local!, capacity: Int64) {
+        items = ArrayList<JsonValue>(capacity)
+    }
 
     public init() {
+        items = ArrayList<JsonValue>()
+    }
+    public exclave init(this @local!) {
         items = ArrayList<JsonValue>()
     }
     /**
@@ -498,6 +628,9 @@ public class JsonArray <: JsonValue {
      * @since 0.17.4
      */
     public init(list: ArrayList<JsonValue>) {
+        items = list
+    }
+    public exclave init(this @local!, list: ArrayList<JsonValue>@local!) {
         items = list
     }
 
@@ -522,6 +655,27 @@ public class JsonArray <: JsonValue {
      */
     public func kind(): JsonKind {
         return JsArray
+    }
+    public func kind(this @local?): JsonKind {
+        return JsArray
+    }
+
+    /**
+     * Optimized: Calculate capacity for array
+     */
+    protected func calculateCapacity(): Int64 {
+        var sum: Int64 = 2  // []
+        for (v in items) {
+            sum += v.estimateCapacity() + 1  // value + comma
+        }
+        return sum
+    }
+    protected func calculateCapacity(this @local?): Int64 {
+        var sum: Int64 = 2  // []
+        for (v in items) {
+            sum += v.estimateCapacity() + 1  // value + comma
+        }
+        return sum
     }
 
     /**
@@ -596,7 +750,14 @@ public class JsonArray <: JsonValue {
      * @throws JsonException if there exists JsonValue which cannot be converted to String.
      */
     public func toString(): String {
-        return jsonValueToCompactString(this)
+        let buff = WriteBuffer(asumecapacity(this))
+        jsonWriteWithoutFormat(this, buff)
+        return unsafe { String.fromUtf8Unchecked(buff.getAndClear()) }
+    }
+    public exclave func toString(this @local?): String @local! {
+        let buff = WriteBuffer(asumecapacity(this)) @local!
+        jsonWriteWithoutFormat(this, buff)
+        return unsafe { String.fromUtf8UncheckedLocal(buff.getAndClear()) }
     }
 
     /**
@@ -620,6 +781,9 @@ public class JsonArray <: JsonValue {
     public func size(): Int64 {
         return items.size
     }
+    public func size(this @local?): Int64 {
+        return items.size
+    }
 
     /**
      * Add the Data to JsonArray.
@@ -632,6 +796,10 @@ public class JsonArray <: JsonValue {
         items.add(jv)
         return this
     }
+    public exclave func add(this @local!, jv: JsonValue @local!): JsonArray @local! {
+        items.add(jv)
+        this
+    }
 
     /**
      * Obtains the option version of JsonValue data of JsonArray at a specified location.
@@ -643,6 +811,9 @@ public class JsonArray <: JsonValue {
      */
     public func get(index: Int64): Option<JsonValue> {
         return items.get(index)
+    }
+    public exclave func get(this @local!, index: Int64): Option<JsonValue> @local! {
+        items.get(index)
     }
 
     /**
@@ -672,6 +843,9 @@ public class JsonArray <: JsonValue {
     public func getItems(): ArrayList<JsonValue> {
         return items
     }
+    public func getItems(this @local?): ArrayList<JsonValue>@local? {
+        return items
+    }
 }
 
 /**
@@ -690,8 +864,14 @@ public class JsonObject <: JsonValue {
     public init() {
         fields = HashMap<String, JsonValue>()
     }
+    public exclave init(this @local!) {
+        fields = HashMap<String, JsonValue>()
+    }
 
     init(capacity: Int64) {
+        fields = HashMap<String, JsonValue>(capacity)
+    }
+    exclave init(this @local!, capacity: Int64) {
         fields = HashMap<String, JsonValue>(capacity)
     }
 
@@ -706,6 +886,9 @@ public class JsonObject <: JsonValue {
     public init(map: HashMap<String, JsonValue>) {
         fields = map
     }
+    public exclave init(this @local!, map: HashMap<String, JsonValue> @local!) {
+        fields = map
+    }
 
     /**
      * Determine the JSON type to which the JsonObject belongs.
@@ -716,6 +899,29 @@ public class JsonObject <: JsonValue {
      */
     public func kind(): JsonKind {
         return JsObject
+    }
+    public func kind(this @local?): JsonKind {
+        return JsObject
+    }
+
+    /**
+     * Optimized: Calculate capacity for object
+     */
+    protected func calculateCapacity(): Int64 {
+        var sum: Int64 = 2  // {}
+        for ((k, v) in fields) {
+            sum += k.size + 4  // "key": ,
+            sum += v.estimateCapacity()
+        }
+        return sum
+    }
+    protected func calculateCapacity(this @local?): Int64 {
+        var sum: Int64 = 2  // {}
+        for ((k, v) in fields) {
+            sum += k.size + 4  // "key": ,
+            sum += v.estimateCapacity()
+        }
+        return sum
     }
 
     /**
@@ -790,7 +996,14 @@ public class JsonObject <: JsonValue {
      * @throws JsonException if there exists JsonValue which cannot be converted to String.
      */
     public func toString(): String {
-        return jsonValueToCompactString(this)
+        let buff = WriteBuffer(asumecapacity(this))
+        jsonWriteWithoutFormat(this, buff)
+        return unsafe { String.fromUtf8Unchecked(buff.getAndClear()) }
+    }
+    public exclave func toString(this @local?): String @local! {
+        let buff = WriteBuffer(asumecapacity(this)) @local!
+        jsonWriteWithoutFormat(this, buff)
+        return unsafe { String.fromUtf8UncheckedLocal(buff.getAndClear()) }
     }
 
     /**
@@ -812,6 +1025,9 @@ public class JsonObject <: JsonValue {
      * @since 0.17.4
      */
     public func size(): Int64 {
+        return fields.size
+    }
+    public exclave func size(this @local?): Int64 {
         return fields.size
     }
 
@@ -838,6 +1054,9 @@ public class JsonObject <: JsonValue {
     public func put(key: String, v: JsonValue): Unit {
         fields.add(key, v)
     }
+    public exclave func put(this @local!, key: String @local!, v: JsonValue @local!): Unit {
+        fields.add(key, v)
+    }
 
     /**
      * Obtains the option version of JsonValue data of JsonObject at a specified location.
@@ -848,6 +1067,9 @@ public class JsonObject <: JsonValue {
      * @since 0.17.4
      */
     public func get(key: String): Option<JsonValue> {
+        return fields.get(key)
+    }
+    public exclave func get(this @local!, key: String @local!): Option<JsonValue> @local! {
         return fields.get(key)
     }
 
@@ -876,6 +1098,12 @@ public class JsonObject <: JsonValue {
      * @since 0.17.4
      */
     public func getFields(): HashMap<String, JsonValue> {
+        return fields
+    }
+    public func getFields(this @local!): HashMap<String, JsonValue> @local! {
+        return fields
+    }
+    public func getFields(this @local?): HashMap<String, JsonValue> @local? {
         return fields
     }
 }

@@ -30,7 +30,7 @@ internal enum ExprKind {
     Invalid |
 
     // terminator
-    Goto | Branch | MultiBranch | Exit |
+    Goto | Branch | MultiBranch | Exit | Exclave |
     TryApply | TryInvoke | TryIntrinsic |
     RaiseException | TrySpawn | TryNumericCast |
     TryAllocate | TryRawArrayAllocate |
@@ -57,7 +57,7 @@ internal enum ExprKind {
 
     // others
     Constant | Debug | Tuple | InstanceOf | GetException | Spawn | Lambda | GetInstantiateValue |
-    Apply | Invoke | Intrinsic | GetRtti | GetRttiStatic
+    Apply | Invoke | Intrinsic | GetRtti | GetRttiStatic | StartRegion | EndRegion
 
     internal func isBinary(): Bool {
         match (this) {
@@ -107,6 +107,7 @@ internal enum ExprKind {
                 | Branch
                 | MultiBranch
                 | Exit
+                | Exclave
                 | TryApply
                 | TryInvoke
                 | TryIntrinsic
@@ -1385,6 +1386,118 @@ public class Exit <: Expression & Equatable<Exit> {
 }
 
 /**
+ * Exclave terminator with an isolated body block group.
+ */
+public class Exclave <: Expression & Equatable<Exclave> {
+    internal init() {
+        super(ExprKind.Exclave)
+        addOperandUsers()
+    }
+
+    /**
+     * Gets the `body` property.
+     * @type { BlockGroup }
+     */
+    public prop body: BlockGroup {
+        get() {
+            assert(!_blockGroups.isEmpty(), "Exclave: body is not set")
+            return _blockGroups[0]
+        }
+    }
+
+    /**
+     * Creates an exclave terminator.
+     * @return The created Exclave expression.
+     */
+    public static func create(): Exclave {
+        Exclave()
+    }
+
+    /**
+     * Initializes the exclave body block group.
+     */
+    public func initBody(): Unit {
+        let bodyId = topLevelFunc.generateBlockGroupId().toString()
+        let body = BlockGroup(bodyId, this)
+        body._attributes.setAttr(Attribute.PluginAdded, true)
+        addBlockGroup(body)
+        let bb = body.appendBlock()
+        body.setEntryBlock(bb)
+    }
+
+    /**
+     * Compares Exclave references.
+     * @param other Expression to compare.
+     * @return true when both references are identical.
+     */
+    public operator func==(other: Exclave): Bool {
+        return refEq(this, other)
+    }
+}
+
+/**
+ * Marks the start of a memory region.
+ */
+public class StartRegion <: Expression & Equatable<StartRegion> {
+    internal init() {
+        super(ExprKind.StartRegion)
+        addOperandUsers()
+    }
+
+    /**
+     * Creates a start-region marker expression.
+     * @param retTy Result type, typically Unit.
+     * @return The created StartRegion expression.
+     */
+    public static func create(retTy: Type): StartRegion {
+        let expr = StartRegion()
+        let result = LocalVar(retTy, expr)
+        expr._result = result
+        return expr
+    }
+
+    /**
+     * Compares StartRegion references.
+     * @param other Expression to compare.
+     * @return true when both references are identical.
+     */
+    public operator func==(other: StartRegion): Bool {
+        return refEq(this, other)
+    }
+}
+
+/**
+ * Marks the end of a memory region.
+ */
+public class EndRegion <: Expression & Equatable<EndRegion> {
+    internal init() {
+        super(ExprKind.EndRegion)
+        addOperandUsers()
+    }
+
+    /**
+     * Creates an end-region marker expression.
+     * @param retTy Result type, typically Unit.
+     * @return The created EndRegion expression.
+     */
+    public static func create(retTy: Type): EndRegion {
+        let expr = EndRegion()
+        let result = LocalVar(retTy, expr)
+        expr._result = result
+        return expr
+    }
+
+    /**
+     * Compares EndRegion references.
+     * @param other Expression to compare.
+     * @return true when both references are identical.
+     */
+    public operator func==(other: EndRegion): Bool {
+        return refEq(this, other)
+    }
+}
+
+/**
  * Field access expression by numeric path.
  */
 public class Field <: Expression & Equatable<Field> {
@@ -2532,7 +2645,7 @@ public class Lambda <: Expression & Equatable<Lambda> {
      */
     public func initBody(): Unit {
         let bodyId = topLevelFunc.generateBlockGroupId().toString()
-        let body = BlockGroup(bodyId, _result.getOrThrow())
+        let body = BlockGroup(bodyId, this)
         body._attributes.setAttr(Attribute.PluginAdded, true)
         addBlockGroup(body)
         let bb = body.appendBlock()
