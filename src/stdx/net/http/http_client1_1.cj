@@ -901,7 +901,7 @@ class ConnNode <: BodyProviderConn {
             if (request.url.path.isEmpty()) {
                 requestTarget.append(ASTERISK)
             } else {
-                requestTarget.append(canonicalPath(request.url.path))
+                requestTarget.append(canonicalPath(request.url.rawPath))
             }
 
         // when making a request to a proxy, other than a CONNECT or server-wide OPTIONS request,
@@ -912,10 +912,15 @@ class ConnNode <: BodyProviderConn {
         // origin-form
         // absolute-path ["?" query]
         } else {
-            requestTarget.append(canonicalPath(request.url.path))
-            if (let Some(query) <- request.url.query && !query.isEmpty()) {
+            requestTarget.append(canonicalPath(request.url.rawPath))
+            if (let Some(rawQuery) <- request.url.rawQuery && !rawQuery.isEmpty()) {
+                // security: do not remove this read. Accessing url.query triggers
+                // checkAndDecode on the raw query, rejecting literal control
+                // characters and invalid escapes (including %00) before rawQuery
+                // is written to the request line.
+                _ = request.url.query
                 requestTarget.append("?")
-                requestTarget.append(query)
+                requestTarget.append(rawQuery)
             }
         }
         return requestTarget

@@ -228,9 +228,14 @@ class ClientStream {
         } else if (req.url.path.isEmpty() && req.method == "OPTIONS") {
             path = ASTERISK
         } else {
-            path = canonicalPath(req.url.path)
-            if (let Some(query) <- req.url.query && !query.isEmpty()) {
-                path += "?${query}"
+            path = canonicalPath(req.url.rawPath)
+            if (let Some(rawQuery) <- req.url.rawQuery && !rawQuery.isEmpty()) {
+                // security: do not remove this read. Accessing url.query triggers
+                // checkAndDecode on the raw query, rejecting literal control
+                // characters and invalid escapes (including %00) before rawQuery
+                // is written to the :path header.
+                _ = req.url.query
+                path += "?${rawQuery}"
             }
         }
         headers.add((":authority", authority))
