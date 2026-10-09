@@ -65,6 +65,11 @@ add_dependencies(${libname}-objs FLATC_OUTPUTS)
 add_library(${libname} STATIC $<TARGET_OBJECTS:${libname}-objs>)
 add_dependencies(${libname} FLATC_OUTPUTS)
 
+# Build shared library so the dynamic stdx layout ships a real shared lib
+add_library(${libname}-shared SHARED $<TARGET_OBJECTS:${libname}-objs>)
+add_dependencies(${libname}-shared FLATC_OUTPUTS)
+set_target_properties(${libname}-shared PROPERTIES OUTPUT_NAME ${libname})
+
 set(CANGJIE_INC_DIR)
 set(AST_SUPPORT_LIB_DIR)
 set(LSP_LIB_DIR)
@@ -107,20 +112,32 @@ if(DARWIN)
         add_library(cangjie-link-ast SHARED IMPORTED)
         set_target_properties(cangjie-link-ast PROPERTIES IMPORTED_LOCATION ${AST_LIB_DIR}/libcangjie-std-ast.dylib)
         target_link_libraries(${libname} PUBLIC cangjie-link-ast)
+        target_link_libraries(${libname}-shared PUBLIC cangjie-link-ast)
     else()
 
         add_library(cangjie-lsp SHARED IMPORTED)
         set_target_properties(cangjie-lsp PROPERTIES IMPORTED_LOCATION ${LSP_LIB_DIR}/libcangjie-lsp.dylib)
         target_link_libraries(${libname} PUBLIC cangjie-lsp)
+        target_link_libraries(${libname}-shared PUBLIC cangjie-lsp)
     endif()
 else()
     if (MINGW)
         add_library(cangjie-lsp SHARED IMPORTED)
         set_target_properties(cangjie-lsp PROPERTIES IMPORTED_IMPLIB ${LSP_LIB_DIR}/libcangjie-lsp.dll.a)
         target_link_libraries(${libname} PUBLIC cangjie-lsp)
+        target_link_libraries(${libname}-shared PUBLIC cangjie-lsp)
     endif()
+endif()
+
+if(DARWIN AND NOT IOS)
+    # libcangjie-lsp.dylib is installed in <CANGJIE_HOME>/tools/lib, which is not part of
+    # dyld's default search path. macOS resolves all load commands eagerly, so without
+    # this rpath the shared library fails to load with "Library not loaded".
+    set_target_properties(${libname}-shared PROPERTIES
+        BUILD_WITH_INSTALL_RPATH ON
+        INSTALL_RPATH "${LSP_LIB_DIR}")
 endif()
 
 # install for dynamic and static lib
 install_cangjie_library_ffi(${libname})
-install_cangjie_library_ffi_s(${libname})
+install_cangjie_library_ffi_s(${libname}-shared)
