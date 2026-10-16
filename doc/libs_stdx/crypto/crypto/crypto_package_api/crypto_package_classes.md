@@ -8,10 +8,6 @@ public class SecureRandom <: RandomGenerator {
 }
 ```
 
-父类型：
-
-- [RandomGenerator](../../common/crypto_common_package_api/crypto_common_package_interfaces.md#interface-randomgenerator)
-
 功能：用于生成加密安全的伪随机数。
 
 和 Random 相比，主要有三个方面不同：
@@ -21,6 +17,10 @@ public class SecureRandom <: RandomGenerator {
 - 安全性： Random 不能用于加密安全的应用或者隐私数据的保护，可以使用 [SecureRandom](crypto_package_classes.md#class-securerandom)。
 
 使用示例见 [SecureRandom 使用](../crypto_samples/sample_secure_random.md)。
+
+父类型：
+
+- [RandomGenerator](../../common/crypto_common_package_api/crypto_common_package_interfaces.md#interface-randomgenerator)
 
 ### init(Bool)
 
@@ -74,7 +74,7 @@ public func nextBits(bits: UInt64): UInt64
 
 返回值：
 
-- UInt64 - 生成的用户指定位长的随机数。
+- UInt64 - 生成的指定位长的随机数。
 
 异常：
 

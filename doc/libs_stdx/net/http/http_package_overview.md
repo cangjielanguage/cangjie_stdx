@@ -36,7 +36,7 @@ http 包提供 HTTP/1.1、HTTP/2 和 WebSocket 协议的 server、client 端实�
     - 另外，使用 `DevEco Studio-Cangjie Plugin`（`26.0.0 Beta1` 及以上版本）时，在动态链接 `stdx` 库的场景下，还需要把 `stdx` 模块中的 `libcangjie-dynamicLoader-opensslFFI.so` 打包到应用包中，该动态库用于链接 `OpenSSL`。
     - 用户可将本地仓颉 stdx 库中的 `libcangjie-dynamicLoader-opensslFFI.so` 拷贝到应用模块的 `libs/arm64-v8a`（真机）或 `libs/x86_64`（模拟器）目录下， `DevEco Studio` 会将其打包到应用包的对应目录中。
 
-如果未安装 `OpenSSL 3`软件包或者安装低版本的软件包，程序可能无法使用并抛出 TLS 相关异常。
+如果未安装 `OpenSSL 3` 软件包或者安装低版本的软件包，程序可能无法使用并抛出 TLS 相关异常。
 
 ### http
 

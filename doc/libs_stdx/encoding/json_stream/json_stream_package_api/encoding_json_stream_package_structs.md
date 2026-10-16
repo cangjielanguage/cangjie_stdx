@@ -183,7 +183,7 @@ main() {
 public mut prop htmlSafe: Bool
 ```
 
-功能：用于表示是否转义 HTML 字符 `<`、`>`、`&`、`=`和`'`。
+功能：用于表示是否转义 HTML 字符 `<`、`>`、`&`、`=` 和 `'`。
 
 该值为 true 时，会将 HTML 字符转义为对应的 Unicode 编码的字符串。
 

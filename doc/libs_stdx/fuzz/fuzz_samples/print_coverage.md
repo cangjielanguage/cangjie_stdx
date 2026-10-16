@@ -4,7 +4,7 @@
 
 由于该功能需要对 libfuzzer 进行侵入式修改，使用该功能需要链接仓颉自带的 libfuzzer，路径是：$CANGJIE_HOME/lib/{linux_x86_64_cjnative, linux_aarch64_cjnative}/libclang_rt-fuzzer_no_main.a。
 
-编译时需要同时启用`--sanitizer-coverage-inline-8bit-counters` 和 `--sanitizer-coverage-pc-table`。
+编译时需要同时启用 `--sanitizer-coverage-inline-8bit-counters` 和 `--sanitizer-coverage-pc-table`。
 
 C 语言 libfuzzer 输出举例
 

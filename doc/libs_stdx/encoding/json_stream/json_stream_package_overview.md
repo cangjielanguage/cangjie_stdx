@@ -28,7 +28,7 @@ json.stream 包主要用于仓颉对象和 JSON 数据流之间的互相转换�
 |  类名 | 功能  |
 | ------------ | ------------ |
 | [JsonReader](./json_stream_package_api/encoding_json_stream_package_classes.md#class-jsonreader) | 此类提供 JSON 数据流转仓颉对象的反序列化能力。 |
-| [JsonWriter](./json_stream_package_api/encoding_json_stream_package_classes.md#class-jsonwriter) | 构造函数，构造一个将数据写入 out 的实例。 |
+| [JsonWriter](./json_stream_package_api/encoding_json_stream_package_classes.md#class-jsonwriter) | 提供了将仓颉对象序列化到 OutputStream 的能力。 |
 
 ### 枚举
 
