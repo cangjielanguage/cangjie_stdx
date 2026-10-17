@@ -524,17 +524,54 @@ class HttpServer2 <: ProtocolService {
         if (!(frame is UnblockFrame)) {
             toWriteFrames.add(frame)
         }
-        while (!toWriteFrames.isEmpty()) {
-            let waitingFrame = toWriteFrames.remove(at: 0)
-            stream.value = streams.get(waitingFrame.streamId) ?? continue
+        // scan the whole queue instead of writing only the head frame: a DATA frame
+        // blocked by connection-level flow control must not prevent writing frames
+        // queued behind it on other streams (e.g. HEADERS, which are not flow-controlled)
+        // capacity 0: most requests hit no flow-control block, so the backing
+        // array is allocated lazily on first add instead of a default 16-slot array
+        var blockedStreams = ArrayList<UInt32>(0)
+        var index = 0
+        while (index < toWriteFrames.size) {
+            // peek the frame instead of removing it: the frame must stay queued until
+            // it is written successfully, so that when the connection-level flow-control
+            // window is exhausted, the UnblockFrame triggered by a later connection-level
+            // WINDOW_UPDATE can retry writing it
+            let waitingFrame = toWriteFrames[index]
+            stream.value = match (streams.get(waitingFrame.streamId)) {
+                case Some(v) => v
+                case None =>
+                    toWriteFrames.remove(at: index)
+                    continue
+            }
             // when stream is closed, but hasn't been purged yet, for example, write timeout,
             // queued data and fields frames should be discarded, in order to avoid blocking due to connection flow control
             if (stream.value.isClosed()) {
+                toWriteFrames.remove(at: index)
+                continue
+            }
+            // PUSH_PROMISE frames (FieldsFrame with a non-zero pushId) carry the parent
+            // stream's ID but are not part of the parent stream's response sequence: they
+            // must be written before the promised stream's response frames regardless of
+            // the parent's flow-control state, otherwise the client receives response
+            // HEADERS on an unreserved stream, which is a connection error (PROTOCOL_ERROR)
+            let isPushPromise = match (waitingFrame) {
+                case f: FieldsFrame => f.pushId != 0
+                case _ => false
+            }
+            if (!isPushPromise && blockedStreams.contains(waitingFrame.streamId)) {
+                // keep frames of a flow-control blocked stream queued behind its blocked
+                // DATA frame to preserve per-stream frame ordering
+                index++
                 continue
             }
             if (!writeFrame(waitingFrame, stream.value)) {
-                break
+                // not enough window on connection level: keep the frame queued and wait for
+                // the next UnblockFrame triggered by a connection-level WINDOW_UPDATE
+                blockedStreams.add(waitingFrame.streamId)
+                index++
+                continue
             }
+            toWriteFrames.remove(at: index)
         }
         return true
     }
