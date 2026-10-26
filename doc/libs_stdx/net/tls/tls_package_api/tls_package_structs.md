@@ -204,7 +204,7 @@ public mut prop securityLevel: Int32
 public mut prop serverName: ?String
 ```
 
-功能：读写要求的服务端主机地址 (SNI)， `None` 表示不要求。
+功能：读写要求的服务端主机地址 (SNI)， `None` 表示不要求。通过 `stdx.net.http` 客户端发起请求且未设置该字段时，将使用请求 URL 中的主机名作为 SNI 并校验服务器证书（主机名为空时握手失败）。
 
 类型：?String
 

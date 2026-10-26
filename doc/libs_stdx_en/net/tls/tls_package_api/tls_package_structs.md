@@ -159,7 +159,7 @@ Type: ?(Array\<[X509Certificate](../../../crypto/x509/x509_package_api/x509_pack
 public mut prop domain: ?String
 ```
 
-Function: Reads or writes the required server host address (SNI). `None` indicates no requirement.
+Function: Reads or writes the required server host address (SNI). `None` indicates no requirement. When sending a request via an `stdx.net.http` client with this field unset, the host name from the request URL is used as the SNI and for server certificate verification (the handshake fails if the host name is empty).
 
 Type: ?String
 
