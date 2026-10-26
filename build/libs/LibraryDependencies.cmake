@@ -59,6 +59,7 @@ set(NET_HTTP_DEPENDENCIES
     cangjie${BACKEND_TYPE}Url
     cangjie${BACKEND_TYPE}Log
     cangjie${BACKEND_TYPE}Logger
+    cangjie${BACKEND_TYPE}Tls
     cangjie${BACKEND_TYPE}TlsCommon
     cangjie${BACKEND_TYPE}CryptoCommon)
 
