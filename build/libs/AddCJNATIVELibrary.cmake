@@ -364,6 +364,7 @@ make_cangjie_lib(
         encoding.url
         log
         logger
+        net.tls
         net.tls.common
         crypto.common
     CANGJIE_STD_LIB_LINK
