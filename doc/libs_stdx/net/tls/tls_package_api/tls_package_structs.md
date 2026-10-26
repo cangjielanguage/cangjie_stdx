@@ -451,7 +451,7 @@ main() {
 public mut prop serverName: ?String
 ```
 
-功能：TLS 客户端的服务器名称指示（SNI，Server Name Indication）配置，属于 TLS 握手扩展字段。客户端在 TLS 握手时，向服务端声明想要访问的主机域名，让服务端返回对应域名的证书。服务端可通过握手结果获取该扩展字段。设置为 None 时，握手时不向服务端传递 SNI 扩展字段，服务端将使用当前 IP 的默认证书响应。
+功能：TLS 客户端的服务器名称指示（SNI，Server Name Indication）配置，属于 TLS 握手扩展字段。客户端在 TLS 握手时，向服务端声明想要访问的主机域名，让服务端返回对应域名的证书，并按该域名校验服务器证书。设置为 None 时，由上层使用方决定 SNI 与证书校验行为：直接使用 `TlsSocket.client` 握手时不向服务端传递 SNI 扩展字段，服务端将使用当前 IP 的默认证书响应；通过 `stdx.net.http` 客户端发起请求时，将使用请求 URL 中的主机名作为 SNI 并校验服务器证书（主机名为空时握手失败）。
 
 类型：?String
 
