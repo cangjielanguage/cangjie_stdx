@@ -18,7 +18,7 @@
   homepage = "https://gitcode.com/Cangjie/cangjie_stdx"
   src-dir = "src/stdx"
   output-type = "static"
-  compile-option = "-Woff=all"
+  compile-option = "-Woff=all --experimental --enable-local-mode"
   link-option = "-L target/release/stdx -L target/debug/stdx -L target/mock/release/stdx -L target/mock/debug/stdx"
   exclude = ["build_temp", "third_party/zlib", "third_party/flatbuffers"]
 

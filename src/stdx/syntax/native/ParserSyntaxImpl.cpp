@@ -25,12 +25,16 @@ ParserSyntaxImpl::ParserSyntaxImpl(const std::string& input, DiagnosticEngine& d
     bool attachComment)
     : lexer{std::make_unique<Lexer>(input, diag, sm, pos, attachComment)}
 {
+    // no compile options here, keep local mode enabled as the parser does
+    lexer->SetLocalModeEnabled(true);
 }
 
 ParserSyntaxImpl::ParserSyntaxImpl(const std::vector<Token>& inputTokens, DiagnosticEngine& diag, SourceManager& sm,
     bool attachComment)
     : lexer{std::make_unique<Lexer>(inputTokens, diag, sm, attachComment)}
 {
+    // no compile options here, keep local mode enabled as the parser does
+    lexer->SetLocalModeEnabled(true);
 }
 
 ParserSyntaxImpl::~ParserSyntaxImpl()

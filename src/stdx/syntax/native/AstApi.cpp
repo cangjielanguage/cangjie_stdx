@@ -87,6 +87,8 @@ std::vector<Token> tokensFormatter(const uint8_t* tokensBytes)
     DiagnosticEngine diag;
     SourceManager sm;
     Lexer lex(tokenStr, diag, sm, false, false);
+    // no compile options here, keep local mode enabled as the parser does
+    lex.SetLocalModeEnabled(true);
     std::vector<Token> tokens{};
     Token token = lex.Next();
 
@@ -219,7 +221,7 @@ ParseRes* CJ_ParseAnnotationArguments(const uint8_t* tokensBytes)
     diag.DisableScopeCheck();
     diag.SetDisableWarning(true);
     diag.EnableCheckRangeErrorCodeRatherICE();
-    Parser parser(tokens, diag, sm, false, false);
+    Parser parser(tokens, diag, sm, false);
     auto node = parser.ParseCustomAnnotation();
 
     ParseRes* result = (ParseRes*)malloc(sizeof(ParseRes));
