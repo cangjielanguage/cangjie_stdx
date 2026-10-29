@@ -10339,7 +10339,7 @@ func_isConst: false
 public func isExternalLinkage(): Bool
 ```
 
-Function: Checks whether this global value has external linkage (`LinkType.External`).
+Function: Checks whether this global value has external linkage (`LinkType.External`). Returns `true` by default when no linkage annotation is set.
 
 Return Value:
 
@@ -10673,6 +10673,58 @@ Output:
 func_setInternal: true
 ```
 
+### func setLinkageType(LinkType)
+
+```cangjie
+public func setLinkageType(lt: LinkType): Unit
+```
+
+Function: Sets the linkage of a function or global variable. The selected linkage replaces the previous linkage, disabling all other kinds;
+repeated calls do not add duplicate annotations.
+
+> **Notes:**
+>
+> - Unset linkage defaults to `LinkType.External`.
+> - Linkage is independent of access level; selecting `LinkType.Internal` does not change visibility.
+
+The example first sets `LinkType.Internal` and checks that `isExternalLinkage()` returns `false` for both the function and the global variable, then applies each linkage kind in alphabetical order. The first iteration sets `LinkType.External` and checks that both return `true`.
+
+Parameters:
+
+- lt: [LinkType](./chir_package_enums.md#enum-linktype) - The linkage to enable.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    let gv = pkg.addGlobalVar(IntType.getInt32(), "g_m", "g", "demo")
+    f.setLinkageType(LinkType.Internal)
+    gv.setLinkageType(LinkType.Internal)
+    println("before: ${f.isExternalLinkage()} ${gv.isExternalLinkage()}")
+    for (item in [LinkType.External, LinkType.ExternalWeak, LinkType.Internal, LinkType.LinkonceOdr, LinkType.WeakOdr]) {
+        f.setLinkageType(item)
+        gv.setLinkageType(item)
+        println("${item}: ${f.isExternalLinkage()} ${gv.isExternalLinkage()}")
+    }
+}
+```
+
+Output:
+
+```text
+before: false false
+external: true true
+external_weak: false false
+internal: false false
+linkonce_odr: false false
+weak_odr: false false
+```
+
 ### func setPrivate()
 
 ```cangjie
@@ -10924,6 +10976,35 @@ Output:
 prop_funcType: () -> Unit
 ```
 
+### prop genericDecl
+
+```cangjie
+public prop genericDecl: ?Function
+```
+
+Function: The generic declaration from which this function was instantiated. This property is read-only and returns `None` when no generic declaration is associated with the function.
+
+Type: ?[Function](#class-function)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("prop_genericDecl: ${f.genericDecl.isNone()}")
+}
+```
+
+Output:
+
+```text
+prop_genericDecl: true
+```
+
 ### prop genericTypeParams
 
 ```cangjie
@@ -11010,6 +11091,22 @@ Output:
 ```text
 mut_prop_returnValue: true
 ```
+
+### func getFirstInitializerCall()
+
+```cangjie
+public func getFirstInitializerCall(): ?Expression
+```
+
+Function: Uses [CHIRVisitor](#class-chirvisitor) to return the first expression visited after the first `Preinitialize` intrinsic in this package initializer. Traversal follows stored block-group, block, and expression order, descends into nested block groups, skips initializer calls belonging to other packages, and stops when the result is found.
+
+Return Value:
+
+- ?[Expression](#class-expression) - The first expression after the intrinsic; `None` if the body, matching intrinsic, or following expression is absent, or the next expression is `Exit`.
+
+Exceptions:
+
+- [CHIRException](#class-chirexception) - Thrown when this function lacks the initializer flag or compiler-generated package-initializer name; ordinary functions and file, variable, and literal initializers cannot use this method.
 
 ### func initBody()
 

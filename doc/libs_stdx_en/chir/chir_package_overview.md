@@ -166,6 +166,7 @@ The **chir** (Cangjie High-level IR) package provides the type system and CHIR d
 | [BinaryExprKind](./chir_package_api/chir_package_enums.md#enum-binaryexprkind) | Binary operator category. |
 | [InsertPosition](./chir_package_api/chir_package_enums.md#enum-insertposition) | CHIRBuilder insertion position. |
 | [IRActionMode](./chir_package_api/chir_package_enums.md#enum-iractionmode) | CHIRVisitor traversal behavior mode. |
+| [LinkType](./chir_package_api/chir_package_enums.md#enum-linktype) | Linkage kinds for global values. |
 | [OverflowStrategy](./chir_package_api/chir_package_enums.md#enum-overflowstrategy) | Overflow handling strategy. |
 | [TypeActionMode](./chir_package_api/chir_package_enums.md#enum-typeactionmode) | TypeVisitor traversal behavior mode. |
 | [UnaryExprKind](./chir_package_api/chir_package_enums.md#enum-unaryexprkind) | Unary operator category. |
