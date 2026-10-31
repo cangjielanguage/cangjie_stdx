@@ -144,6 +144,7 @@ public class ECDSAPublicKey <: PublicKey {
 
     public init(pri: ECDSAPrivateKey) {
         var content = getPublicKeyDer(pri.pkey)
+        keepAlive(pri)
         pkey = loadPublicKey(EC_id, content)
         if (pkey.isNull()) {
             throw CryptoException("Failed to initialize ECDSA public key.")
@@ -171,7 +172,9 @@ public class ECDSAPublicKey <: PublicKey {
 
     public func verify(digest: Array<Byte>, sig: Array<Byte>): Bool {
         let ctx = EVPKEYCTX(pkey)
-        verify(ctx, digest, sig)
+        let result = verify(ctx, digest, sig)
+        keepAlive(this)
+        result
     }
 
     public override func toString(): String {

@@ -123,6 +123,7 @@ public class SM2PublicKey <: PublicKey {
     }
     public init(pri: SM2PrivateKey) {
         var content = getSM2PublicKeyDer(pri.pkey)
+        keepAlive(pri)
         pkey = loadPublicKey(NID_sm2, content)
         if (pkey.isNull()) {
             throw CryptoException("Failed to initialize public key.")

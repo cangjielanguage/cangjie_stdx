@@ -187,6 +187,7 @@ public class RSAPublicKey <: PublicKey {
 
     public init(pri: RSAPrivateKey) {
         var content = getPublicKeyDer(pri.pkey)
+        keepAlive(pri)
         pkey = loadPublicKey(RSA_id, content)
         if (pkey.isNull()) {
             throw CryptoException("Failed to initialize RSA public key.")
@@ -222,6 +223,7 @@ public class RSAPublicKey <: PublicKey {
             case PSS(pss) => verifyPSS(ctx, hash, digest, sig, pss.saltLen)
             case OAEP(_) => throw CryptoException("OAEPOption is only applicable to encryption or decryption operations.")
         }
+        keepAlive(this)
         result
     }
 
