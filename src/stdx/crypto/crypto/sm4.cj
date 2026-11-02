@@ -21,9 +21,8 @@ const SM4_BUFFER_SIZE: Int64 = 1024
 const SM4_GCM_TAG_SIZE: Int64 = SM4_BLOCK_SIZE
 const SM4_GCM_TAG_MIN_SIZE: Int64 = 12
 const SM4_DIGEST_ALGORITHM_NAME = "SM4"
+// EVP_CTRL_AEAD_SET_IVLEN = 0x9 (OpenSSL evp.h)
 const AEAD_SET_IVLEN: Int32 = 9
-const AEAD_GET_TAG: Int32 = 10
-const AEAD_SET_TAG: Int32 = 11
 
 public struct OperationMode <: ToString & Equatable<OperationMode> {
     public static let ECB: OperationMode = OperationMode("ECB")
@@ -276,7 +275,8 @@ public class SM4 <: BlockCipher {
                 output.write(writebuff[..Int64(outlen2Ptr.value.read())])
 
                 if (optMode == OperationMode.GCM) {
-                    if (cipherCtx(ctx, AEAD_GET_TAG, Int32(tagSize), tagM.pointer) != 1) {
+                    // 16 = EVP_CTRL_AEAD_GET_TAG (OpenSSL evp.h)
+                    if (cipherCtx(ctx, 16, Int32(tagSize), tagM.pointer) != 1) {
                         throw CryptoException("Failed to get GCM authentication tag.")
                     }
                     output.write(tag)
@@ -368,7 +368,8 @@ public class SM4 <: BlockCipher {
                     } while (inLenNext >= 0)
                     var tagM: CPointerHandle<Byte> = acquireArrayRawData(tag)
                     try {
-                        if (cipherCtx(ctx, AEAD_SET_TAG, Int32(tagSize), tagM.pointer) != 1) {
+                        // 17 = EVP_CTRL_AEAD_SET_TAG (OpenSSL evp.h)
+                        if (cipherCtx(ctx, 17, Int32(tagSize), tagM.pointer) != 1) {
                             throw CryptoException("Failed to set GCM authentication tag.")
                         }
                     } finally {
