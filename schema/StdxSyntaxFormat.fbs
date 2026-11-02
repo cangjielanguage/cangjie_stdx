@@ -12,6 +12,19 @@ struct Position {
   column: int32;
 }
 
+enum ASTMode : uint8 {
+  AST_MODE_NONE,
+  AST_MODE_NOT,
+  AST_MODE_HALF,
+  AST_MODE_FULL,
+}
+
+table ModalInfo {
+  at_pos: Position;
+  local_pos: Position;
+  local: ASTMode = AST_MODE_NONE;
+}
+
 union AnyExpr {
   BINARY_EXPR: BinaryExpr,
   UNARY_EXPR: UnaryExpr,
@@ -59,6 +72,7 @@ union AnyExpr {
   ARRAY_EXPR: ArrayExpr,
   PERFORM_EXPR: PerformExpr,
   RESUME_EXPR: ResumeExpr,
+  EXCLAVE_EXPR: ExclaveExpr,
 }
 
 table MatchCase {
@@ -436,6 +450,12 @@ table SynchronizedExpr {
   body: Block;
 }
 
+table ExclaveExpr {
+  base: NodeBase;
+  exclave_pos: Position;
+  body: Block;
+}
+
 table TrailingClosureExpr {
   base: NodeBase;
   left_lambda: Position;
@@ -552,6 +572,7 @@ table FuncParamList {
   left_paren_pos: Position;
   params: [FuncParam];
   right_paren_pos: Position;
+  this_param: ThisParam;
 }
 
 union MacroParam {
@@ -570,6 +591,14 @@ table FuncParam {
   not_mark_pos: Position;
   has_let_or_var: bool;
   macroParam: MacroParam;
+}
+
+table ThisParam {
+  // explicit `this` parameter, e.g. `this: T @local!`
+  base: DeclBase;
+  this_pos: Position;
+  comma_pos: Position;
+  modal: ModalInfo;
 }
 
 table FuncBody {
@@ -907,7 +936,9 @@ union AnyDecl {
   EXTEND_DECL: ExtendDecl,
   MACRO_DECL: MacroDecl,
   MACRO_EXPAND_DECL: MacroExpandDecl,
-  FUNC_PARAM: FuncParam
+  FUNC_PARAM: FuncParam,
+  MACRO_EXPAND_PARAM: MacroExpandParam,
+  THIS_PARAM: ThisParam
 }
 
 table Decl {

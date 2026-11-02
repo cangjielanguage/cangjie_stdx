@@ -291,6 +291,21 @@ class CHIRSerializerImpl {
         return CHIRFormat_Base.createBase(fbBuilder, annoTypesVec, annosVec, locOffset, attributes)
     }
 
+    private func serializeMode(local: Mode): CHIRFormat_Mode {
+        return match (local) {
+            case Mode.Absent => CHIRFormat_Mode.Mode_NONE
+            case Mode.Maybe => CHIRFormat_Mode.Mode_MAYBE
+            case Mode.Must => CHIRFormat_Mode.Mode_MUST
+        }
+    }
+
+    private func serializeModalInfo(modal: ModalInfo): UInt32 {
+        if (!modal.isModal()) {
+            return UInt32(0)
+        }
+        return CHIRFormat_ModalInfo.createModalInfo(fbBuilder, serializeMode(modal.local))
+    }
+
     private func serializeType(obj: Type): UInt32 {
         let kind = serializeTypeKind(obj._kind)
         let argTys = getTypeIdList(obj._typeArgs)
@@ -299,7 +314,8 @@ class CHIRSerializerImpl {
         } else {
             fbBuilder.createUInt32Vector(argTys)
         }
-        return CHIRFormat_Type.createType(fbBuilder, kind, argTysVec)
+        let modal = serializeModalInfo(obj.modalInfo)
+        return CHIRFormat_Type.createType(fbBuilder, kind, argTysVec, modal)
     }
 
     private func serializeTypeKind(kind: TypeKind): CHIRFormat_CHIRTypeKind {
@@ -471,7 +487,14 @@ class CHIRSerializerImpl {
         valueKind[Int64(valueId) - 1] = EnumCHIRFormat_ValueElemValues(CHIRFormat_ValueElem.ValueElem_PARAMETER)
         let srcCodeName = fbBuilder.createString(obj._srcCodeName)
         let annoInfo = serializeAnnoInfo(obj._annoInfo)
-        return CHIRFormat_Parameter.createParameter(fbBuilder, base, ownedFunc, ownedLambda, srcCodeName, annoInfo)
+        var paramDftValFunc: UInt32 = 0
+        if (let Some(dftFunc) <- obj._paramDftValFunc) {
+            if (dftFunc.isFunction()) {
+                paramDftValFunc = getId(dftFunc)
+            }
+        }
+        return CHIRFormat_Parameter.createParameter(
+            fbBuilder, base, ownedFunc, ownedLambda, srcCodeName, annoInfo, paramDftValFunc)
     }
 
     private func serializeLocalVar(obj: LocalVar, base: UInt32, valueId: UInt32): UInt32 {
@@ -512,9 +535,9 @@ class CHIRSerializerImpl {
         } else {
             fbBuilder.createUInt32Vector(genericTypeParams)
         }
-        var paramDftValHostFunc: UInt32 = 0
-        if (let Some(host) <- obj._paramDftValHostFunc) {
-            paramDftValHostFunc = getId(host)
+        var paramDftValHostParam: UInt32 = 0
+        if (let Some(host) <- obj._paramDftValHostParam) {
+            paramDftValHostParam = getId(host)
         }
         valueKind[Int64(valueId) - 1] = EnumCHIRFormat_ValueElemValues(CHIRFormat_ValueElem.ValueElem_FUNCTION)
         let globalValueBase = serializeGlobalValue(obj, base)
@@ -535,7 +558,7 @@ class CHIRSerializerImpl {
         let propLoc = serializeDebugLocation(obj._propLocation)
         return CHIRFormat_Function.createFunction(
             fbBuilder, globalValueBase, genericDecl, funcKind, isFastNative, isCFFIWrapper,
-            originalLambdaInfo, genericTypeParamsVec, paramDftValHostFunc, body, paramsVec, retVal, propLoc,
+            originalLambdaInfo, genericTypeParamsVec, paramDftValHostParam, body, paramsVec, retVal, propLoc,
             obj._localId, obj._blockId, obj._blockGroupId
         )
     }
@@ -594,10 +617,10 @@ class CHIRSerializerImpl {
         let blocksVec = if (blocks.size == 0) { UInt32(0) } else { fbBuilder.createUInt32Vector(blocks) }
         var ownedFunc: UInt32 = 0
         var ownedExpression: UInt32 = 0
-        if (obj.owner.isFunction()) {
-            ownedFunc = getId(obj.owner)
-        } else {
-            ownedExpression = getId((obj.owner as LocalVar).getOrThrow().expr)
+        if (let Some(expr) <- obj._ownerExpression) {
+            ownedExpression = getId(expr)
+        } else if (let Some(f) <- obj._ownerFunc) {
+            ownedFunc = getId(f)
         }
         valueKind[Int64(valueId) - 1] = EnumCHIRFormat_ValueElemValues(CHIRFormat_ValueElem.ValueElem_BLOCKGROUP)
         return CHIRFormat_BlockGroup.createBlockGroup(fbBuilder, base, entryBlock, blocksVec, ownedFunc, ownedExpression)
@@ -684,6 +707,7 @@ class CHIRSerializerImpl {
             case ExprKind.Branch => CHIRFormat_CHIRExprKind.CHIRExprKind_BRANCH
             case ExprKind.MultiBranch => CHIRFormat_CHIRExprKind.CHIRExprKind_MULTIBRANCH
             case ExprKind.Exit => CHIRFormat_CHIRExprKind.CHIRExprKind_EXIT
+            case ExprKind.Exclave => CHIRFormat_CHIRExprKind.CHIRExprKind_EXCLAVE
 
             case ExprKind.TryApply => CHIRFormat_CHIRExprKind.CHIRExprKind_TRYAPPLY
             case ExprKind.TryInvoke => CHIRFormat_CHIRExprKind.CHIRExprKind_TRYINVOKE
@@ -765,6 +789,8 @@ class CHIRSerializerImpl {
             case ExprKind.GetInstantiateValue => CHIRFormat_CHIRExprKind.CHIRExprKind_GETINSTANTIATEVALUE
             case ExprKind.GetRtti => CHIRFormat_CHIRExprKind.CHIRExprKind_GETRTTI
             case ExprKind.GetRttiStatic => CHIRFormat_CHIRExprKind.CHIRExprKind_GETRTTISTATIC
+            case ExprKind.StartRegion => CHIRFormat_CHIRExprKind.CHIRExprKind_STARTREGION
+            case ExprKind.EndRegion => CHIRFormat_CHIRExprKind.CHIRExprKind_ENDREGION
             case _ => throw CHIRException("Invalid expression kind '${kind.toString()}'.")
         }
     }
@@ -1232,7 +1258,15 @@ class CHIRSerializerImpl {
                 let body = getId(e.body)
                 let retVal = getId(e._returnValue.getOrThrow())
                 let isCompileTimeValue = e._isCompileTimeValue
-                CHIRFormat_Lambda.createLambda(fbBuilder, base, funcTy, isLocalFunc, identifier, srcCodeName, paramsVec, genericTypeParamsVec, body, retVal, isCompileTimeValue)
+                var paramDftValHostParam: UInt32 = 0
+                if (let Some(host) <- e._paramDftValHostParam) {
+                    paramDftValHostParam = getId(host)
+                }
+                var genericDecl: UInt32 = 0
+                if (let Some(gDecl) <- e._genericDecl) {
+                    genericDecl = getId(gDecl)
+                }
+                CHIRFormat_Lambda.createLambda(fbBuilder, base, funcTy, isLocalFunc, identifier, srcCodeName, paramsVec, genericTypeParamsVec, body, retVal, isCompileTimeValue, paramDftValHostParam, genericDecl)
             case e: MultiBranch =>
                 exprKind[Int64(exprId) - 1] = EnumCHIRFormat_ExpressionElemValues(CHIRFormat_ExpressionElem.ExpressionElem_MULTIBRANCH)
                 let caseValues = Array<UInt64>(e.caseValues.size, { i => e.caseValues[i] })

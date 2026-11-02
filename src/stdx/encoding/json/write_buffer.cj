@@ -191,6 +191,342 @@ class WriteBuffer {
         _size = 0
         return ret
     }
+
+    @When[env != "ohos"]
+    public exclave init(this @local!, capacity: Int64) {
+        let cap = if (capacity > MIN_CAPACITY) {
+            capacity
+        } else {
+            MIN_CAPACITY
+        }
+        _buffer = Array<Byte>(cap, repeat: BLANK) @local!
+    }
+
+    @When[env != "ohos"]
+    public exclave func checkAndExpend(this @local!, addition: Int64): Unit {
+        let minCapacity = _size + addition
+        let oldCapacity: Int64 = _buffer.size
+        if (minCapacity < oldCapacity) {
+            return
+        }
+
+        var newCapacity: Int64 = oldCapacity + (oldCapacity >> 1)
+        if (newCapacity < minCapacity) {
+            newCapacity = minCapacity
+        }
+        let newArr: Array<Byte> @local! = Array<Byte>(newCapacity, repeat: BLANK)
+        _buffer.copyTo(newArr, 0, 0, _size)
+        _buffer = newArr
+    }
+
+    @When[env != "ohos"]
+    public exclave func append(this @local!, arr: Array<Byte> @local!): WriteBuffer @local! {
+        appendBytes(arr)
+    }
+
+    @When[env != "ohos"]
+    public exclave func append(this @local!, arr: Array<Byte> @local?): WriteBuffer @local! { // cjlint-ignore !G.DCL.01
+        appendBytes(arr)
+    }
+
+    @When[env != "ohos"]
+    private exclave func appendBytes(this @local!, arr: Array<Byte> @local?): WriteBuffer @local! {
+        checkAndExpend(arr.size)
+
+        if (arr.size < 32) {
+            for (index in 0..arr.size) {
+                _buffer[_size] = arr[index]
+                _size++
+            }
+        } else {
+            arr.copyTo(_buffer, 0, _size, arr.size)
+            _size += arr.size
+        }
+        this
+    }
+
+    @When[env != "ohos"]
+    public exclave func append(this @local!, str: String @local!): WriteBuffer @local! { // cjlint-ignore !G.DCL.01
+        append(unsafe { str.rawData() })
+    }
+
+    @When[env != "ohos"]
+    public exclave func append(this @local!, str: String @local?): WriteBuffer @local! { // cjlint-ignore !G.DCL.01
+        append(unsafe { str.toString().rawData() })
+    }
+
+    @When[env != "ohos"]
+    public exclave func append(this @local!, byte: Byte): WriteBuffer @local! {
+        checkAndExpend(1)
+        _buffer[_size] = byte
+        _size++
+        this
+    }
+
+    @When[env != "ohos"]
+    public exclave func append(this @local!, n: Int64): WriteBuffer @local! {
+        checkAndExpend(22)
+        unsafe {
+            let buff = acquireArrayRawData<Byte>(_buffer)
+            let len = CJ_JSON_WriteBufferAppendInt(buff.pointer + _size, n)
+            releaseArrayRawData(buff)
+            _size += len
+        }
+        this
+    }
+
+    @When[env != "ohos"]
+    public exclave func append(this @local!, fl: Float64): WriteBuffer @local! {
+        if (isJsonFloatInfinite(fl)) {
+            throw JsonException("Failed to serialize JSON float.")
+        }
+        unsafe {
+            let p: CPointer<UInt8> = CJ_CORE_Float64ToCPointer(fl)
+            if (p.isNull()) {
+                return this
+            }
+            let cpSize = Int64(strlen(p))
+            checkAndExpend(cpSize)
+            let dest = acquireArrayRawData(_buffer)
+            memcpy_s(dest.pointer + _size, UIntNative(_buffer.size - _size), p, UIntNative(cpSize))
+            releaseArrayRawData(dest)
+            LibC.free(p)
+            _size += cpSize
+        }
+
+        while (_buffer[_size - 1] == b'0') {
+            _size--
+        }
+        if (_buffer[_size - 1] == b'.') {
+            _size--
+        }
+        this
+    }
+
+    @When[env != "ohos"]
+    public exclave func append(this @local!, b: Bool): WriteBuffer @local! {
+        if (b) {
+            append(b't').append(b'r').append(b'u').append(b'e')
+        } else {
+            append(b'f').append(b'a').append(b'l').append(b's').append(b'e')
+        }
+    }
+
+    @When[env != "ohos"]
+    public exclave func appendBlank(this @local!, n: Int64): WriteBuffer @local! {
+        checkAndExpend(n)
+        _size += n
+        this
+    }
+
+    @When[env != "ohos"]
+    public exclave func removetail(this @local!): WriteBuffer @local! {
+        if (_size > 0) {
+            _size--
+        }
+        this
+    }
+
+    @When[env != "ohos"]
+    public exclave func appendEscape(this @local!, str: String @local!, htmlSafe!: Bool = true): WriteBuffer @local! { // cjlint-ignore !G.DCL.01
+        appendEscapeOwned(str, htmlSafe)
+    }
+
+    @When[env != "ohos"]
+    public exclave func appendEscape(this @local!, str: String @local?, htmlSafe!: Bool = true): WriteBuffer @local! { // cjlint-ignore !G.DCL.01
+        appendEscapeOwned(str.toString(), htmlSafe)
+    }
+
+    @When[env != "ohos"]
+    private exclave func appendEscapeOwned(this @local!, materialised: String @local!, htmlSafe: Bool): WriteBuffer @local! {
+        var escapenum = 0
+
+        unsafe {
+            let input = acquireArrayRawData(materialised.rawData())
+            escapenum = CJ_JSON_StringEscapeCharNumGet(input.pointer, materialised.size, htmlSafe)
+            releaseArrayRawData(input)
+        }
+
+        if (escapenum == 0) {
+            append(materialised)
+            return this
+        }
+
+        checkAndExpend(materialised.size + escapenum)
+        unsafe {
+            let input = acquireArrayRawData(materialised.rawData())
+            let buff = acquireArrayRawData<Byte>(_buffer)
+            let len = CJ_JSON_ReplaceEscapeChar(input.pointer, materialised.size, buff.pointer + _size, htmlSafe)
+            releaseArrayRawData(input)
+            releaseArrayRawData(buff)
+            _size += len
+        }
+        this
+    }
+
+    @When[env != "ohos"]
+    public exclave func getAndClear(this @local!): Array<Byte> @local! {
+        let ret: Array<Byte> @local! = _buffer[0.._size]
+        _buffer = Array<Byte>(0, repeat: BLANK) @local!
+        _size = 0
+        ret
+    }
+}
+
+@When[env != "ohos"]
+exclave func jsonWriteWithoutFormat(json: JsonValue @local?, buff: WriteBuffer @local!, htmlSafe!: Bool = true): Unit {
+    jsonWriteWithoutFormat(json, buff, 0, htmlSafe: htmlSafe)
+}
+
+@When[env != "ohos"]
+exclave func jsonWriteWithoutFormat(json: JsonValue @local?, buff: WriteBuffer @local!, depth: Int64,
+    htmlSafe!: Bool = true): Unit {
+    checkJsonWriteDepth(depth)
+    match (json) {
+        case jo: JsonObject =>
+            if (jo.size() == 0) {
+                buff.append(b'{').append(b'}')
+                return
+            }
+            buff.append(b'{')
+            for ((strKey, jv) in jo.getFields()) {
+                buff.append(b'\"').appendEscape(strKey, htmlSafe: htmlSafe).append(b'\"').append(b':')
+                jsonWriteWithoutFormat(jv, buff, depth + 1, htmlSafe: htmlSafe)
+                buff.append(b',')
+            }
+            buff.removetail()
+            buff.append(b'}')
+        case ja: JsonArray =>
+            if (ja.size() == 0) {
+                buff.append(b'[').append(b']')
+                return
+            }
+            buff.append(b'[')
+            let items = ja.getItems()
+            for (index in 0..items.size) {
+                jsonWriteWithoutFormat(items[index], buff, depth + 1, htmlSafe: htmlSafe)
+                buff.append(b',')
+            }
+            buff.removetail()
+            buff.append(b']')
+        case js: JsonString => buff.append(b'\"').appendEscape(js.getValue(), htmlSafe: htmlSafe).append(b'\"')
+        case jb: JsonBool => buff.append(jb.getValue())
+        case ji: JsonInt => buff.append(ji.getValue())
+        case jf: JsonFloat => buff.append(jf.getValue())
+        case _: JsonNull => buff.append(b'n').append(b'u').append(b'l').append(b'l')
+        // Unreachable once all JsonValue subclasses are covered; kept for exhaustiveness.
+        case _ => throw JsonException("Unsupported JsonValue type.")
+    }
+}
+
+@When[env != "ohos"]
+exclave func jsonWriteObject(json: JsonObject @local?, buff: WriteBuffer @local!, depth: Int64,
+    bracketInNewLine: Bool, indent: String @local?, htmlSafe!: Bool = true): Unit {
+    checkJsonWriteDepth(depth)
+    if (bracketInNewLine) {
+        for (_ in 0..depth) {
+            buff.append(indent)
+        }
+    }
+
+    if (json.size() == 0) {
+        buff.append(b'{').append(b'}')
+        return
+    }
+
+    buff.append(b'{')
+    let new_depth = depth + 1
+    for ((key, jv) in json.getFields()) {
+        buff.append(b'\n')
+        for (_ in 0..new_depth) {
+            buff.append(indent)
+        }
+        buff.append(b'\"').appendEscape(key, htmlSafe: htmlSafe).append(b'\"').append(b':').appendBlank(1)
+        match (jv) {
+            case jo: JsonObject => jsonWriteObject(jo, buff, new_depth, false, indent, htmlSafe: htmlSafe)
+            case ja: JsonArray => jsonWriteArray(ja, buff, new_depth, false, indent, htmlSafe: htmlSafe)
+            case _ => jsonWriteWithoutFormat(jv, buff, new_depth, htmlSafe: htmlSafe)
+        }
+        buff.append(b',')
+    }
+    buff.removetail()
+    buff.append(b'\n')
+    for (_ in 0..depth) {
+        buff.append(indent)
+    }
+    buff.append(b'}')
+}
+
+@When[env != "ohos"]
+exclave func jsonWriteArray(json: JsonArray @local?, buff: WriteBuffer @local!, depth: Int64,
+    bracketInNewLine: Bool, indent: String @local?, htmlSafe!: Bool = true): Unit {
+    checkJsonWriteDepth(depth)
+    if (bracketInNewLine) {
+        for (_ in 0..depth) {
+            buff.append(indent)
+        }
+    }
+
+    if (json.size() == 0) {
+        buff.append(b'[').append(b']')
+        return
+    }
+
+    buff.append(b'[')
+    let new_depth = depth + 1
+    let items = json.getItems()
+    for (index in 0..items.size) {
+        buff.append(b'\n')
+        for (_ in 0..new_depth) {
+            buff.append(indent)
+        }
+        let value = items[index]
+        match (value) {
+            case jo: JsonObject => jsonWriteObject(jo, buff, new_depth, false, indent, htmlSafe: htmlSafe)
+            case ja: JsonArray => jsonWriteArray(ja, buff, new_depth, false, indent, htmlSafe: htmlSafe)
+            case _ => jsonWriteWithoutFormat(value, buff, new_depth, htmlSafe: htmlSafe)
+        }
+        buff.append(b',')
+    }
+    buff.removetail()
+    buff.append(b'\n')
+    for (_ in 0..depth) {
+        buff.append(indent)
+    }
+    buff.append(b']')
+}
+
+@When[env != "ohos"]
+func asumecapacity(json: JsonValue @local?, depth: Int64): Int64 {
+    checkJsonWriteDepth(depth)
+    match (json) {
+        case jo: JsonObject =>
+            var sum: Int64 = 2
+            for ((key, value) in jo.getFields()) {
+                sum += key.size + 4
+                sum += asumecapacity(value, depth + 1)
+            }
+            sum
+        case ja: JsonArray =>
+            var sum: Int64 = 2
+            let items = ja.getItems()
+            for (index in 0..items.size) {
+                sum += asumecapacity(items[index], depth + 1) + 1
+            }
+            sum
+        case js: JsonString => js.getValue().size + 2
+        case _: JsonBool => 5
+        case _: JsonInt => 22
+        case _: JsonFloat => 200
+        case _: JsonNull => 4
+        // Unreachable once all JsonValue subclasses are covered; kept for exhaustiveness.
+        case _ => throw JsonException("Unsupported JsonValue type.")
+    }
+}
+
+@When[env != "ohos"]
+func asumecapacity(json: JsonValue @local?): Int64 {
+    asumecapacity(json, 0)
 }
 
 func checkJsonWriteDepth(depth: Int64): Unit {

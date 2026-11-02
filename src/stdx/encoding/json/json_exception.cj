@@ -14,7 +14,6 @@
 package stdx.encoding.json
 
 
-
 /**
  * JsonException class.
  */

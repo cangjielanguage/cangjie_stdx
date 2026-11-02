@@ -31,13 +31,13 @@ using namespace Cangjie::AST;
 namespace StdxSyntax {
 ParserSyntax::ParserSyntax(const std::string& input, DiagnosticEngine& diag, SourceManager& sm, const Position& pos,
     bool attachComment)
-    : Parser(input, diag, sm, pos, attachComment, false),
+    : Parser(input, diag, sm, pos, attachComment, nullptr),
       implSyntax(std::make_unique<ParserSyntaxImpl>(input, diag, sm, pos, attachComment))
 {
 }
 
 ParserSyntax::ParserSyntax(const std::vector<Token>& inputTokens, DiagnosticEngine& diag, SourceManager& sm, bool attachComment)
-    : Parser(inputTokens, diag, sm, attachComment, false),
+    : Parser(inputTokens, diag, sm, attachComment, nullptr),
       implSyntax(std::make_unique<ParserSyntaxImpl>(inputTokens, diag, sm, attachComment))
 {
 }
