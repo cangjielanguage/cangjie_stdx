@@ -121,6 +121,29 @@ sealed abstract class JsonValue <: ToString {
         throw UnimplementedException("JsonValue.kind(this @local?) not implemented")
     }
 
+    public func estimateCapacity(): Int64 {
+        return calculateCapacity()
+    }
+    public func estimateCapacity(this @local?): Int64 {
+        return calculateCapacity()
+    }
+
+    /**
+     * Calculate capacity (to be overridden by subclasses)
+     */
+    protected func calculateCapacity(): Int64
+    protected func calculateCapacity(this @local?): Int64
+
+    /**
+     * Invalidate cached capacity when structure changes
+     */
+    protected func invalidateCapacity(): Unit {
+        return
+    }
+    protected func invalidateCapacity(this @local!): Unit {
+        return
+    }
+
     /**
      * Convert JsonValue to JsonNull. If the failure occurs, Exception will be throwed.
      *

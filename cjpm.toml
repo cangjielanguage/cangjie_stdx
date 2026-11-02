@@ -18,7 +18,7 @@
   homepage = "https://gitcode.com/Cangjie/cangjie_stdx"
   src-dir = "src/stdx"
   output-type = "static"
-  compile-option = "-Woff=all --experimental --enable-local-mode"
+  compile-option = "-Woff=all"
   link-option = "-L target/release/stdx -L target/debug/stdx -L target/mock/release/stdx -L target/mock/debug/stdx"
   exclude = ["build_temp", "third_party/zlib", "third_party/flatbuffers"]
 
@@ -56,18 +56,23 @@
   compile-option = "-lcangjie-dynamicLoader-opensslFFI"
 
 [target.x86_64-unknown-linux-gnu]
+  compile-option = "--experimental --enable-local-mode"
   link-option = "-L target/linux_ohos_aarch64_cjnative/static/stdx -L target/linux_x86_64_cjnative/static/stdx -L target/mock/linux_x86_64_cjnative/static/stdx -lstdx.fuzzFFI"
 
 [target.aarch64-unknown-linux-gnu]
+  compile-option = "--experimental --enable-local-mode"
   link-option = "-L target/linux_ohos_aarch64_cjnative/static/stdx -L target/linux_aarch64_cjnative/static/stdx -L target/mock/linux_aarch64_cjnative/static/stdx -lstdx.fuzzFFI"
 
 [target.aarch64-apple-darwin]
+  compile-option = "--experimental --enable-local-mode"
   link-option = "-L target/darwin_aarch64_cjnative/static/stdx -L /tmp/stdx/target/release/stdx -L target/mock/darwin_aarch64_cjnative/static/stdx -undefined suppress -flat_namespace -lstdx.fuzzFFI"
 
 [target.x86_64-apple-darwin]
+  compile-option = "--experimental --enable-local-mode"
   link-option = "-L target/darwin_x86_64_cjnative/static/stdx -L /tmp/stdx/target/release/stdx -L target/mock/darwin_x86_64_cjnative/static/stdx -undefined suppress -flat_namespace -lstdx.fuzzFFI"
 
 [target.x86_64-w64-mingw32]
+  compile-option = "--experimental --enable-local-mode"
   link-option = "-L target/windows_x86_64_cjnative/static/stdx -L target/mock/windows_x86_64_cjnative/static/stdx -lpthread -lws2_32 -lcrypt32"
 
 [target.x86_64-linux-ohos]
