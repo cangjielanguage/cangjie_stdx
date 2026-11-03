@@ -48,6 +48,42 @@ main() {
 JsonValue的数量: 0
 ```
 
+<!--Del_sink-->
+### init(this @local!)
+
+```cangjie
+public exclave init(this @local!)
+```
+
+功能：创建一个空的 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 实例。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 待构造的 `@local!` 实例。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let ja: JsonArray @local! = JsonArray() @local!
+    println("size=${ja.size()}")
+}
+```
+
+运行结果：
+
+```text
+size=0
+```
+<!--DelEnd_sink-->
 ### init(Array\<JsonValue>)
 
 ```cangjie
@@ -87,6 +123,49 @@ main() {
 [null,true,123,"hello",{"hello":"world"}]
 ```
 
+<!--Del_sink-->
+### init(this @local!, Array\<JsonValue> @local!)
+
+```cangjie
+public exclave init(this @local!, list: Array<JsonValue> @local!)
+```
+
+功能：根据 Array 构造一个 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 实例。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 待构造的 `@local!` 实例。
+- list: Array\<[JsonValue](encoding_json_package_classes.md#class-jsonvalue)> @local! - 用于创建 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 的 `@local!` Array。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    let arr: Array<JsonValue> @local! = [v1, v2]
+    let ja: JsonArray @local! = JsonArray(arr) @local!
+    let s: String @local! = ja.toString()
+    println("ja=${String(s)}")
+    println("size=${ja.size()}")
+}
+```
+
+运行结果：
+
+```text
+ja=[1,2]
+size=2
+```
+<!--DelEnd_sink-->
 ### init(ArrayList\<JsonValue>)
 
 ```cangjie
@@ -131,6 +210,52 @@ main() {
 [null,true,123,"hello",{"hello":"world"}]
 ```
 
+<!--Del_sink-->
+### init(this @local!, ArrayList\<JsonValue> @local!)
+
+```cangjie
+public exclave init(this @local!, list: ArrayList<JsonValue> @local!)
+```
+
+功能：根据 ArrayList 构造一个 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 实例。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 待构造的 `@local!` 实例。
+- list: ArrayList\<[JsonValue](encoding_json_package_classes.md#class-jsonvalue)> @local! - 用于创建 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 的 `@local!` ArrayList。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+import std.collection.*
+
+main() {
+    let list: ArrayList<JsonValue> @local! = ArrayList<JsonValue>() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    list.add(v1)
+    list.add(v2)
+    let ja: JsonArray @local! = JsonArray(list) @local!
+    let s: String @local! = ja.toString()
+    println("ja=${String(s)}")
+    println("size=${ja.size()}")
+}
+```
+
+运行结果：
+
+```text
+ja=[1,2]
+size=2
+```
+<!--DelEnd_sink-->
 ### func add(JsonValue)
 
 ```cangjie
@@ -193,6 +318,54 @@ main() {
 数量: 4
 ```
 
+<!--Del_sink-->
+### func add(JsonValue)
+
+```cangjie
+public exclave func add(this @local!, jv: JsonValue @local!): JsonArray @local!
+```
+
+功能：向 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 中加入 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 数据。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+- jv: [JsonValue](encoding_json_package_classes.md#class-jsonvalue) @local! - 待加入的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 数据。
+
+返回值：
+
+- [JsonArray](encoding_json_package_classes.md#class-jsonarray) @local! - 加入数据后的 [JsonArray](encoding_json_package_classes.md#class-jsonarray)。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    ja.add(v1)
+    ja.add(v2)
+    let s: String @local! = ja.toString()
+    println("ja=${String(s)}")
+    println("size=${ja.size()}")
+}
+```
+
+运行结果：
+
+```text
+ja=[1,2]
+size=2
+```
+<!--DelEnd_sink-->
 ### func get(Int64)
 
 ```cangjie
@@ -258,6 +431,112 @@ JsonArray 内容: [null,true,100,"hello",{"hello":"world"}]
 索引 10 的值不存在
 ```
 
+<!--Del_sink-->
+### func get(Int64)
+
+```cangjie
+public exclave func get(this @local!, index: Int64): Option<JsonValue> @local!
+```
+
+功能：获取 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 中指定索引的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)，并用 Option\<[JsonValue](encoding_json_package_classes.md#class-jsonvalue)> 封装。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+- index: Int64 - 指定的索引。
+
+返回值：
+
+- Option\<[JsonValue](encoding_json_package_classes.md#class-jsonvalue)> @local! - 指定索引对应的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)，用 Option 封装。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    ja.add(v1)
+    ja.add(v2)
+    match (ja.get(0)) {
+        case Some(v) =>
+            let sv: String @local! = v.toString()
+            println("first=${String(sv)}")
+        case None => println("none")
+    }
+}
+```
+
+运行结果：
+
+```text
+first=1
+```
+<!--DelEnd_sink-->
+
+<!--Del_sink-->
+### func get(Int64)
+
+```cangjie
+public exclave func get(this @local?, index: Int64): Option<JsonValue> @local?
+```
+
+功能：获取 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 中指定索引的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)，并用 Option\<[JsonValue](encoding_json_package_classes.md#class-jsonvalue)> 封装。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+- index: Int64 - 指定的索引。
+
+返回值：
+
+- Option\<[JsonValue](encoding_json_package_classes.md#class-jsonvalue)> @local? - 指定索引对应的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)，用 Option 封装。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeArray(): JsonArray @local? {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    ja.add(v1)
+    ja.add(v2)
+    ja
+}
+
+main() {
+    let ja: JsonArray @local? = makeArray()
+    match (ja.get(1)) {
+        case Some(v) =>
+            let sv: String @local! = v.toString()
+            println("second=${String(sv)}")
+        case None => println("none")
+    }
+}
+```
+
+运行结果：
+
+```text
+second=2
+```
+<!--DelEnd_sink-->
 ### func getItems()
 
 ```cangjie
@@ -313,6 +592,104 @@ JsonArray 内容: [null,true,100,"hello",{"hello":"world"}]
 值: {"hello":"world"}
 ```
 
+<!--Del_sink-->
+### func getItems()
+
+```cangjie
+public exclave func getItems(this @local!): ArrayList<JsonValue> @local!
+```
+
+功能：获取 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 中的 items 数据。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- ArrayList\<[JsonValue](encoding_json_package_classes.md#class-jsonvalue)> @local! - [JsonArray](encoding_json_package_classes.md#class-jsonarray) 中的 items 数据。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+import std.collection.*
+
+main() {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    ja.add(v1)
+    ja.add(v2)
+    let items: ArrayList<JsonValue> @local! = ja.getItems()
+    println("size=${items.size}")
+}
+```
+
+运行结果：
+
+```text
+size=2
+```
+<!--DelEnd_sink-->
+
+<!--Del_sink-->
+### func getItems()
+
+```cangjie
+public func getItems(this @local?): ArrayList<JsonValue> @local?
+```
+
+功能：获取 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 中的 items 数据。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- ArrayList\<[JsonValue](encoding_json_package_classes.md#class-jsonvalue)> @local? - [JsonArray](encoding_json_package_classes.md#class-jsonarray) 中的 items 数据。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+import std.collection.*
+
+exclave func makeArray(): JsonArray @local? {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    ja.add(v1)
+    ja.add(v2)
+    ja
+}
+
+main() {
+    let ja: JsonArray @local? = makeArray()
+    let items: ArrayList<JsonValue> @local? = ja.getItems()
+    println("size=${items.size}")
+}
+```
+
+运行结果：
+
+```text
+size=2
+```
+<!--DelEnd_sink-->
 ### func kind()
 
 ```cangjie
@@ -356,6 +733,58 @@ main() {
 变量 jsonArray 的 kind 是 JsArray
 ```
 
+<!--Del_sink-->
+### func kind()
+
+```cangjie
+public func kind(this @local?): JsonKind
+```
+
+功能：返回当前 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 所属的 [JsonKind](encoding_json_package_enums.md#enum-jsonkind) 类型（JsArray）。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- [JsonKind](encoding_json_package_enums.md#enum-jsonkind) - 当前 `@local?` [JsonArray](encoding_json_package_classes.md#class-jsonarray) 所属的 [JsonKind](encoding_json_package_enums.md#enum-jsonkind) 类型（JsArray）。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeArray(): JsonArray @local? {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    ja.add(v1)
+    ja.add(v2)
+    ja
+}
+
+main() {
+    let ja: JsonArray @local? = makeArray()
+    match (ja.kind()) {
+        case JsonKind.JsArray => println("kind is JsArray")
+        case _ => println("kind is not JsArray")
+    }
+}
+```
+
+运行结果：
+
+```text
+kind is JsArray
+```
+<!--DelEnd_sink-->
 ### func size()
 
 ```cangjie
@@ -399,6 +828,55 @@ main() {
 最终 JsonArray 内容: [null,true]
 ```
 
+<!--Del_sink-->
+### func size()
+
+```cangjie
+public func size(this @local?): Int64
+```
+
+功能：获取 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 中 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 的数量。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- Int64 - 当前 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 中 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 的数量。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeArray(): JsonArray @local? {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    ja.add(v1)
+    ja.add(v2)
+    ja
+}
+
+main() {
+    let ja: JsonArray @local? = makeArray()
+    println("size=${ja.size()}")
+}
+```
+
+运行结果：
+
+```text
+size=2
+```
+<!--DelEnd_sink-->
 ### func toJsonString()
 
 ```cangjie
@@ -410,6 +888,10 @@ public func toJsonString(): String
 返回值：
 
 - String - 转换后的 JSON 格式字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 当 JSON 写入深度超过 100，或待序列化的内容中存在值为 NaN 或正负无穷的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 时，抛出异常。
 
 示例：
 
@@ -458,18 +940,128 @@ toJsonString 结果:
 toString 结果: [null,true,123,"hello",{"hello":"world"}]
 ```
 
+<!--Del_sink-->
+### func toJsonString()
+
+```cangjie
+public exclave func toJsonString(this @local!): String @local!
+```
+
+功能：将当前 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 转换为 JSON 格式的 (带有空格换行符) 的字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的 JSON 格式字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    ja.add(v1)
+    ja.add(v2)
+    let s: String @local! = ja.toJsonString()
+    println(String(s))
+}
+```
+
+运行结果：
+
+```text
+[
+  1,
+  2
+]
+```
+<!--DelEnd_sink-->
+
+<!--Del_sink-->
+### func toJsonString()
+
+```cangjie
+public func toJsonString(this @local?): String
+```
+
+功能：将当前 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 转换为 JSON 格式的 (带有空格换行符) 的字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- String - 转换后的 JSON 格式字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeArray(): JsonArray @local? {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    ja.add(v1)
+    ja.add(v2)
+    ja
+}
+
+main() {
+    let ja: JsonArray @local? = makeArray()
+    let s: String = ja.toJsonString()
+    println(s)
+}
+```
+
+运行结果：
+
+```text
+[
+  1,
+  2
+]
+```
+<!--DelEnd_sink-->
 ### func toJsonString(Int64, Bool, String)
 
 ```cangjie
 public func toJsonString(depth: Int64, bracketInNewLine!: Bool = false, indent!: String = "  "): String
 ```
 
-功能：将 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 转换为 JSON 格式的字符串。该函数将指定初始的缩进深度、第一个括号后是否换行以及缩进字符串。
+功能：将 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 转换为 JSON 格式的字符串。该函数将指定初始的缩进深度、首括号前是否缩进以及缩进字符串。
 
 参数：
 
 - depth: Int64 - 指定的缩进深度。
-- bracketInNewLine!: Bool - 第一个括号是否换行，如果为 `true`，第一个括号将另起一行并且按照指定的深度缩进。
+- bracketInNewLine!: Bool - 为 `true` 时，在首括号前添加 `depth` 份 `indent`；为 `false` 时不添加该缩进。此参数不插入换行符。
 - indent!: String - 指定的缩进字符串，缩进字符串中只允许空格和制表符的组合，默认为两个空格。
 
 返回值：
@@ -479,6 +1071,7 @@ public func toJsonString(depth: Int64, bracketInNewLine!: Bool = false, indent!:
 异常：
 
 - IllegalArgumentException - 如果 depth 为负数，或 indent 中存在 ' ' 和 '\t' 以外的字符，则抛出异常。
+- JsonException - 当 JSON 写入深度超过 100，或待序列化的内容中存在值为 NaN 或正负无穷的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 时，抛出异常。
 
 示例：
 
@@ -529,17 +1122,139 @@ main() {
 ]
 ```
 
+<!--Del_sink-->
+### func toJsonString(Int64, Bool, String)
+
+```cangjie
+public exclave func toJsonString(this @local!, depth: Int64, bracketInNewLine!: Bool = false, indent!: String @~local = "  "): String @local!
+```
+
+功能：将当前 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 转换为 JSON 格式的字符串。该函数将指定初始的缩进深度、首括号前是否缩进以及缩进字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+- depth: Int64 - 初始缩进深度，也是 JSON 写入深度的起始值；嵌套值会继续增加写入深度。
+- bracketInNewLine!: Bool - 为 `true` 时，在首括号前添加 `depth` 份 `indent`；为 `false` 时不添加该缩进。此参数不插入换行符。
+- indent!: String @~local - 指定的缩进字符串，缩进字符串中只允许空格和制表符的组合，默认为两个空格。
+
+返回值：
+
+- String @local! - 转换后的 JSON 格式字符串。
+
+异常：
+
+- IllegalArgumentException - 如果 depth 为负数，或 indent 中存在 ' ' 和 '\t' 以外的字符，则抛出异常。
+- JsonException - 当 JSON 写入深度超过 100，或待序列化的内容中存在值为 NaN 或正负无穷的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 时，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    ja.add(v1)
+    ja.add(v2)
+    let s: String @local! = ja.toJsonString(1, bracketInNewLine: true, indent: " ")
+    println(String(s))
+}
+```
+
+运行结果：
+
+```text
+ [
+  1,
+  2
+ ]
+```
+<!--DelEnd_sink-->
+
+<!--Del_sink-->
+### func toJsonString(Int64, Bool, String)
+
+```cangjie
+public func toJsonString(this @local?, depth: Int64, bracketInNewLine!: Bool = false, indent!: String @local? = "  "): String
+```
+
+功能：将当前 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 转换为 JSON 格式的字符串。该函数将指定初始的缩进深度、首括号前是否缩进以及缩进字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+- depth: Int64 - 初始缩进深度，也是 JSON 写入深度的起始值；嵌套值会继续增加写入深度。
+- bracketInNewLine!: Bool - 为 `true` 时，在首括号前添加 `depth` 份 `indent`；为 `false` 时不添加该缩进。此参数不插入换行符。
+- indent!: String @local? - 指定的缩进字符串，缩进字符串中只允许空格和制表符的组合，默认为两个空格。
+
+返回值：
+
+- String - 转换后的 JSON 格式字符串。
+
+异常：
+
+- IllegalArgumentException - 如果 depth 为负数，或 indent 中存在 ' ' 和 '\t' 以外的字符，则抛出异常。
+- JsonException - 当 JSON 写入深度超过 100，或待序列化的内容中存在值为 NaN 或正负无穷的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 时，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeArray(): JsonArray @local? {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    ja.add(v1)
+    ja.add(v2)
+    ja
+}
+
+main() {
+    let ja: JsonArray @local? = makeArray()
+    let s: String = ja.toJsonString(1, bracketInNewLine: true, indent: " ")
+    println(s)
+}
+```
+
+运行结果：
+
+```text
+ [
+  1,
+  2
+ ]
+```
+<!--DelEnd_sink-->
 ### func toJsonStringWithoutEscaping()
 
 ```cangjie
 public func toJsonStringWithoutEscaping(): String
 ```
 
-功能：将 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 转换为 JSON 格式的 (带有空格换行符) 的字符串，不对 html 特殊字符 `&` 转义。
+功能：将 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 转换为 JSON 格式的 (带有空格换行符) 的字符串，不对字符串值中的 html 特殊字符 `&` 转义；对象键中的 `&` 仍转义为 `\u0026`。
 
 返回值：
 
 - String - 转换后的 JSON 格式字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 当 JSON 写入深度超过 100，或待序列化的内容中存在值为 NaN 或正负无穷的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 时，抛出异常。
 
 示例：
 
@@ -576,18 +1291,128 @@ toJsonStringWithoutEscaping 结果（无转义）:
 ]
 ```
 
+<!--Del_sink-->
+### func toJsonStringWithoutEscaping()
+
+```cangjie
+public exclave func toJsonStringWithoutEscaping(this @local!): String @local!
+```
+
+功能：将当前 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 转换为 JSON 格式的 (带有空格换行符) 的字符串，不对 html 特殊字符 `&` 转义。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的 JSON 格式字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    ja.add(v1)
+    ja.add(v2)
+    let s: String @local! = ja.toJsonStringWithoutEscaping()
+    println(String(s))
+}
+```
+
+运行结果：
+
+```text
+[
+  1,
+  2
+]
+```
+<!--DelEnd_sink-->
+
+<!--Del_sink-->
+### func toJsonStringWithoutEscaping()
+
+```cangjie
+public func toJsonStringWithoutEscaping(this @local?): String
+```
+
+功能：将当前 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 转换为 JSON 格式的 (带有空格换行符) 的字符串，不对 html 特殊字符 `&` 转义。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- String - 转换后的 JSON 格式字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeArray(): JsonArray @local? {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    ja.add(v1)
+    ja.add(v2)
+    ja
+}
+
+main() {
+    let ja: JsonArray @local? = makeArray()
+    let s: String = ja.toJsonStringWithoutEscaping()
+    println(s)
+}
+```
+
+运行结果：
+
+```text
+[
+  1,
+  2
+]
+```
+<!--DelEnd_sink-->
 ### func toJsonStringWithoutEscaping(Int64, Bool, String)
 
 ```cangjie
 public func toJsonStringWithoutEscaping(depth: Int64, bracketInNewLine!: Bool = false, indent!: String = "  "): String
 ```
 
-功能：将 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 转换为 JSON 格式的字符串。该函数将指定初始的缩进深度、第一个括号后是否换行以及缩进字符串，不对 html 特殊字符 `&` 转义。
+功能：将 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 转换为 JSON 格式的字符串。该函数将指定初始的缩进深度、首括号前是否缩进以及缩进字符串，不对字符串值中的 html 特殊字符 `&` 转义；对象键中的 `&` 仍转义为 `\u0026`。
 
 参数：
 
 - depth: Int64 - 指定的缩进深度。
-- bracketInNewLine!: Bool - 第一个括号是否换行，如果为 `true`，第一个括号将另起一行并且按照指定的深度缩进。
+- bracketInNewLine!: Bool - 为 `true` 时，在首括号前添加 `depth` 份 `indent`；为 `false` 时不添加该缩进。此参数不插入换行符。
 - indent!: String - 指定的缩进字符串，缩进字符串中只允许空格和制表符的组合，默认为两个空格。
 
 返回值：
@@ -597,6 +1422,7 @@ public func toJsonStringWithoutEscaping(depth: Int64, bracketInNewLine!: Bool = 
 异常：
 
 - IllegalArgumentException - 如果 depth 为负数，或 indent 中存在 ' ' 和 '\t' 以外的字符，则抛出异常。
+- JsonException - 当 JSON 写入深度超过 100，或待序列化的内容中存在值为 NaN 或正负无穷的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 时，抛出异常。
 
 示例：
 
@@ -633,6 +1459,124 @@ toJsonStringWithoutEscaping （带参数） 结果（无转义）:
   ]
 ```
 
+<!--Del_sink-->
+### func toJsonStringWithoutEscaping(Int64, Bool, String)
+
+```cangjie
+public exclave func toJsonStringWithoutEscaping(this @local!, depth: Int64, bracketInNewLine!: Bool = false, indent!: String @~local = "  "): String @local!
+```
+
+功能：将当前 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 转换为 JSON 格式的字符串。该函数将指定初始的缩进深度、首括号前是否缩进以及缩进字符串，不对 html 特殊字符 `&` 转义。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+- depth: Int64 - 初始缩进深度，也是 JSON 写入深度的起始值；嵌套值会继续增加写入深度。
+- bracketInNewLine!: Bool - 为 `true` 时，在首括号前添加 `depth` 份 `indent`；为 `false` 时不添加该缩进。此参数不插入换行符。
+- indent!: String @~local - 指定的缩进字符串，缩进字符串中只允许空格和制表符的组合，默认为两个空格。
+
+返回值：
+
+- String @local! - 转换后的 JSON 格式字符串。
+
+异常：
+
+- IllegalArgumentException - 如果 depth 为负数，或 indent 中存在 ' ' 和 '\t' 以外的字符，则抛出异常。
+- JsonException - 当 JSON 写入深度超过 100，或待序列化的内容中存在值为 NaN 或正负无穷的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 时，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    ja.add(v1)
+    ja.add(v2)
+    let s: String @local! = ja.toJsonStringWithoutEscaping(1, bracketInNewLine: true, indent: " ")
+    println(String(s))
+}
+```
+
+运行结果：
+
+```text
+ [
+  1,
+  2
+ ]
+```
+<!--DelEnd_sink-->
+
+<!--Del_sink-->
+### func toJsonStringWithoutEscaping(Int64, Bool, String)
+
+```cangjie
+public func toJsonStringWithoutEscaping(this @local?, depth: Int64, bracketInNewLine!: Bool = false, indent!: String @local? = "  "): String
+```
+
+功能：将当前 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 转换为 JSON 格式的字符串。该函数将指定初始的缩进深度、首括号前是否缩进以及缩进字符串，不对 html 特殊字符 `&` 转义。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+- depth: Int64 - 初始缩进深度，也是 JSON 写入深度的起始值；嵌套值会继续增加写入深度。
+- bracketInNewLine!: Bool - 为 `true` 时，在首括号前添加 `depth` 份 `indent`；为 `false` 时不添加该缩进。此参数不插入换行符。
+- indent!: String @local? - 指定的缩进字符串，缩进字符串中只允许空格和制表符的组合，默认为两个空格。
+
+返回值：
+
+- String - 转换后的 JSON 格式字符串。
+
+异常：
+
+- IllegalArgumentException - 如果 depth 为负数，或 indent 中存在 ' ' 和 '\t' 以外的字符，则抛出异常。
+- JsonException - 当 JSON 写入深度超过 100，或待序列化的内容中存在值为 NaN 或正负无穷的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 时，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeArray(): JsonArray @local? {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    ja.add(v1)
+    ja.add(v2)
+    ja
+}
+
+main() {
+    let ja: JsonArray @local? = makeArray()
+    let s: String = ja.toJsonStringWithoutEscaping(1, bracketInNewLine: true, indent: " ")
+    println(s)
+}
+```
+
+运行结果：
+
+```text
+ [
+  1,
+  2
+ ]
+```
+<!--DelEnd_sink-->
 ### func toString()
 
 ```cangjie
@@ -644,6 +1588,10 @@ public func toString(): String
 返回值：
 
 - String - 转换后的字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 当 JSON 写入深度超过 100，或待序列化的内容中存在值为 NaN 或正负无穷的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 时，抛出异常。
 
 示例：
 
@@ -672,17 +1620,75 @@ main() {
 toString 结果: [null,true,123,"hello\u0026world",{"hello":"world"}]
 ```
 
+<!--Del_sink-->
+### func toString()
+
+```cangjie
+public exclave func toString(this @local?): String @local!
+```
+
+功能：将当前 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 转换为字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- String @local! - 转换后的 `@local!` 字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeArray(): JsonArray @local? {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    ja.add(v1)
+    ja.add(v2)
+    ja
+}
+
+main() {
+    let ja: JsonArray @local? = makeArray()
+    let s: String @local! = ja.toString()
+    println("ja=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+ja=[1,2]
+```
+<!--DelEnd_sink-->
 ### func toStringWithoutEscaping()
 
 ```cangjie
 public func toStringWithoutEscaping(): String
 ```
 
-功能：将 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 转换为字符串，不对 html 特殊字符 `&` 转义。
+功能：将 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 转换为字符串，不对字符串值中的 html 特殊字符 `&` 转义；对象键中的 `&` 仍转义为 `\u0026`。
 
 返回值：
 
 - String - 转换后的字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 当 JSON 写入深度超过 100，或待序列化的内容中存在值为 NaN 或正负无穷的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 时，抛出异常。
 
 示例：
 
@@ -711,6 +1717,110 @@ main() {
 toString 结果: [null,true,123,"hello&world",{"hello":"world"}]
 ```
 
+<!--Del_sink-->
+### func toStringWithoutEscaping()
+
+```cangjie
+public exclave func toStringWithoutEscaping(this @local!): String @local!
+```
+
+功能：将当前 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 转换为字符串，不对 html 特殊字符 `&` 转义。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    ja.add(v1)
+    ja.add(v2)
+    let s: String @local! = ja.toStringWithoutEscaping()
+    println("ja=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+ja=[1,2]
+```
+<!--DelEnd_sink-->
+
+<!--Del_sink-->
+### func toStringWithoutEscaping()
+
+```cangjie
+public func toStringWithoutEscaping(this @local?): String
+```
+
+功能：将当前 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 转换为字符串，不对 html 特殊字符 `&` 转义。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- String - 转换后的字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeArray(): JsonArray @local? {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    ja.add(v1)
+    ja.add(v2)
+    ja
+}
+
+main() {
+    let ja: JsonArray @local? = makeArray()
+    let s: String = ja.toStringWithoutEscaping()
+    println("ja=${s}")
+}
+```
+
+运行结果：
+
+```text
+ja=[1,2]
+```
+<!--DelEnd_sink-->
 ### operator func \[](Int64)
 
 ```cangjie
@@ -782,6 +1892,114 @@ JsonArray 内容: [null,true,123,"hello\u0026world",{"hello":"world"}]
 捕获到异常: Index '10' does not exist in JsonArray.
 ```
 
+<!--Del_sink-->
+### operator func \[](Int64)
+
+```cangjie
+public exclave operator func [](this @local!, index: Int64): JsonValue @local!
+```
+
+功能：获取 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 中指定索引的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+- index: Int64 - 指定的索引。
+
+返回值：
+
+- [JsonValue](encoding_json_package_classes.md#class-jsonvalue) @local! - 指定索引对应的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果索引在 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 中不存在，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(10) @local!
+    let v2: JsonValue @local! = JsonInt(20) @local!
+    ja.add(v1)
+    ja.add(v2)
+    let v: JsonValue @local! = ja[0]
+    let ji: JsonInt @local! = v.asInt()
+    println("first=${ji.getValue()}")
+}
+```
+
+运行结果：
+
+```text
+first=10
+```
+<!--DelEnd_sink-->
+
+<!--Del_sink-->
+### operator func \[](Int64)
+
+```cangjie
+public exclave operator func [](this @local?, index: Int64): JsonValue @local?
+```
+
+功能：获取 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 中指定索引的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+- index: Int64 - 指定的索引。
+
+返回值：
+
+- [JsonValue](encoding_json_package_classes.md#class-jsonvalue) @local? - 指定索引对应的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果索引在 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 中不存在，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeArray(): JsonArray @local? {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    ja.add(v1)
+    ja.add(v2)
+    ja
+}
+
+main() {
+    let ja: JsonArray @local? = makeArray()
+    let v: JsonValue @local? = ja[1]
+    let s: String @local! = v.toString()
+    println("second=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+second=2
+```
+<!--DelEnd_sink-->
 ## class JsonBool
 
 ```cangjie
@@ -827,6 +2045,43 @@ main() {
 JsonBool(true) 创建的对象: true
 ```
 
+<!--Del_sink-->
+### init(this @local!, Bool)
+
+```cangjie
+public exclave init(this @local!, bv: Bool)
+```
+
+功能：将指定的 Bool 类型实例封装成 [JsonBool](encoding_json_package_classes.md#class-jsonbool) 实例。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 待构造的 `@local!` 实例。
+- bv: Bool - 用于创建 [JsonBool](encoding_json_package_classes.md#class-jsonbool) 的 Bool 值。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let jb: JsonBool @local! = JsonBool(true) @local!
+    println("value=${jb.getValue()}")
+}
+```
+
+运行结果：
+
+```text
+value=true
+```
+<!--DelEnd_sink-->
 ### func getValue()
 
 ```cangjie
@@ -860,6 +2115,51 @@ main() {
 JsonBool(true) 的值: true
 ```
 
+<!--Del_sink-->
+### func getValue()
+
+```cangjie
+public func getValue(this @local?): Bool
+```
+
+功能：获取 [JsonBool](encoding_json_package_classes.md#class-jsonbool) 中 value 的实际值。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- Bool - value 的实际值。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeBool(): JsonBool @local? {
+    let b: JsonBool @local! = JsonBool(true) @local!
+    b
+}
+
+main() {
+    let jb: JsonBool @local? = makeBool()
+    println("value=${jb.getValue()}")
+}
+```
+
+运行结果：
+
+```text
+value=true
+```
+<!--DelEnd_sink-->
 ### func kind()
 
 ```cangjie
@@ -897,6 +2197,54 @@ main() {
 变量jsonTrue的类型是JsBool
 ```
 
+<!--Del_sink-->
+### func kind()
+
+```cangjie
+public func kind(this @local?): JsonKind
+```
+
+功能：返回当前 [JsonBool](encoding_json_package_classes.md#class-jsonbool) 所属的 [JsonKind](encoding_json_package_enums.md#enum-jsonkind) 类型（JsBool）。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- [JsonKind](encoding_json_package_enums.md#enum-jsonkind) - 当前 `@local?` [JsonBool](encoding_json_package_classes.md#class-jsonbool) 所属的 [JsonKind](encoding_json_package_enums.md#enum-jsonkind) 类型（JsBool）。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeBool(): JsonBool @local? {
+    let b: JsonBool @local! = JsonBool(true) @local!
+    b
+}
+
+main() {
+    let jb: JsonBool @local? = makeBool()
+    match (jb.kind()) {
+        case JsonKind.JsBool => println("kind is JsBool")
+        case _ => println("kind is not JsBool")
+    }
+}
+```
+
+运行结果：
+
+```text
+kind is JsBool
+```
+<!--DelEnd_sink-->
 ### func toJsonString()
 
 ```cangjie
@@ -930,6 +2278,47 @@ main() {
 JsonBool(true) 的 JSON 字符串: true
 ```
 
+<!--Del_sink-->
+### func toJsonString()
+
+```cangjie
+public exclave func toJsonString(this @local!): String @local!
+```
+
+功能：将当前 [JsonBool](encoding_json_package_classes.md#class-jsonbool) 转换为 JSON 格式的 (带有空格换行符) 字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的 JSON 格式字符串。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let jb: JsonBool @local! = JsonBool(true) @local!
+    let s: String @local! = jb.toJsonString()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s=true
+```
+<!--DelEnd_sink-->
 ### func toJsonStringWithoutEscaping()
 
 ```cangjie
@@ -963,6 +2352,47 @@ main() {
 等同 toJsonString(): true
 ```
 
+<!--Del_sink-->
+### func toJsonStringWithoutEscaping()
+
+```cangjie
+public exclave func toJsonStringWithoutEscaping(this @local!): String @local!
+```
+
+功能：将当前 [JsonBool](encoding_json_package_classes.md#class-jsonbool) 转换为 JSON 格式的 (带有空格换行符) 字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的 JSON 格式字符串。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let jb: JsonBool @local! = JsonBool(true) @local!
+    let s: String @local! = jb.toJsonStringWithoutEscaping()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s=true
+```
+<!--DelEnd_sink-->
 ### func toString()
 
 ```cangjie
@@ -996,6 +2426,52 @@ main() {
 JsonBool(true) 的字符串表示: true
 ```
 
+<!--Del_sink-->
+### func toString()
+
+```cangjie
+public exclave func toString(this @local?): String @local!
+```
+
+功能：将当前 [JsonBool](encoding_json_package_classes.md#class-jsonbool) 转换为字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- String @local! - 转换后的 `@local!` 字符串。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeBool(): JsonBool @local? {
+    let b: JsonBool @local! = JsonBool(true) @local!
+    b
+}
+
+main() {
+    let jb: JsonBool @local? = makeBool()
+    let s: String @local! = jb.toString()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s=true
+```
+<!--DelEnd_sink-->
 ### func toStringWithoutEscaping()
 
 ```cangjie
@@ -1029,6 +2505,47 @@ main() {
 等同toString(): true
 ```
 
+<!--Del_sink-->
+### func toStringWithoutEscaping()
+
+```cangjie
+public exclave func toStringWithoutEscaping(this @local!): String @local!
+```
+
+功能：将当前 [JsonBool](encoding_json_package_classes.md#class-jsonbool) 转换为字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的字符串。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let jb: JsonBool @local! = JsonBool(true) @local!
+    let s: String @local! = jb.toStringWithoutEscaping()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s=true
+```
+<!--DelEnd_sink-->
 ## class JsonFloat
 
 ```cangjie
@@ -1075,6 +2592,43 @@ main() {
 JsonFloat(3.14159) 创建的对象: 3.141590
 ```
 
+<!--Del_sink-->
+### init(this @local!, Float64)
+
+```cangjie
+public exclave init(this @local!, fv: Float64)
+```
+
+功能：将指定的 Float64 类型实例封装成 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 实例。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 待构造的 `@local!` 实例。
+- fv: Float64 - 用于创建 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 的 Float64 值。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let jf: JsonFloat @local! = JsonFloat(1.5) @local!
+    println("value=${jf.getValue()}")
+}
+```
+
+运行结果：
+
+```text
+value=1.500000
+```
+<!--DelEnd_sink-->
 ### init(Int64)
 
 ```cangjie
@@ -1106,6 +2660,43 @@ main() {
 JsonFloat(42) 创建的对象: 42.000000
 ```
 
+<!--Del_sink-->
+### init(this @local!, Int64)
+
+```cangjie
+public exclave init(this @local!, v: Int64)
+```
+
+功能：将指定的 Int64 类型实例封装成 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 实例。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 待构造的 `@local!` 实例。
+- v: Int64 - 用于创建 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 的 Int64 值。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let jf: JsonFloat @local! = JsonFloat(42) @local!
+    println("value=${jf.getValue()}")
+}
+```
+
+运行结果：
+
+```text
+value=42.000000
+```
+<!--DelEnd_sink-->
 ### func getValue()
 
 ```cangjie
@@ -1139,6 +2730,51 @@ main() {
 JsonFloat(3.14159) 的值: 3.141590
 ```
 
+<!--Del_sink-->
+### func getValue()
+
+```cangjie
+public func getValue(this @local?): Float64
+```
+
+功能：获取 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 中 value 的实际值。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- Float64 - value 的实际值。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeFloat(): JsonFloat @local? {
+    let f: JsonFloat @local! = JsonFloat(3.5) @local!
+    f
+}
+
+main() {
+    let jf: JsonFloat @local? = makeFloat()
+    println("value=${jf.getValue()}")
+}
+```
+
+运行结果：
+
+```text
+value=3.500000
+```
+<!--DelEnd_sink-->
 ### func kind()
 
 ```cangjie
@@ -1176,6 +2812,54 @@ main() {
 变量jsonFloat的类型是JsFloat
 ```
 
+<!--Del_sink-->
+### func kind()
+
+```cangjie
+public func kind(this @local?): JsonKind
+```
+
+功能：返回当前 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 所属的 [JsonKind](encoding_json_package_enums.md#enum-jsonkind) 类型（JsFloat）。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- [JsonKind](encoding_json_package_enums.md#enum-jsonkind) - 当前 `@local?` [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 所属的 [JsonKind](encoding_json_package_enums.md#enum-jsonkind) 类型（JsFloat）。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeFloat(): JsonFloat @local? {
+    let f: JsonFloat @local! = JsonFloat(3.5) @local!
+    f
+}
+
+main() {
+    let jf: JsonFloat @local? = makeFloat()
+    match (jf.kind()) {
+        case JsonKind.JsFloat => println("kind is JsFloat")
+        case _ => println("kind is not JsFloat")
+    }
+}
+```
+
+运行结果：
+
+```text
+kind is JsFloat
+```
+<!--DelEnd_sink-->
 ### func toJsonString()
 
 ```cangjie
@@ -1187,6 +2871,10 @@ public func toJsonString(): String
 返回值：
 
 - String - 转换后的 JSON 格式字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 当封装的 Float64 值为 NaN 或正负无穷时，抛出异常。
 
 示例：
 
@@ -1209,6 +2897,51 @@ main() {
 JsonFloat(3.14159) 的 JSON 字符串: 3.141590
 ```
 
+<!--Del_sink-->
+### func toJsonString()
+
+```cangjie
+public exclave func toJsonString(this @local!): String @local!
+```
+
+功能：将当前 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 转换为 JSON 格式的 (带有空格换行符) 字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的 JSON 格式字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 当封装的 Float64 值为 NaN 或正负无穷时，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let jf: JsonFloat @local! = JsonFloat(3.5) @local!
+    let s: String @local! = jf.toJsonString()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s=3.500000
+```
+<!--DelEnd_sink-->
 ### func toJsonStringWithoutEscaping()
 
 ```cangjie
@@ -1220,6 +2953,10 @@ public func toJsonStringWithoutEscaping(): String
 返回值：
 
 - String - 转换后的 JSON 格式字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 当封装的 Float64 值为 NaN 或正负无穷时，抛出异常。
 
 示例：
 
@@ -1242,6 +2979,51 @@ main() {
 等同 toJsonString(): 3.141590
 ```
 
+<!--Del_sink-->
+### func toJsonStringWithoutEscaping()
+
+```cangjie
+public exclave func toJsonStringWithoutEscaping(this @local!): String @local!
+```
+
+功能：将当前 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 转换为 JSON 格式的 (带有空格换行符) 字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的 JSON 格式字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 当封装的 Float64 值为 NaN 或正负无穷时，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let jf: JsonFloat @local! = JsonFloat(3.5) @local!
+    let s: String @local! = jf.toJsonStringWithoutEscaping()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s=3.500000
+```
+<!--DelEnd_sink-->
 ### func toString()
 
 ```cangjie
@@ -1253,6 +3035,10 @@ public func toString(): String
 返回值：
 
 - String - 转换后的字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 当封装的 Float64 值为 NaN 或正负无穷时，抛出异常。
 
 示例：
 
@@ -1275,6 +3061,56 @@ main() {
 JsonFloat(3.14159) 的字符串表示: 3.141590
 ```
 
+<!--Del_sink-->
+### func toString()
+
+```cangjie
+public exclave func toString(this @local?): String @local!
+```
+
+功能：将当前 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 转换为字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- String @local! - 转换后的 `@local!` 字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 当封装的 Float64 值为 NaN 或正负无穷时，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeFloat(): JsonFloat @local? {
+    let f: JsonFloat @local! = JsonFloat(3.5) @local!
+    f
+}
+
+main() {
+    let jf: JsonFloat @local? = makeFloat()
+    let s: String @local! = jf.toString()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s=3.500000
+```
+<!--DelEnd_sink-->
 ### func toStringWithoutEscaping()
 
 ```cangjie
@@ -1286,6 +3122,10 @@ public func toStringWithoutEscaping(): String
 返回值：
 
 - String - 转换后的字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 当封装的 Float64 值为 NaN 或正负无穷时，抛出异常。
 
 示例：
 
@@ -1308,6 +3148,51 @@ main() {
 等同toString(): 3.141590
 ```
 
+<!--Del_sink-->
+### func toStringWithoutEscaping()
+
+```cangjie
+public exclave func toStringWithoutEscaping(this @local!): String @local!
+```
+
+功能：将当前 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 转换为字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 当封装的 Float64 值为 NaN 或正负无穷时，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let jf: JsonFloat @local! = JsonFloat(3.5) @local!
+    let s: String @local! = jf.toStringWithoutEscaping()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s=3.500000
+```
+<!--DelEnd_sink-->
 ## class JsonInt
 
 ```cangjie
@@ -1353,6 +3238,43 @@ main() {
 JsonInt(42) 创建的对象: 42
 ```
 
+<!--Del_sink-->
+### init(this @local!, Int64)
+
+```cangjie
+public exclave init(this @local!, iv: Int64)
+```
+
+功能：将指定的 Int64 类型实例封装成 [JsonInt](encoding_json_package_classes.md#class-jsonint) 实例。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 待构造的 `@local!` 实例。
+- iv: Int64 - 用于创建 [JsonInt](encoding_json_package_classes.md#class-jsonint) 的 Int64 值。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let ji: JsonInt @local! = JsonInt(123) @local!
+    println("value=${ji.getValue()}")
+}
+```
+
+运行结果：
+
+```text
+value=123
+```
+<!--DelEnd_sink-->
 ### func getValue()
 
 ```cangjie
@@ -1386,6 +3308,51 @@ main() {
 JsonInt(42) 的值: 42
 ```
 
+<!--Del_sink-->
+### func getValue()
+
+```cangjie
+public func getValue(this @local?): Int64
+```
+
+功能：获取 [JsonInt](encoding_json_package_classes.md#class-jsonint) 中 value 的实际值。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- Int64 - value 的实际值。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeInt(): JsonInt @local? {
+    let i: JsonInt @local! = JsonInt(123) @local!
+    i
+}
+
+main() {
+    let ji: JsonInt @local? = makeInt()
+    println("value=${ji.getValue()}")
+}
+```
+
+运行结果：
+
+```text
+value=123
+```
+<!--DelEnd_sink-->
 ### func kind()
 
 ```cangjie
@@ -1423,6 +3390,54 @@ main() {
 变量jsonInt的类型是JsInt
 ```
 
+<!--Del_sink-->
+### func kind()
+
+```cangjie
+public func kind(this @local?): JsonKind
+```
+
+功能：返回当前 [JsonInt](encoding_json_package_classes.md#class-jsonint) 所属的 [JsonKind](encoding_json_package_enums.md#enum-jsonkind) 类型（JsInt）。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- [JsonKind](encoding_json_package_enums.md#enum-jsonkind) - 当前 `@local?` [JsonInt](encoding_json_package_classes.md#class-jsonint) 所属的 [JsonKind](encoding_json_package_enums.md#enum-jsonkind) 类型（JsInt）。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeInt(): JsonInt @local? {
+    let i: JsonInt @local! = JsonInt(123) @local!
+    i
+}
+
+main() {
+    let ji: JsonInt @local? = makeInt()
+    match (ji.kind()) {
+        case JsonKind.JsInt => println("kind is JsInt")
+        case _ => println("kind is not JsInt")
+    }
+}
+```
+
+运行结果：
+
+```text
+kind is JsInt
+```
+<!--DelEnd_sink-->
 ### func toJsonString()
 
 ```cangjie
@@ -1456,6 +3471,47 @@ main() {
 JsonInt(42) 的 JSON 字符串: 42
 ```
 
+<!--Del_sink-->
+### func toJsonString()
+
+```cangjie
+public exclave func toJsonString(this @local!): String @local!
+```
+
+功能：将当前 [JsonInt](encoding_json_package_classes.md#class-jsonint) 转换为 JSON 格式的 (带有空格换行符) 字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的 JSON 格式字符串。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let ji: JsonInt @local! = JsonInt(123) @local!
+    let s: String @local! = ji.toJsonString()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s=123
+```
+<!--DelEnd_sink-->
 ### func toJsonStringWithoutEscaping()
 
 ```cangjie
@@ -1489,6 +3545,47 @@ main() {
 等同 toJsonString(): 42
 ```
 
+<!--Del_sink-->
+### func toJsonStringWithoutEscaping()
+
+```cangjie
+public exclave func toJsonStringWithoutEscaping(this @local!): String @local!
+```
+
+功能：将当前 [JsonInt](encoding_json_package_classes.md#class-jsonint) 转换为 JSON 格式的 (带有空格换行符) 字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的 JSON 格式字符串。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let ji: JsonInt @local! = JsonInt(123) @local!
+    let s: String @local! = ji.toJsonStringWithoutEscaping()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s=123
+```
+<!--DelEnd_sink-->
 ### func toString()
 
 ```cangjie
@@ -1522,6 +3619,52 @@ main() {
 JsonInt(42) 的字符串表示: 42
 ```
 
+<!--Del_sink-->
+### func toString()
+
+```cangjie
+public exclave func toString(this @local?): String @local!
+```
+
+功能：将当前 [JsonInt](encoding_json_package_classes.md#class-jsonint) 转换为字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- String @local! - 转换后的 `@local!` 字符串。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeInt(): JsonInt @local? {
+    let i: JsonInt @local! = JsonInt(123) @local!
+    i
+}
+
+main() {
+    let ji: JsonInt @local? = makeInt()
+    let s: String @local! = ji.toString()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s=123
+```
+<!--DelEnd_sink-->
 ### func toStringWithoutEscaping()
 
 ```cangjie
@@ -1555,6 +3698,47 @@ main() {
 等同toString(): 42
 ```
 
+<!--Del_sink-->
+### func toStringWithoutEscaping()
+
+```cangjie
+public exclave func toStringWithoutEscaping(this @local!): String @local!
+```
+
+功能：将当前 [JsonInt](encoding_json_package_classes.md#class-jsonint) 转换为字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的字符串。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let ji: JsonInt @local! = JsonInt(123) @local!
+    let s: String @local! = ji.toStringWithoutEscaping()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s=123
+```
+<!--DelEnd_sink-->
 ## class JsonNull
 
 ```cangjie
@@ -1603,6 +3787,54 @@ main() {
 变量jsonNull的类型是JsNull
 ```
 
+<!--Del_sink-->
+### func kind()
+
+```cangjie
+public func kind(this @local?): JsonKind
+```
+
+功能：返回当前 [JsonNull](encoding_json_package_classes.md#class-jsonnull) 所属的 [JsonKind](encoding_json_package_enums.md#enum-jsonkind) 类型（JsNull）。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- [JsonKind](encoding_json_package_enums.md#enum-jsonkind) - 当前 `@local?` [JsonNull](encoding_json_package_classes.md#class-jsonnull) 所属的 [JsonKind](encoding_json_package_enums.md#enum-jsonkind) 类型（JsNull）。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeNull(): JsonNull @local? {
+    let n: JsonNull @local! = JsonNull() @local!
+    n
+}
+
+main() {
+    let n: JsonNull @local? = makeNull()
+    match (n.kind()) {
+        case JsonKind.JsNull => println("kind is JsNull")
+        case _ => println("kind is not JsNull")
+    }
+}
+```
+
+运行结果：
+
+```text
+kind is JsNull
+```
+<!--DelEnd_sink-->
 ### func toJsonString()
 
 ```cangjie
@@ -1635,6 +3867,47 @@ main() {
 JsonNull 的 JSON 字符串: null
 ```
 
+<!--Del_sink-->
+### func toJsonString()
+
+```cangjie
+public exclave func toJsonString(this @local!): String @local!
+```
+
+功能：将当前 [JsonNull](encoding_json_package_classes.md#class-jsonnull) 转换为 JSON 格式的 (带有空格换行符) 字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的 JSON 格式字符串。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let n: JsonNull @local! = JsonNull() @local!
+    let s: String @local! = n.toJsonString()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s=null
+```
+<!--DelEnd_sink-->
 ### func toJsonStringWithoutEscaping()
 
 ```cangjie
@@ -1668,6 +3941,47 @@ main() {
 等同 toJsonString(): null
 ```
 
+<!--Del_sink-->
+### func toJsonStringWithoutEscaping()
+
+```cangjie
+public exclave func toJsonStringWithoutEscaping(this @local!): String @local!
+```
+
+功能：将当前 [JsonNull](encoding_json_package_classes.md#class-jsonnull) 转换为 JSON 格式的 (带有空格换行符) 字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的 JSON 格式字符串。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let n: JsonNull @local! = JsonNull() @local!
+    let s: String @local! = n.toJsonStringWithoutEscaping()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s=null
+```
+<!--DelEnd_sink-->
 ### func toString()
 
 ```cangjie
@@ -1700,6 +4014,52 @@ main() {
 JsonNull 的字符串表示: null
 ```
 
+<!--Del_sink-->
+### func toString()
+
+```cangjie
+public exclave func toString(this @local?): String @local!
+```
+
+功能：将当前 [JsonNull](encoding_json_package_classes.md#class-jsonnull) 转换为字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- String @local! - 转换后的 `@local!` 字符串。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeNull(): JsonNull @local? {
+    let n: JsonNull @local! = JsonNull() @local!
+    n
+}
+
+main() {
+    let n: JsonNull @local? = makeNull()
+    let s: String @local! = n.toString()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s=null
+```
+<!--DelEnd_sink-->
 ### func toStringWithoutEscaping()
 
 ```cangjie
@@ -1733,6 +4093,47 @@ main() {
 等同 toJsonString(): null
 ```
 
+<!--Del_sink-->
+### func toStringWithoutEscaping()
+
+```cangjie
+public exclave func toStringWithoutEscaping(this @local!): String @local!
+```
+
+功能：将当前 [JsonNull](encoding_json_package_classes.md#class-jsonnull) 转换为字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的字符串。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let n: JsonNull @local! = JsonNull() @local!
+    let s: String @local! = n.toStringWithoutEscaping()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s=null
+```
+<!--DelEnd_sink-->
 ## class JsonObject
 
 ```cangjie
@@ -1775,6 +4176,42 @@ main() {
 创建空JsonObject: {}
 ```
 
+<!--Del_sink-->
+### init(this @local!)
+
+```cangjie
+public exclave init(this @local!)
+```
+
+功能：创建一个空的 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 实例。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 待构造的 `@local!` 实例。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let jo: JsonObject @local! = JsonObject() @local!
+    println("size=${jo.size()}")
+}
+```
+
+运行结果：
+
+```text
+size=0
+```
+<!--DelEnd_sink-->
 ### init(HashMap\<String, JsonValue>)
 
 ```cangjie
@@ -1813,6 +4250,51 @@ main() {
 使用HashMap创建JsonObject: {"name":"张三","age":25,"student":true}
 ```
 
+<!--Del_sink-->
+### init(this @local!, HashMap\<String, JsonValue> @local!)
+
+```cangjie
+public exclave init(this @local!, map: HashMap<String, JsonValue> @local!)
+```
+
+功能：根据 HashMap 构造一个 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 实例。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 待构造的 `@local!` 实例。
+- map: HashMap\<String, [JsonValue](encoding_json_package_classes.md#class-jsonvalue)> @local! - 用于创建 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 的 `@local!` HashMap。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+import std.collection.*
+
+main() {
+    let map: HashMap<String, JsonValue> @local! = HashMap<String, JsonValue>() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    map.add(k, v)
+    let jo: JsonObject @local! = JsonObject(map) @local!
+    let s: String @local! = jo.toString()
+    println("jo=${String(s)}")
+    println("size=${jo.size()}")
+}
+```
+
+运行结果：
+
+```text
+jo={"hello":"world"}
+size=1
+```
+<!--DelEnd_sink-->
 ### func containsKey(String)
 
 ```cangjie
@@ -1855,6 +4337,59 @@ JsonObject是否包含name键: true
 JsonObject是否包含address键: false
 ```
 
+<!--Del_sink-->
+### func containsKey(String)
+
+```cangjie
+public func containsKey(this @local?, key: String @local?): Bool
+```
+
+功能：判断 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 中是否存在 key。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+- key: String @local? - 指定的键。
+
+返回值：
+
+- Bool - 如果存在该 key，返回 true，否则返回 false。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeObject(): JsonObject @local? {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    jo
+}
+
+main() {
+    let jo: JsonObject @local? = makeObject()
+    let k: String @local? = "hello"
+    println("contains=${jo.containsKey(k)}")
+    let missing: String @local? = "foo"
+    println("missing=${jo.containsKey(missing)}")
+}
+```
+
+运行结果：
+
+```text
+contains=true
+missing=false
+```
+<!--DelEnd_sink-->
 ### func get(String)
 
 ```cangjie
@@ -1916,6 +4451,111 @@ age的值: 25
 address的值: 键不存在
 ```
 
+<!--Del_sink-->
+### func get(String)
+
+```cangjie
+public exclave func get(this @local!, key: String @local!): Option<JsonValue> @local!
+```
+
+功能：获取 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 中 key 对应的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)，并用 Option\<[JsonValue](encoding_json_package_classes.md#class-jsonvalue)> 封装。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+- key: String @local! - 指定的键。
+
+返回值：
+
+- Option\<[JsonValue](encoding_json_package_classes.md#class-jsonvalue)> @local! - 键对应的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)，用 Option 封装。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    match (jo.get("hello")) {
+        case Some(found) =>
+            let sv: String @local! = found.toString()
+            println("found=${String(sv)}")
+        case None => println("none")
+    }
+}
+```
+
+运行结果：
+
+```text
+found="world"
+```
+<!--DelEnd_sink-->
+
+<!--Del_sink-->
+### func get(String)
+
+```cangjie
+public exclave func get(this @local?, key: String @local?): Option<JsonValue> @local?
+```
+
+功能：获取 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 中 key 对应的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)，并用 Option\<[JsonValue](encoding_json_package_classes.md#class-jsonvalue)> 封装。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+- key: String @local? - 指定的键。
+
+返回值：
+
+- Option\<[JsonValue](encoding_json_package_classes.md#class-jsonvalue)> @local? - 键对应的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)，用 Option 封装。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeObject(): JsonObject @local? {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    jo
+}
+
+main() {
+    let jo: JsonObject @local? = makeObject()
+    let k: String @local? = "hello"
+    match (jo.get(k)) {
+        case Some(found) =>
+            let sv: String @local! = found.toString()
+            println("found=${String(sv)}")
+        case None => println("none")
+    }
+}
+```
+
+运行结果：
+
+```text
+found="world"
+```
+<!--DelEnd_sink-->
 ### func getFields()
 
 ```cangjie
@@ -1955,6 +4595,106 @@ JsonObject的字段数据: {"name":"张三","age":25,"student":true}
 获取到的字段HashMap: [(name, "张三"), (age, 25), (student, true)]
 ```
 
+<!--Del_sink-->
+### func getFields()
+
+```cangjie
+public exclave func getFields(this @local!): HashMap<String, JsonValue> @local!
+```
+
+功能：获取 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 中的 fields 数据。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- HashMap\<String, [JsonValue](encoding_json_package_classes.md#class-jsonvalue)> @local! - [JsonObject](encoding_json_package_classes.md#class-jsonobject) 中的 fields 数据。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+import std.collection.*
+
+main() {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    let fields: HashMap<String, JsonValue> @local! = jo.getFields()
+    println("size=${jo.size()}")
+    println("empty=${fields.isEmpty()}")
+}
+```
+
+运行结果：
+
+```text
+size=1
+empty=false
+```
+<!--DelEnd_sink-->
+
+<!--Del_sink-->
+### func getFields()
+
+```cangjie
+public func getFields(this @local?): HashMap<String, JsonValue> @local?
+```
+
+功能：获取 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 中的 fields 数据。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- HashMap\<String, [JsonValue](encoding_json_package_classes.md#class-jsonvalue)> @local? - [JsonObject](encoding_json_package_classes.md#class-jsonobject) 中的 fields 数据。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+import std.collection.*
+
+exclave func makeObject(): JsonObject @local? {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    jo
+}
+
+main() {
+    let jo: JsonObject @local? = makeObject()
+    let fields: HashMap<String, JsonValue> @local? = jo.getFields()
+    println("size=${jo.size()}")
+    println("empty=${fields.isEmpty()}")
+}
+```
+
+运行结果：
+
+```text
+size=1
+empty=false
+```
+<!--DelEnd_sink-->
 ### func kind()
 
 ```cangjie
@@ -1993,6 +4733,57 @@ main() {
 变量jsonObject的类型是JsObject
 ```
 
+<!--Del_sink-->
+### func kind()
+
+```cangjie
+public func kind(this @local?): JsonKind
+```
+
+功能：返回当前 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 所属的 [JsonKind](encoding_json_package_enums.md#enum-jsonkind) 类型（JsObject）。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- [JsonKind](encoding_json_package_enums.md#enum-jsonkind) - 当前 `@local?` [JsonObject](encoding_json_package_classes.md#class-jsonobject) 所属的 [JsonKind](encoding_json_package_enums.md#enum-jsonkind) 类型（JsObject）。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeObject(): JsonObject @local? {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    jo
+}
+
+main() {
+    let jo: JsonObject @local? = makeObject()
+    match (jo.kind()) {
+        case JsonKind.JsObject => println("kind is JsObject")
+        case _ => println("kind is not JsObject")
+    }
+}
+```
+
+运行结果：
+
+```text
+kind is JsObject
+```
+<!--DelEnd_sink-->
 ### func put(String, JsonValue)
 
 ```cangjie
@@ -2029,6 +4820,91 @@ main() {
 添加键值对后的JsonObject: {"name":"张三","age":25,"student":true}
 ```
 
+<!--Del_sink-->
+### func put(String, JsonValue)
+
+```cangjie
+public exclave func put(this @local!, key: String @local!, v: JsonValue @local!): Unit
+```
+
+功能：向 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 中加入 key-[JsonValue](encoding_json_package_classes.md#class-jsonvalue) 数据。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+- key: String @local! - 指定的键。
+- v: [JsonValue](encoding_json_package_classes.md#class-jsonvalue) @local! - 键对应的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 数据。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    let s: String @local! = jo.toString()
+    println("jo=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+jo={"hello":"world"}
+```
+<!--DelEnd_sink-->
+
+<!--Del_sink-->
+### func put(String, JsonValue)
+
+```cangjie
+public exclave func put(this @local!, key: String @local?, v: JsonValue @local!): Unit
+```
+
+功能：向 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 中加入 key-[JsonValue](encoding_json_package_classes.md#class-jsonvalue) 数据，加入时将键深拷贝为本地持有的 `String @local!` 字符串存储。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+- key: String @local? - 指定的键。
+- v: [JsonValue](encoding_json_package_classes.md#class-jsonvalue) @local! - 键对应的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 数据。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local? = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    let s: String @local! = jo.toString()
+    println("jo=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+jo={"hello":"world"}
+```
+<!--DelEnd_sink-->
 ### func size()
 
 ```cangjie
@@ -2072,6 +4948,54 @@ main() {
 添加多个键值对后的最终大小: 3
 ```
 
+<!--Del_sink-->
+### func size()
+
+```cangjie
+public func size(this @local?): Int64
+```
+
+功能：获取 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 中 fields 存入 string-[JsonValue](encoding_json_package_classes.md#class-jsonvalue) 的数量。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- Int64 - [JsonObject](encoding_json_package_classes.md#class-jsonobject) 中 fields 的数量。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeObject(): JsonObject @local? {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    jo
+}
+
+main() {
+    let jo: JsonObject @local? = makeObject()
+    println("size=${jo.size()}")
+}
+```
+
+运行结果：
+
+```text
+size=1
+```
+<!--DelEnd_sink-->
 ### func toJsonString()
 
 ```cangjie
@@ -2083,6 +5007,10 @@ public func toJsonString(): String
 返回值：
 
 - String - 转换后的 JSON 格式字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 当 JSON 写入深度超过 100，或待序列化的内容中存在值为 NaN 或正负无穷的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 时，抛出异常。
 
 示例：
 
@@ -2113,18 +5041,124 @@ JsonObject转换为JSON字符串:
 }
 ```
 
+<!--Del_sink-->
+### func toJsonString()
+
+```cangjie
+public exclave func toJsonString(this @local!): String @local!
+```
+
+功能：将当前 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 转换为 JSON 格式的 (带有空格换行符) 字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的 JSON 格式字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    let s: String @local! = jo.toJsonString()
+    println(String(s))
+}
+```
+
+运行结果：
+
+```text
+{
+  "hello": "world"
+}
+```
+<!--DelEnd_sink-->
+
+<!--Del_sink-->
+### func toJsonString()
+
+```cangjie
+public func toJsonString(this @local?): String
+```
+
+功能：将当前 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 转换为 JSON 格式的 (带有空格换行符) 字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- String - 转换后的 JSON 格式字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeObject(): JsonObject @local? {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    jo
+}
+
+main() {
+    let jo: JsonObject @local? = makeObject()
+    let s: String = jo.toJsonString()
+    println(s)
+}
+```
+
+运行结果：
+
+```text
+{
+  "hello": "world"
+}
+```
+<!--DelEnd_sink-->
 ### func toJsonString(Int64, Bool, String)
 
 ```cangjie
 public func toJsonString(depth: Int64, bracketInNewLine!: Bool = false, indent!: String = "  "): String
 ```
 
-功能：将 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 转换为 JSON 格式的字符串。该函数将指定初始的缩进深度、第一个括号后是否换行以及缩进字符串。
+功能：将 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 转换为 JSON 格式的字符串。该函数将指定初始的缩进深度、首括号前是否缩进以及缩进字符串。
 
 参数：
 
 - depth: Int64 - 缩进深度。
-- bracketInNewLine!: Bool - 第一个括号是否换行，如果为 `true`，第一个括号将另起一行并且按照指定的深度缩进。
+- bracketInNewLine!: Bool - 为 `true` 时，在首括号前添加 `depth` 份 `indent`；为 `false` 时不添加该缩进。此参数不插入换行符。
 - indent!: String - 指定的缩进字符串，缩进字符串中只允许空格和制表符的组合，默认为两个空格。
 
 返回值：
@@ -2134,6 +5168,7 @@ public func toJsonString(depth: Int64, bracketInNewLine!: Bool = false, indent!:
 异常：
 
 - IllegalArgumentException - 如果 depth 为负数，或 indent 中存在 ' ' 和 '\t' 以外的字符，则抛出异常。
+- JsonException - 当 JSON 写入深度超过 100，或待序列化的内容中存在值为 NaN 或正负无穷的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 时，抛出异常。
 
 示例：
 
@@ -2173,17 +5208,135 @@ main() {
     }
 ```
 
+<!--Del_sink-->
+### func toJsonString(Int64, Bool, String)
+
+```cangjie
+public exclave func toJsonString(this @local!, depth: Int64, bracketInNewLine!: Bool = false, indent!: String @~local = "  "): String @local!
+```
+
+功能：将当前 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 转换为 JSON 格式的字符串。该函数将指定初始的缩进深度、首括号前是否缩进以及缩进字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+- depth: Int64 - 初始缩进深度，也是 JSON 写入深度的起始值；嵌套值会继续增加写入深度。
+- bracketInNewLine!: Bool - 为 `true` 时，在首括号前添加 `depth` 份 `indent`；为 `false` 时不添加该缩进。此参数不插入换行符。
+- indent!: String @~local - 指定的缩进字符串，缩进字符串中只允许空格和制表符的组合，默认为两个空格。
+
+返回值：
+
+- String @local! - 转换后的 JSON 格式字符串。
+
+异常：
+
+- IllegalArgumentException - 如果 depth 为负数，或 indent 中存在 ' ' 和 '\t' 以外的字符，则抛出异常。
+- JsonException - 当 JSON 写入深度超过 100，或待序列化的内容中存在值为 NaN 或正负无穷的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 时，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    let s: String @local! = jo.toJsonString(1, bracketInNewLine: true, indent: " ")
+    println(String(s))
+}
+```
+
+运行结果：
+
+```text
+ {
+  "hello": "world"
+ }
+```
+<!--DelEnd_sink-->
+
+<!--Del_sink-->
+### func toJsonString(Int64, Bool, String)
+
+```cangjie
+public func toJsonString(this @local?, depth: Int64, bracketInNewLine!: Bool = false, indent!: String @local? = "  "): String
+```
+
+功能：将当前 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 转换为 JSON 格式的字符串。该函数将指定初始的缩进深度、首括号前是否缩进以及缩进字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+- depth: Int64 - 初始缩进深度，也是 JSON 写入深度的起始值；嵌套值会继续增加写入深度。
+- bracketInNewLine!: Bool - 为 `true` 时，在首括号前添加 `depth` 份 `indent`；为 `false` 时不添加该缩进。此参数不插入换行符。
+- indent!: String @local? - 指定的缩进字符串，缩进字符串中只允许空格和制表符的组合，默认为两个空格。
+
+返回值：
+
+- String - 转换后的 JSON 格式字符串。
+
+异常：
+
+- IllegalArgumentException - 如果 depth 为负数，或 indent 中存在 ' ' 和 '\t' 以外的字符，则抛出异常。
+- JsonException - 当 JSON 写入深度超过 100，或待序列化的内容中存在值为 NaN 或正负无穷的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 时，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeObject(): JsonObject @local? {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    jo
+}
+
+main() {
+    let jo: JsonObject @local? = makeObject()
+    let s: String = jo.toJsonString(1, bracketInNewLine: true, indent: " ")
+    println(s)
+}
+```
+
+运行结果：
+
+```text
+ {
+  "hello": "world"
+ }
+```
+<!--DelEnd_sink-->
 ### func toJsonStringWithoutEscaping()
 
 ```cangjie
 public func toJsonStringWithoutEscaping(): String
 ```
 
-功能：将 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 转换为 JSON 格式的 (带有空格换行符) 字符串，不对 html 特殊字符 `&` 转义。
+功能：将 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 转换为 JSON 格式的 (带有空格换行符) 字符串，不对字符串值中的 html 特殊字符 `&` 转义；对象键中的 `&` 仍转义为 `\u0026`。
 
 返回值：
 
 - String - 转换后的 JSON 格式字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 当 JSON 写入深度超过 100，或待序列化的内容中存在值为 NaN 或正负无穷的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 时，抛出异常。
 
 示例：
 
@@ -2219,18 +5372,124 @@ main() {
 }
 ```
 
+<!--Del_sink-->
+### func toJsonStringWithoutEscaping()
+
+```cangjie
+public exclave func toJsonStringWithoutEscaping(this @local!): String @local!
+```
+
+功能：将当前 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 转换为 JSON 格式的 (带有空格换行符) 字符串，不对 html 特殊字符 `&` 转义。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的 JSON 格式字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    let s: String @local! = jo.toJsonStringWithoutEscaping()
+    println(String(s))
+}
+```
+
+运行结果：
+
+```text
+{
+  "hello": "world"
+}
+```
+<!--DelEnd_sink-->
+
+<!--Del_sink-->
+### func toJsonStringWithoutEscaping()
+
+```cangjie
+public func toJsonStringWithoutEscaping(this @local?): String
+```
+
+功能：将当前 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 转换为 JSON 格式的 (带有空格换行符) 字符串，不对 html 特殊字符 `&` 转义。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- String - 转换后的 JSON 格式字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeObject(): JsonObject @local? {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    jo
+}
+
+main() {
+    let jo: JsonObject @local? = makeObject()
+    let s: String = jo.toJsonStringWithoutEscaping()
+    println(s)
+}
+```
+
+运行结果：
+
+```text
+{
+  "hello": "world"
+}
+```
+<!--DelEnd_sink-->
 ### func toJsonStringWithoutEscaping(Int64, Bool, String)
 
 ```cangjie
 public func toJsonStringWithoutEscaping(depth: Int64, bracketInNewLine!: Bool = false, indent!: String = "  "): String
 ```
 
-功能：将 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 转换为 JSON 格式的字符串。该函数将指定初始的缩进深度、第一个括号后是否换行以及缩进字符串，不对 html 特殊字符 `&` 转义。
+功能：将 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 转换为 JSON 格式的字符串。该函数将指定初始的缩进深度、首括号前是否缩进以及缩进字符串，不对字符串值中的 html 特殊字符 `&` 转义；对象键中的 `&` 仍转义为 `\u0026`。
 
 参数：
 
 - depth: Int64 - 缩进深度。
-- bracketInNewLine!: Bool - 第一个括号是否换行，如果为 `true`，第一个括号将另起一行并且按照指定的深度缩进。
+- bracketInNewLine!: Bool - 为 `true` 时，在首括号前添加 `depth` 份 `indent`；为 `false` 时不添加该缩进。此参数不插入换行符。
 - indent!: String - 指定的缩进字符串，缩进字符串中只允许空格和制表符的组合，默认为两个空格。
 
 返回值：
@@ -2240,6 +5499,7 @@ public func toJsonStringWithoutEscaping(depth: Int64, bracketInNewLine!: Bool = 
 异常：
 
 - IllegalArgumentException - 如果 depth 为负数，或 indent 中存在 ' ' 和 '\t' 以外的字符，则抛出异常。
+- JsonException - 当 JSON 写入深度超过 100，或待序列化的内容中存在值为 NaN 或正负无穷的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 时，抛出异常。
 
 示例：
 
@@ -2276,6 +5536,120 @@ main() {
     }
 ```
 
+<!--Del_sink-->
+### func toJsonStringWithoutEscaping(Int64, Bool, String)
+
+```cangjie
+public exclave func toJsonStringWithoutEscaping(this @local!, depth: Int64, bracketInNewLine!: Bool = false, indent!: String @~local = "  "): String @local!
+```
+
+功能：将当前 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 转换为 JSON 格式的字符串。该函数将指定初始的缩进深度、首括号前是否缩进以及缩进字符串，不对 html 特殊字符 `&` 转义。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+- depth: Int64 - 初始缩进深度，也是 JSON 写入深度的起始值；嵌套值会继续增加写入深度。
+- bracketInNewLine!: Bool - 为 `true` 时，在首括号前添加 `depth` 份 `indent`；为 `false` 时不添加该缩进。此参数不插入换行符。
+- indent!: String @~local - 指定的缩进字符串，缩进字符串中只允许空格和制表符的组合，默认为两个空格。
+
+返回值：
+
+- String @local! - 转换后的 JSON 格式字符串。
+
+异常：
+
+- IllegalArgumentException - 如果 depth 为负数，或 indent 中存在 ' ' 和 '\t' 以外的字符，则抛出异常。
+- JsonException - 当 JSON 写入深度超过 100，或待序列化的内容中存在值为 NaN 或正负无穷的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 时，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    let s: String @local! = jo.toJsonStringWithoutEscaping(1, bracketInNewLine: true, indent: " ")
+    println(String(s))
+}
+```
+
+运行结果：
+
+```text
+ {
+  "hello": "world"
+ }
+```
+<!--DelEnd_sink-->
+
+<!--Del_sink-->
+### func toJsonStringWithoutEscaping(Int64, Bool, String)
+
+```cangjie
+public func toJsonStringWithoutEscaping(this @local?, depth: Int64, bracketInNewLine!: Bool = false, indent!: String @local? = "  "): String
+```
+
+功能：将当前 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 转换为 JSON 格式的字符串。该函数将指定初始的缩进深度、首括号前是否缩进以及缩进字符串，不对 html 特殊字符 `&` 转义。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+- depth: Int64 - 初始缩进深度，也是 JSON 写入深度的起始值；嵌套值会继续增加写入深度。
+- bracketInNewLine!: Bool - 为 `true` 时，在首括号前添加 `depth` 份 `indent`；为 `false` 时不添加该缩进。此参数不插入换行符。
+- indent!: String @local? - 指定的缩进字符串，缩进字符串中只允许空格和制表符的组合，默认为两个空格。
+
+返回值：
+
+- String - 转换后的 JSON 格式字符串。
+
+异常：
+
+- IllegalArgumentException - 如果 depth 为负数，或 indent 中存在 ' ' 和 '\t' 以外的字符，则抛出异常。
+- JsonException - 当 JSON 写入深度超过 100，或待序列化的内容中存在值为 NaN 或正负无穷的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 时，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeObject(): JsonObject @local? {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    jo
+}
+
+main() {
+    let jo: JsonObject @local? = makeObject()
+    let s: String = jo.toJsonStringWithoutEscaping(1, bracketInNewLine: true, indent: " ")
+    println(s)
+}
+```
+
+运行结果：
+
+```text
+ {
+  "hello": "world"
+ }
+```
+<!--DelEnd_sink-->
 ### func toString()
 
 ```cangjie
@@ -2287,6 +5661,10 @@ public func toString(): String
 返回值：
 
 - String - 转换后的字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 当 JSON 写入深度超过 100，或待序列化的内容中存在值为 NaN 或正负无穷的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 时，抛出异常。
 
 示例：
 
@@ -2312,17 +5690,74 @@ main() {
 JsonObject的字符串表示: {"name":"张三","age":25,"student":true}
 ```
 
+<!--Del_sink-->
+### func toString()
+
+```cangjie
+public exclave func toString(this @local?): String @local!
+```
+
+功能：将当前 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 转换为字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- String @local! - 转换后的 `@local!` 字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeObject(): JsonObject @local? {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    jo
+}
+
+main() {
+    let jo: JsonObject @local? = makeObject()
+    let s: String @local! = jo.toString()
+    println("jo=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+jo={"hello":"world"}
+```
+<!--DelEnd_sink-->
 ### func toStringWithoutEscaping()
 
 ```cangjie
 public func toStringWithoutEscaping(): String
 ```
 
-功能：将 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 转换为字符串，不对 html 特殊字符 `&` 转义。
+功能：将 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 转换为字符串，不对字符串值中的 html 特殊字符 `&` 转义；对象键中的 `&` 仍转义为 `\u0026`。
 
 返回值：
 
 - String - 转换后的字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 当 JSON 写入深度超过 100，或待序列化的内容中存在值为 NaN 或正负无穷的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 时，抛出异常。
 
 示例：
 
@@ -2350,6 +5785,108 @@ main() {
 正常转义的字符串: {"name":"张三\u0026李四","description":"学生<25岁"}
 ```
 
+<!--Del_sink-->
+### func toStringWithoutEscaping()
+
+```cangjie
+public exclave func toStringWithoutEscaping(this @local!): String @local!
+```
+
+功能：将当前 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 转换为字符串，不对 html 特殊字符 `&` 转义。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    let s: String @local! = jo.toStringWithoutEscaping()
+    println("jo=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+jo={"hello":"world"}
+```
+<!--DelEnd_sink-->
+
+<!--Del_sink-->
+### func toStringWithoutEscaping()
+
+```cangjie
+public func toStringWithoutEscaping(this @local?): String
+```
+
+功能：将当前 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 转换为字符串，不对 html 特殊字符 `&` 转义。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- String - 转换后的字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeObject(): JsonObject @local? {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    jo
+}
+
+main() {
+    let jo: JsonObject @local? = makeObject()
+    let s: String = jo.toStringWithoutEscaping()
+    println("jo=${s}")
+}
+```
+
+运行结果：
+
+```text
+jo={"hello":"world"}
+```
+<!--DelEnd_sink-->
 ### operator func \[](String)
 
 ```cangjie
@@ -2398,6 +5935,114 @@ main() {
 通过索引操作符获取age: 25
 ```
 
+<!--Del_sink-->
+### operator func \[](String)
+
+```cangjie
+public exclave operator func [](this @local!, key: String @local!): JsonValue @local!
+```
+
+功能：获取 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 中 key 对应的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+- key: String @local! - 指定的键。
+
+返回值：
+
+- [JsonValue](encoding_json_package_classes.md#class-jsonvalue) @local! - 键对应的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果 key 在 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 中不存在，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    let v2: JsonValue @local! = jo[k]
+    let js: JsonString @local! = v2.asString()
+    let sv: String @local! = js.getValue()
+    println("value=${String(sv)}")
+}
+```
+
+运行结果：
+
+```text
+value=world
+```
+<!--DelEnd_sink-->
+
+<!--Del_sink-->
+### operator func \[](String)
+
+```cangjie
+public exclave operator func [](this @local?, key: String @local?): JsonValue @local?
+```
+
+功能：获取 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 中 key 对应的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+- key: String @local? - 指定的键。
+
+返回值：
+
+- [JsonValue](encoding_json_package_classes.md#class-jsonvalue) @local? - 键对应的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果 key 在 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 中不存在，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeObject(): JsonObject @local? {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    jo
+}
+
+main() {
+    let jo: JsonObject @local? = makeObject()
+    let k: String @local? = "hello"
+    let v: JsonValue @local? = jo[k]
+    let s: String @local! = v.toString()
+    println("value=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+value="world"
+```
+<!--DelEnd_sink-->
 ## class JsonString
 
 ```cangjie
@@ -2443,6 +6088,45 @@ main() {
 JsonString("Hello, 世界") 创建的对象: "Hello, 世界"
 ```
 
+<!--Del_sink-->
+### init(this @local!, String @local!)
+
+```cangjie
+public exclave init(this @local!, sv: String @local!)
+```
+
+功能：根据 字符串构造一个 [JsonString](encoding_json_package_classes.md#class-jsonstring) 实例。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 待构造的 `@local!` 实例。
+- sv: String @local! - 用于创建 [JsonString](encoding_json_package_classes.md#class-jsonstring) 的 `@local!` 字符串。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let s: String @local! = "hello"
+    let js: JsonString @local! = JsonString(s) @local!
+    let v: String @local! = js.getValue()
+    println("value=${String(v)}")
+}
+```
+
+运行结果：
+
+```text
+value=hello
+```
+<!--DelEnd_sink-->
 ### func getValue()
 
 ```cangjie
@@ -2476,6 +6160,96 @@ main() {
 JsonString("Hello, 世界") 的值: Hello, 世界
 ```
 
+<!--Del_sink-->
+### func getValue()
+
+```cangjie
+public exclave func getValue(this @local!): String @local!
+```
+
+功能：获取 [JsonString](encoding_json_package_classes.md#class-jsonstring) 中 value 的实际值。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - value 的实际值。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let s: String @local! = "hello"
+    let js: JsonString @local! = JsonString(s) @local!
+    let v: String @local! = js.getValue()
+    println("value=${String(v)}")
+}
+```
+
+运行结果：
+
+```text
+value=hello
+```
+<!--DelEnd_sink-->
+
+<!--Del_sink-->
+### func getValue()
+
+```cangjie
+public exclave func getValue(this @local?): String @local?
+```
+
+功能：获取 [JsonString](encoding_json_package_classes.md#class-jsonstring) 中 value 的实际值。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- String @local? - value 的实际值。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeStr(): JsonString @local? {
+    let s: String @local! = "hello"
+    let js: JsonString @local! = JsonString(s) @local!
+    js
+}
+
+main() {
+    let js: JsonString @local? = makeStr()
+    let v: String @local? = js.getValue()
+    println("value=${String(v)}")
+}
+```
+
+运行结果：
+
+```text
+value=hello
+```
+<!--DelEnd_sink-->
 ### func kind()
 
 ```cangjie
@@ -2513,6 +6287,55 @@ main() {
 变量jsonString的类型是JsString
 ```
 
+<!--Del_sink-->
+### func kind()
+
+```cangjie
+public func kind(this @local?): JsonKind
+```
+
+功能：返回当前 [JsonString](encoding_json_package_classes.md#class-jsonstring) 所属的 [JsonKind](encoding_json_package_enums.md#enum-jsonkind) 类型（JsString）。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- [JsonKind](encoding_json_package_enums.md#enum-jsonkind) - 当前 `@local?` [JsonString](encoding_json_package_classes.md#class-jsonstring) 所属的 [JsonKind](encoding_json_package_enums.md#enum-jsonkind) 类型（JsString）。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeStr(): JsonString @local? {
+    let s: String @local! = "hello"
+    let js: JsonString @local! = JsonString(s) @local!
+    js
+}
+
+main() {
+    let js: JsonString @local? = makeStr()
+    match (js.kind()) {
+        case JsonKind.JsString => println("kind is JsString")
+        case _ => println("kind is not JsString")
+    }
+}
+```
+
+运行结果：
+
+```text
+kind is JsString
+```
+<!--DelEnd_sink-->
 ### func toJsonString()
 
 ```cangjie
@@ -2546,6 +6369,48 @@ main() {
 JsonString("Hello, 世界") 的 JSON 字符串: "Hello, 世界"
 ```
 
+<!--Del_sink-->
+### func toJsonString()
+
+```cangjie
+public exclave func toJsonString(this @local!): String @local!
+```
+
+功能：将当前 [JsonString](encoding_json_package_classes.md#class-jsonstring) 转换为 JSON 格式的 (带有空格换行符) 字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的 JSON 格式字符串。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let s: String @local! = "hello"
+    let js: JsonString @local! = JsonString(s) @local!
+    let r: String @local! = js.toJsonString()
+    println("s=${String(r)}")
+}
+```
+
+运行结果：
+
+```text
+s="hello"
+```
+<!--DelEnd_sink-->
 ### func toJsonStringWithoutEscaping()
 
 ```cangjie
@@ -2582,6 +6447,48 @@ main() {
 正常转义的JSON字符串: "Hello \u0026 World <测试>"
 ```
 
+<!--Del_sink-->
+### func toJsonStringWithoutEscaping()
+
+```cangjie
+public exclave func toJsonStringWithoutEscaping(this @local!): String @local!
+```
+
+功能：将当前 [JsonString](encoding_json_package_classes.md#class-jsonstring) 转换为 JSON 格式的 (带有空格换行符) 字符串，不对 html 特殊字符 `&` 转义。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的 JSON 格式字符串。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let s: String @local! = "hello"
+    let js: JsonString @local! = JsonString(s) @local!
+    let r: String @local! = js.toJsonStringWithoutEscaping()
+    println("s=${String(r)}")
+}
+```
+
+运行结果：
+
+```text
+s="hello"
+```
+<!--DelEnd_sink-->
 ### func toString()
 
 ```cangjie
@@ -2615,6 +6522,53 @@ main() {
 JsonString("Hello, 世界") 的字符串表示: "Hello, 世界"
 ```
 
+<!--Del_sink-->
+### func toString()
+
+```cangjie
+public exclave func toString(this @local?): String @local!
+```
+
+功能：将当前 [JsonString](encoding_json_package_classes.md#class-jsonstring) 转换为字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- String @local! - 转换后的 `@local!` 字符串。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeStr(): JsonString @local? {
+    let s: String @local! = "hello"
+    let js: JsonString @local! = JsonString(s) @local!
+    js
+}
+
+main() {
+    let js: JsonString @local? = makeStr()
+    let s: String @local! = js.toString()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s="hello"
+```
+<!--DelEnd_sink-->
 ### func toStringWithoutEscaping()
 
 ```cangjie
@@ -2651,6 +6605,48 @@ main() {
 正常转义的字符串: "Hello \u0026 World <测试>"
 ```
 
+<!--Del_sink-->
+### func toStringWithoutEscaping()
+
+```cangjie
+public exclave func toStringWithoutEscaping(this @local!): String @local!
+```
+
+功能：将当前 [JsonString](encoding_json_package_classes.md#class-jsonstring) 转换为字符串，不对 html 特殊字符 `&` 转义。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的字符串。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let s: String @local! = "hello"
+    let js: JsonString @local! = JsonString(s) @local!
+    let r: String @local! = js.toStringWithoutEscaping()
+    println("s=${String(r)}")
+}
+```
+
+运行结果：
+
+```text
+s="hello"
+```
+<!--DelEnd_sink-->
 ## class JsonValue
 
 ```cangjie
@@ -2675,13 +6671,13 @@ sealed abstract class JsonValue <: ToString
 public static func fromStr(s: String): JsonValue
 ```
 
-功能：将字符串数据解析为 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)。对于整数，支持前导 '0b'，'0o'，'0x'（不区分大小写），分别表示二进制，八进制和十六进制。字符串解析失败时将打印错误字符及其行数和列数，其中列数从错误字符所在行的非空格字符起开始计算。
+功能：将字符串数据解析为 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)。对于整数，支持前导 '0b'，'0o'，'0x'（不区分大小写），分别表示二进制，八进制和十六进制。非空字符串解析失败时，抛出的 [JsonException](encoding_json_package_exceptions.md#class-jsonexception) 消息包含错误字符及其行数和列数。列号不计行首的 ASCII 空格，但会计入制表符。
 
 JSON 在解析 String 转换为 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 时，转义字符 \\ 之后只能对应 JSON 支持的转义字符（b、f、n、r、t、u、\\、\"、\/），其中 \\u 的格式为：\\uXXXX，X 为十六进制数，例：\\u0041 代表字符 'A'。
 
 参数：
 
-- s: String - 传入字符串，暂不支持 "?" 和特殊字符。
+- s: String - 传入字符串，须符合 JSON 语法。
 
 返回值：
 
@@ -2689,7 +6685,7 @@ JSON 在解析 String 转换为 [JsonValue](encoding_json_package_classes.md#cla
 
 异常：
 
-- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果内存分配失败，或解析字符串出错，抛出异常。
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果解析字符串出错，或解析数字时原生缓冲区分配失败，抛出异常；分配器抛出的 Error 不会在此转换为 JsonException。
 
 示例：
 
@@ -2738,6 +6734,104 @@ JsonValue 是 JsonObject?: true
 异常信息: Invalid JSON data: Parse Error: [Line]: 1, [Pos]: 3, [Error]: Unexpected character: 'x'.
 ```
 
+<!--Del_sink-->
+### static func fromStr(String)
+
+```cangjie
+public exclave static func fromStr(s: String @local!): JsonValue @local!
+```
+
+功能：将 字符串数据解析为 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- s: String @local! - 传入字符串。
+
+返回值：
+
+- [JsonValue](encoding_json_package_classes.md#class-jsonvalue) @local! - 解析得到的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果解析字符串出错，或解析数字时原生缓冲区分配失败，抛出异常；分配器抛出的 Error 不会在此转换为 JsonException。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let s: String @local! = ##"[1, 2, 3]"##
+    let v: JsonValue @local! = JsonValue.fromStr(s)
+    let a: JsonArray @local! = v.asArray()
+    println("size=${a.size()}")
+}
+```
+
+运行结果：
+
+```text
+size=3
+```
+<!--DelEnd_sink-->
+
+<!--Del_sink-->
+### static func fromStr(String)
+
+```cangjie
+public exclave static func fromStr(s: String @local?): JsonValue @local!
+```
+
+功能：将字符串数据解析为 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)，解析前先将该字符串深拷贝为 `@local!` 字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- s: String @local? - 传入字符串。
+
+返回值：
+
+- [JsonValue](encoding_json_package_classes.md#class-jsonvalue) @local! - 解析得到的 [JsonValue](encoding_json_package_classes.md#class-jsonvalue)。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果解析字符串出错，或解析数字时原生缓冲区分配失败，抛出异常；分配器抛出的 Error 不会在此转换为 JsonException。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeStr(): String @local? {
+    let s: String @local! = ##"123"##
+    s
+}
+
+main() {
+    let s: String @local? = makeStr()
+    let v: JsonValue @local! = JsonValue.fromStr(s)
+    let ji: JsonInt @local! = v.asInt()
+    println("value=${ji.getValue()}")
+}
+```
+
+运行结果：
+
+```text
+value=123
+```
+<!--DelEnd_sink-->
 ### func asArray()
 
 ```cangjie
@@ -2788,6 +6882,56 @@ JsonValue转换为JsonArray: [1,2,3,"hello"]
 转换异常: Failed to convert JsonValue to JsonArray.
 ```
 
+<!--Del_sink-->
+### func asArray()
+
+```cangjie
+public exclave func asArray(this @local!): JsonArray @local!
+```
+
+功能：将当前 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 转换为 [JsonArray](encoding_json_package_classes.md#class-jsonarray) 格式。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- [JsonArray](encoding_json_package_classes.md#class-jsonarray) @local! - 转换后的 [JsonArray](encoding_json_package_classes.md#class-jsonarray)。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let ja: JsonArray @local! = JsonArray() @local!
+    let v1: JsonValue @local! = JsonInt(1) @local!
+    let v2: JsonValue @local! = JsonInt(2) @local!
+    ja.add(v1)
+    ja.add(v2)
+    let v: JsonValue @local! = ja
+    let a: JsonArray @local! = v.asArray()
+    println("size=${a.size()}")
+}
+```
+
+运行结果：
+
+```text
+size=2
+```
+<!--DelEnd_sink-->
 ### func asBool()
 
 ```cangjie
@@ -2838,6 +6982,51 @@ JsonBool的值: true
 转换异常: Failed to convert JsonValue to JsonBool.
 ```
 
+<!--Del_sink-->
+### func asBool()
+
+```cangjie
+public exclave func asBool(this @local!): JsonBool @local!
+```
+
+功能：将当前 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 转换为 [JsonBool](encoding_json_package_classes.md#class-jsonbool) 格式。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- [JsonBool](encoding_json_package_classes.md#class-jsonbool) @local! - 转换后的 [JsonBool](encoding_json_package_classes.md#class-jsonbool)。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let v: JsonValue @local! = JsonBool(true) @local!
+    let jb: JsonBool @local! = v.asBool()
+    println("value=${jb.getValue()}")
+}
+```
+
+运行结果：
+
+```text
+value=true
+```
+<!--DelEnd_sink-->
 ### func asFloat()
 
 ```cangjie
@@ -2888,6 +7077,51 @@ JsonFloat的值: 3.141590
 转换异常: Failed to convert JsonValue to JsonFloat.
 ```
 
+<!--Del_sink-->
+### func asFloat()
+
+```cangjie
+public exclave func asFloat(this @local!): JsonFloat @local!
+```
+
+功能：将当前 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 转换为 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 格式。如果当前对象是 [JsonInt](encoding_json_package_classes.md#class-jsonint)，将按其整数值构造 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat)。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) @local! - 转换后的 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat)。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let v: JsonValue @local! = JsonInt(42) @local!
+    let jf: JsonFloat @local! = v.asFloat()
+    println("value=${jf.getValue()}")
+}
+```
+
+运行结果：
+
+```text
+value=42.000000
+```
+<!--DelEnd_sink-->
 ### func asInt()
 
 ```cangjie
@@ -2938,6 +7172,51 @@ JsonInt的值: 42
 转换异常: Failed to convert JsonValue to JsonInt.
 ```
 
+<!--Del_sink-->
+### func asInt()
+
+```cangjie
+public exclave func asInt(this @local!): JsonInt @local!
+```
+
+功能：将当前 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 转换为 [JsonInt](encoding_json_package_classes.md#class-jsonint) 格式。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- [JsonInt](encoding_json_package_classes.md#class-jsonint) @local! - 转换后的 [JsonInt](encoding_json_package_classes.md#class-jsonint)。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let v: JsonValue @local! = JsonInt(123) @local!
+    let ji: JsonInt @local! = v.asInt()
+    println("value=${ji.getValue()}")
+}
+```
+
+运行结果：
+
+```text
+value=123
+```
+<!--DelEnd_sink-->
 ### func asNull()
 
 ```cangjie
@@ -2976,6 +7255,52 @@ main() {
 JsonValue转换为JsonNull: null
 ```
 
+<!--Del_sink-->
+### func asNull()
+
+```cangjie
+public exclave func asNull(this @local!): JsonNull @local!
+```
+
+功能：将当前 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 转换为 [JsonNull](encoding_json_package_classes.md#class-jsonnull) 格式。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- [JsonNull](encoding_json_package_classes.md#class-jsonnull) @local! - 转换后的 [JsonNull](encoding_json_package_classes.md#class-jsonnull)。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let v: JsonValue @local! = JsonNull() @local!
+    let n: JsonNull @local! = v.asNull()
+    let s: String @local! = n.toString()
+    println("n=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+n=null
+```
+<!--DelEnd_sink-->
 ### func asObject()
 
 ```cangjie
@@ -3026,6 +7351,55 @@ JsonObject的大小: 3
 转换异常: Failed to convert JsonValue to JsonObject.
 ```
 
+<!--Del_sink-->
+### func asObject()
+
+```cangjie
+public exclave func asObject(this @local!): JsonObject @local!
+```
+
+功能：将当前 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 转换为 [JsonObject](encoding_json_package_classes.md#class-jsonobject) 格式。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- [JsonObject](encoding_json_package_classes.md#class-jsonobject) @local! - 转换后的 [JsonObject](encoding_json_package_classes.md#class-jsonobject)。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let jo: JsonObject @local! = JsonObject() @local!
+    let k: String @local! = "hello"
+    let v: JsonValue @local! = JsonString("world") @local!
+    jo.put(k, v)
+    let v2: JsonValue @local! = jo
+    let o: JsonObject @local! = v2.asObject()
+    println("size=${o.size()}")
+}
+```
+
+运行结果：
+
+```text
+size=1
+```
+<!--DelEnd_sink-->
 ### func asString()
 
 ```cangjie
@@ -3076,6 +7450,53 @@ JsonString的值: Hello, 世界
 转换异常: Failed to convert JsonValue to JsonString.
 ```
 
+<!--Del_sink-->
+### func asString()
+
+```cangjie
+public exclave func asString(this @local!): JsonString @local!
+```
+
+功能：将当前 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 转换为 [JsonString](encoding_json_package_classes.md#class-jsonstring) 格式。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- [JsonString](encoding_json_package_classes.md#class-jsonstring) @local! - 转换后的 [JsonString](encoding_json_package_classes.md#class-jsonstring)。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 如果转换失败，抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let s: String @local! = "hello"
+    let v: JsonValue @local! = JsonString(s) @local!
+    let js: JsonString @local! = v.asString()
+    let sv: String @local! = js.getValue()
+    println("value=${String(sv)}")
+}
+```
+
+运行结果：
+
+```text
+value=hello
+```
+<!--DelEnd_sink-->
 ### func kind()
 
 ```cangjie
@@ -3119,6 +7540,58 @@ main() {
 JsonValue的类型是JsObject
 ```
 
+<!--Del_sink-->
+### func kind()
+
+```cangjie
+public open func kind(this @local?): JsonKind
+```
+
+功能：返回当前 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 所属的 [JsonKind](encoding_json_package_enums.md#enum-jsonkind) 类型。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- [JsonKind](encoding_json_package_enums.md#enum-jsonkind) - 当前 `@local?` [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 所属的 [JsonKind](encoding_json_package_enums.md#enum-jsonkind) 类型。
+
+异常：
+
+- UnimplementedException - 如果调用绑定到 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 的默认实现（当前对象的具体子类未覆写该 local 版本方法），抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeValue(): JsonValue @local? {
+    let v: JsonValue @local! = JsonInt(123) @local!
+    v
+}
+
+main() {
+    let v: JsonValue @local? = makeValue()
+    match (v.kind()) {
+        case JsonKind.JsInt => println("kind is JsInt")
+        case _ => println("kind is not JsInt")
+    }
+}
+```
+
+运行结果：
+
+```text
+kind is JsInt
+```
+<!--DelEnd_sink-->
 ### func toJsonString()
 
 ```cangjie
@@ -3130,6 +7603,10 @@ public func toJsonString(): String
 返回值：
 
 - String - 转换后的 JSON 格式字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 当具体子类的序列化实现失败时抛出异常，例如 JSON 写入深度超过 100，或 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 的值为 NaN 或正负无穷。
 
 示例：
 
@@ -3161,17 +7638,67 @@ JsonValue转换为JSON字符串:
 }
 ```
 
+<!--Del_sink-->
+### func toJsonString()
+
+```cangjie
+public open func toJsonString(this @local!): String @local!
+```
+
+功能：将当前 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 转换为 JSON 格式的 (带有空格换行符) 字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的 JSON 格式字符串。
+
+异常：
+
+- JsonException - 当具体子类的序列化实现失败时抛出异常，例如 JSON 写入深度超过 100，或 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 的值为 NaN 或正负无穷。
+- UnimplementedException - 如果调用绑定到 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 的默认实现（当前对象的具体子类未覆写该 local 版本方法），抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let v: JsonValue @local! = JsonInt(123) @local!
+    let s: String @local! = v.toJsonString()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s=123
+```
+<!--DelEnd_sink-->
 ### func toJsonStringWithoutEscaping()
 
 ```cangjie
 public func toJsonStringWithoutEscaping(): String
 ```
 
-功能：将 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 转换为 JSON 格式的 (带有空格换行符) 字符串，不对 html 特殊字符 `&` 转义。
+功能：将 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 转换为 JSON 格式的 (带有空格换行符) 字符串，不对字符串值中的 html 特殊字符 `&` 转义；对象键中的 `&` 仍转义为 `\u0026`。
 
 返回值：
 
 - String - 转换后的 JSON 格式字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 当具体子类的序列化实现失败时抛出异常，例如 JSON 写入深度超过 100，或 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 的值为 NaN 或正负无穷。
 
 示例：
 
@@ -3204,6 +7731,52 @@ main() {
 }
 ```
 
+<!--Del_sink-->
+### func toJsonStringWithoutEscaping()
+
+```cangjie
+public open func toJsonStringWithoutEscaping(this @local!): String @local!
+```
+
+功能：将当前 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 转换为 JSON 格式的 (带有空格换行符) 字符串，不对 html 特殊字符 `&` 转义。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的 JSON 格式字符串。
+
+异常：
+
+- JsonException - 当具体子类的序列化实现失败时抛出异常，例如 JSON 写入深度超过 100，或 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 的值为 NaN 或正负无穷。
+- UnimplementedException - 如果调用绑定到 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 的默认实现（当前对象的具体子类未覆写该 local 版本方法），抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let v: JsonValue @local! = JsonInt(123) @local!
+    let s: String @local! = v.toJsonStringWithoutEscaping()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s=123
+```
+<!--DelEnd_sink-->
 ### func toString()
 
 ```cangjie
@@ -3215,6 +7788,10 @@ public func toString(): String
 返回值：
 
 - String - 转换后的字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 当具体子类的序列化实现失败时抛出异常，例如 JSON 写入深度超过 100，或 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 的值为 NaN 或正负无穷。
 
 示例：
 
@@ -3238,17 +7815,72 @@ main() {
 JsonValue转换为字符串: {"name":"张三","age":25}
 ```
 
+<!--Del_sink-->
+### func toString()
+
+```cangjie
+public open func toString(this @local?): String @local!
+```
+
+功能：将当前 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 转换为字符串。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local? - 调用该方法的当前 `@local?` 实例。
+
+返回值：
+
+- String @local! - 转换后的 `@local!` 字符串。
+
+异常：
+
+- JsonException - 当具体子类的序列化实现失败时抛出异常，例如 JSON 写入深度超过 100，或 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 的值为 NaN 或正负无穷。
+- UnimplementedException - 如果调用绑定到 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 的默认实现（当前对象的具体子类未覆写该 local 版本方法），抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+exclave func makeValue(): JsonValue @local? {
+    let v: JsonValue @local! = JsonInt(123) @local!
+    v
+}
+
+main() {
+    let v: JsonValue @local? = makeValue()
+    let s: String @local! = v.toString()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s=123
+```
+<!--DelEnd_sink-->
 ### func toStringWithoutEscaping()
 
 ```cangjie
 public func toStringWithoutEscaping(): String
 ```
 
-功能：将 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 转换为字符串，不对 html 特殊字符 `&` 转义。
+功能：将 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 转换为字符串，不对字符串值中的 html 特殊字符 `&` 转义；对象键中的 `&` 仍转义为 `\u0026`。
 
 返回值：
 
 - String - 转换后的字符串。
+
+异常：
+
+- [JsonException](encoding_json_package_exceptions.md#class-jsonexception) - 当具体子类的序列化实现失败时抛出异常，例如 JSON 写入深度超过 100，或 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 的值为 NaN 或正负无穷。
 
 示例：
 
@@ -3274,3 +7906,50 @@ main() {
 不转义HTML特殊字符的字符串: {"description":"Hello & World <测试>"}
 正常转义的字符串: {"description":"Hello \u0026 World <测试>"}
 ```
+
+<!--Del_sink-->
+### func toStringWithoutEscaping()
+
+```cangjie
+public open func toStringWithoutEscaping(this @local!): String @local!
+```
+
+功能：将当前 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 转换为字符串，不对 html 特殊字符 `&` 转义。
+
+> **注意：**
+>
+> - 实验性 API，仅用于测试验证，规范和实现仍可能发生变化，请谨慎使用。
+> - 不支持平台：OpenHarmony。
+
+参数：
+
+- this @local! - 调用该方法的当前 `@local!` 实例。
+
+返回值：
+
+- String @local! - 转换后的字符串。
+
+异常：
+
+- JsonException - 当具体子类的序列化实现失败时抛出异常，例如 JSON 写入深度超过 100，或 [JsonFloat](encoding_json_package_classes.md#class-jsonfloat) 的值为 NaN 或正负无穷。
+- UnimplementedException - 如果调用绑定到 [JsonValue](encoding_json_package_classes.md#class-jsonvalue) 的默认实现（当前对象的具体子类未覆写该 local 版本方法），抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.encoding.json.*
+
+main() {
+    let v: JsonValue @local! = JsonInt(123) @local!
+    let s: String @local! = v.toStringWithoutEscaping()
+    println("s=${String(s)}")
+}
+```
+
+运行结果：
+
+```text
+s=123
+```
+<!--DelEnd_sink-->
