@@ -791,7 +791,7 @@ Return Value:
 public func tlsConfig(config: TlsConfig): ClientBuilder
 ```
 
-Function: Set the TLS layer configuration. By default, it is not configured.
+Function: Set the TLS layer configuration. By default, it is not configured. When serverName is not specified in the TLS client configuration, the client uses the host name from the request URL as the SNI and verifies the server certificate against it; the TLS handshake fails if the host name is empty.
 
 Parameters:
 

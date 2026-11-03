@@ -270,7 +270,7 @@ class HttpEngine1 {
             // reconnect and resend the request
             if (isIdempotentMethod(request.method)) {
                 httpLogDebug(logger, "[HttpEngine1#sendRequest] Client1_1 connection failed, reconnect and resend request")
-                return reconnectSendRequest(request, isToProxy)
+                return reconnectSendRequest(request, isToProxy, isToHttpsProxy)
             } else {
                 throw e
             }
@@ -279,7 +279,7 @@ class HttpEngine1 {
             if (isFromPool && isIdempotentMethod(request.method)) {
                 httpLogDebug(logger,
                     "[HttpEngine1#sendRequest] Client1_1 connection failed, reconnect and resend request")
-                return reconnectSendRequest(request, isToProxy)
+                return reconnectSendRequest(request, isToProxy, isToHttpsProxy)
             } else {
                 throw e
             }
@@ -289,13 +289,14 @@ class HttpEngine1 {
         }
     }
 
-    private func reconnectSendRequest(request: HttpRequest, isToProxy: Bool): HttpResponse {
+    private func reconnectSendRequest(request: HttpRequest, isToProxy: Bool, isToHttpsProxy: Bool): HttpResponse {
         let isTls = if (request.url.scheme == "https") {
             1
         } else {
             0
         }
-        let (connNode, _) = getConn(request, isTls, isToProxy, forceNew: true)
+        let (connNode, _) = getConn(request, isTls, isToProxy, forceNew: true,
+            isToHttpsProxy: isToHttpsProxy)
         try {
             return connNode.sendRequest(request)
         } catch (e: Exception) {
@@ -422,7 +423,17 @@ class HttpEngine1 {
         }
         httpLogDebug(logger,"[HttpEngine1#connect] get conn finish")
         if (isTls) {
-            let tlsConn = getGlobalTlsKit().getTlsClient(conn, tlsConfig.getOrThrow(), session: None)
+            // The TLS handshake always targets the origin server (also when it
+            // happens inside a proxy tunnel), so certificates are verified
+            // against the request host name; otherwise the TLS peer is the
+            // engine peer address itself.
+            let tlsHost = if (isToHttpsProxy) {
+                request.url.hostName
+            } else {
+                addrport.addr
+            }
+            let effectiveConfig = withTlsServerNameFallback(tlsConfig.getOrThrow(), tlsHost)
+            let tlsConn = getGlobalTlsKit().getTlsClient(conn, effectiveConfig, session: None)
             try {
                 tlsConn.handshake(timeout: None)
             } catch (e: Exception) {

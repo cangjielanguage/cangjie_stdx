@@ -125,7 +125,7 @@ Type: Int32
 public mut prop serverName: ?String
 ```
 
-Function: Reads/writes the required server host address (SNI). `None` means not required.
+Function: Reads/writes the server name for the TLS SNI (Server Name Indication) extension. During the TLS handshake, the client declares the host it wants to access, so the server can return the corresponding certificate, and the server certificate is verified against this name. When set to `None`, the behavior is decided by the caller: a direct `TlsSocket.client` handshake sends no SNI extension and the server responds with its default certificate for the current IP; an `stdx.net.http` client request uses the host name from the request URL as the SNI and verifies the server certificate against it (the handshake fails if the host name is empty).
 
 Type: ?String
 

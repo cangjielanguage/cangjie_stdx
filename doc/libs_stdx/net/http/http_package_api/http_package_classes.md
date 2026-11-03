@@ -2048,7 +2048,7 @@ public func readTimeout(timeout: Duration): ClientBuilder
 public func tlsConfig(config: TlsConfig): ClientBuilder
 ```
 
-功能：设置 TLS 层配置，默认不对其进行设置。
+功能：设置 TLS 层配置，默认不对其进行设置。当 TLS 客户端配置未指定 serverName 时，客户端将使用请求 URL 中的主机名作为 SNI 并校验服务器证书；主机名为空时 TLS 握手失败。
 
 参数：
 
