@@ -58,5 +58,12 @@ extern int CJ_TLS_DYN_SetHostNameForVerify(SSL* stream, const char* name, DynMsg
         return 0;
     }
 
+    /* An IP literal must be validated against the iPAddress SAN instead of the
+     * DNS SAN, so try the IP-aware API first; it fails (without side effects)
+     * for non-IP names and we fall back to the DNS hostname API. */
+    if (DYN_X509_VERIFY_PARAM_set1_ip_asc(param, name, dynMsg) == 1) {
+        return 1;
+    }
+
     return DYN_X509_VERIFY_PARAM_set1_host(param, name, 0, dynMsg);
 }

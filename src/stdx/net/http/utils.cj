@@ -10,6 +10,8 @@ package stdx.net.http
 
 import stdx.encoding.base64.toBase64String
 import stdx.encoding.url.{URL, Form}
+import stdx.net.tls.TlsClientConfig
+import stdx.net.tls.common.{TlsConfig, TlsException}
 import std.collection.*
 import std.convert.Parsable
 import std.fs.*
@@ -316,6 +318,34 @@ func parseProxyAuth(url: URL): ?String {
         auth = "Basic ${basicAuth(url.rawUserInfo.username(), url.rawUserInfo.password() ?? "")}"
     }
     return auth
+}
+
+/*
+ * Prepare a TLS client config for a handshake that targets `hostName`.
+ *
+ * When the user has not configured `serverName` for the client config,
+ * derive a per-connection config that verifies the server certificate
+ * against `hostName` (also used as SNI). The user config is never mutated
+ * because `TlsClientConfig` is a value type.
+ *
+ * Fail closed: an empty host name cannot be used for certificate
+ * verification (and SNI). Silently falling back here would skip hostname
+ * verification entirely, so reject it the same way `setHostNameForVerify`
+ * rejects invalid names.
+ *
+ * @throws TlsException if `hostName` is an empty string.
+ */
+func withTlsServerNameFallback(config: TlsConfig, hostName: String): TlsConfig {
+    if (hostName.isEmpty()) {
+        throw TlsException("Failed to set hostname for verification: host name is empty.")
+    }
+    let clientConfig = config as TlsClientConfig ?? return config // cjlint-ignore !G.EXP.03
+    if (clientConfig.serverName.isSome()) {
+        return config
+    }
+    var effective = clientConfig
+    effective.serverName = Some(hostName)
+    return effective
 }
 
 // rules of boundary  rfc2046#section-5.1.1
