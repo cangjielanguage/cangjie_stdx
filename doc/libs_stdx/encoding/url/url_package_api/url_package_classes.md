@@ -148,10 +148,10 @@ public func get(key: String): Option<String>
 
 情况举例：
 
-- 当 query 组件部分是 `a=b` 时，`form.get("a")`获得 `Some(b)`。
-- 当 query 组件部分是 `a=` 时，`form.get("a")`获得 `Some()`。
-- 当 query 组件部分是 `a` 时，`form.get("a")`获得 `Some()`。
-- 当 query 组件部分是 `a` 时，`form.get("c")`获得 `None`。
+- 当 query 组件部分是 `a=b` 时，`form.get("a")` 获得 `Some(b)`。
+- 当 query 组件部分是 `a=` 时，`form.get("a")` 获得 `Some()`。
+- 当 query 组件部分是 `a` 时，`form.get("a")` 获得 `Some()`。
+- 当 query 组件部分是 `a` 时，`form.get("c")` 获得 `None`。
 
 参数：
 
@@ -417,7 +417,7 @@ public class URL <: ToString {
 
 功能：该类提供解析 [URL](url_package_classes.md#class-url) 的函数以及其他相关函数。
 
-字符串中被百分号`%`编码的内容会被解码，保存在相应的组件之中，而初始值保存在相应的 `raw` 属性之中。[URL](url_package_classes.md#class-url) 中的用户名和密码部分（如果存在的话）也会按照 RFC 3986 协议的说明被解析。
+字符串中被百分号 `%` 编码的内容会被解码，保存在相应的组件之中，而初始值保存在相应的 `raw` 属性之中。[URL](url_package_classes.md#class-url) 中的用户名和密码部分（如果存在的话）也会按照 RFC 3986 协议的说明被解析。
 
 > **注意：**
 >
@@ -1127,7 +1127,7 @@ public static func mergePaths(basePath: String, refPath: String): String
 
 功能：合并两个路径。
 
-合并规则：将引用路径 refPath 追加到基础路径 basePath 的最后一段。如果 refPath 是绝对路径，结果就是 refPath 原本的值。如果 refPath 不是绝对路径，则将自身拼接至 basePath 最后一个 `/` 后，所有结果最终都会进行标准化（路径中的`.`字符，`..`字符，以及多个连续的 `/` 字符都会被优化）。具体行为可以参照下面示例。更详细行为参考 RFC 3986 协议。
+合并规则：将引用路径 refPath 追加到基础路径 basePath 的最后一段。如果 refPath 是绝对路径，结果就是 refPath 原本的值。如果 refPath 不是绝对路径，则将自身拼接至 basePath 最后一个 `/` 后，所有结果最终都会进行标准化（路径中的 `.` 字符，`..` 字符，以及多个连续的 `/` 字符都会被优化）。具体行为可以参照下面示例。更详细行为参考 RFC 3986 协议。
 
 如需合并 URL 请使用 [resolveURL](#func-resolveurlurl)。
 

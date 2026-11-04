@@ -48,7 +48,7 @@ crypto 包提供安全随机数功能和提供国密 SM4 对称加解密。
 
 |                 类名              |                功能                 |
 | --------------------------------- | ---------------------------------- |
-| [SecureRandom](./crypto_package_api/crypto_package_classes.md#class-securerandom) | 安全随机数。    |
+| [SecureRandom](./crypto_package_api/crypto_package_classes.md#class-securerandom) | 用于生成加密安全的伪随机数。    |
 | [SM4](./crypto_package_api/crypto_package_classes.md#class-sm4) | 提供国密 SM4 对称加解密。    |
 
 ### 结构体

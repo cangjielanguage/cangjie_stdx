@@ -16,4 +16,4 @@ compress 是一个压缩与归档能力的集合模块，旨在提供流式、�
 
 |                 类名              |                功能                 |
 | --------------------------------- | ---------------------------------- |
-| [TarGzip](./compress_package_api/compress_package_classes.md#class-targzip) | 一键式 tar.gz 压缩解压组合工具 |
+| [TarGzip](./compress_package_api/compress_package_classes.md#class-targzip) | 一键式 tar.gz 压缩解压组合工具。 |

@@ -608,7 +608,7 @@ public class JsonWriter {
 
 > **注意：**
 >
-> [JsonWriter](encoding_json_stream_package_classes.md#class-jsonwriter) 中使用缓存来减少写入 Stream 时的 IO 次数，在结束使用 [JsonWriter](encoding_json_stream_package_classes.md#class-jsonwriter) 之前需要调用 flush 函数来确保缓存中的数据全部写入 Stream。
+> [JsonWriter](encoding_json_stream_package_classes.md#class-jsonwriter) 中使用缓冲区来减少写入 Stream 时的 IO 次数，在结束使用 [JsonWriter](encoding_json_stream_package_classes.md#class-jsonwriter) 之前需要调用 flush 函数来确保缓冲区中的数据全部写入 Stream。
 
 示例：
 
@@ -803,7 +803,7 @@ main() {
 public func flush(): Unit
 ```
 
-功能：将缓存中的数据写入 out，并且调用 out 的 flush 方法。
+功能：将缓冲区中的数据写入 out，并且调用 out 的 flush 方法。
 
 示例：
 
