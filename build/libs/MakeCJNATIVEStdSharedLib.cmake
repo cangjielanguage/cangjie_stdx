@@ -124,8 +124,6 @@ function(make_cangjie_lib target_name)
         # Hot reload relies on .gnu.hash section.
         if(MINGW)
             list(APPEND flags_to_compile "-static")
-            # Use -fstack-protector-all to let gcc help judge which libssp to link against. Don't use simply -lssp.
-            list(APPEND flags_to_compile "-fstack-protector-all")
         elseif(NOT DARWIN)
             # MinGW ld doesn't support --hash-style
             list(APPEND flags_to_compile "${LINKER_OPTION_PREFIX}--hash-style=both")
