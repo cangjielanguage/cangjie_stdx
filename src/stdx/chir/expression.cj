@@ -30,7 +30,7 @@ internal enum ExprKind {
     Invalid |
 
     // terminator
-    Goto | Branch | MultiBranch | Exit |
+    Goto | Branch | MultiBranch | Exit | Exclave |
     TryApply | TryInvoke | TryIntrinsic |
     RaiseException | TrySpawn | TryNumericCast |
     TryAllocate | TryRawArrayAllocate |
@@ -57,7 +57,7 @@ internal enum ExprKind {
 
     // others
     Constant | Debug | Tuple | InstanceOf | GetException | Spawn | Lambda | GetInstantiateValue |
-    Apply | Invoke | Intrinsic | GetRtti | GetRttiStatic
+    Apply | Invoke | Intrinsic | GetRtti | GetRttiStatic | StartRegion | EndRegion
 
     internal func isBinary(): Bool {
         match (this) {
@@ -107,6 +107,7 @@ internal enum ExprKind {
                 | Branch
                 | MultiBranch
                 | Exit
+                | Exclave
                 | TryApply
                 | TryInvoke
                 | TryIntrinsic
@@ -842,10 +843,7 @@ sealed abstract class Expression <: Base & ToString & Hashable & Equatable<Expre
     public open func toString(): String {
         let res = StringBuilder()
         if (let Some(v) <- _result) {
-            if (v._isRetValue) {
-                res.append("[ret] ")
-            }
-            res.append(v.identifier + ": " + v.ty.toString() + " = ")
+            res.append(localVarResultToString(v))
         }
         res.append(kindToString() + "(" + operandsToString() + ")")
         res.append(getCommentString())
@@ -1381,6 +1379,118 @@ public class Exit <: Expression & Equatable<Exit> {
      * @return true when both references are identical.
      */
     public operator func==(other: Exit): Bool {
+        return refEq(this, other)
+    }
+}
+
+/**
+ * Exclave terminator with an isolated body block group.
+ */
+public class Exclave <: Expression & Equatable<Exclave> {
+    internal init() {
+        super(ExprKind.Exclave)
+        addOperandUsers()
+    }
+
+    /**
+     * Gets the `body` property.
+     * @type { BlockGroup }
+     */
+    public prop body: BlockGroup {
+        get() {
+            assert(!_blockGroups.isEmpty(), "Exclave: body is not set")
+            return _blockGroups[0]
+        }
+    }
+
+    /**
+     * Creates an exclave terminator.
+     * @return The created Exclave expression.
+     */
+    public static func create(): Exclave {
+        Exclave()
+    }
+
+    /**
+     * Initializes the exclave body block group.
+     */
+    public func initBody(): Unit {
+        let bodyId = topLevelFunc.generateBlockGroupId().toString()
+        let body = BlockGroup(bodyId, this)
+        body._attributes.setAttr(Attribute.PluginAdded, true)
+        addBlockGroup(body)
+        let bb = body.appendBlock()
+        body.setEntryBlock(bb)
+    }
+
+    /**
+     * Compares Exclave references.
+     * @param other Expression to compare.
+     * @return true when both references are identical.
+     */
+    public operator func==(other: Exclave): Bool {
+        return refEq(this, other)
+    }
+}
+
+/**
+ * Marks the start of a memory region.
+ */
+public class StartRegion <: Expression & Equatable<StartRegion> {
+    internal init() {
+        super(ExprKind.StartRegion)
+        addOperandUsers()
+    }
+
+    /**
+     * Creates a start-region marker expression.
+     * @param retTy Result type, typically Unit.
+     * @return The created StartRegion expression.
+     */
+    public static func create(retTy: Type): StartRegion {
+        let expr = StartRegion()
+        let result = LocalVar(retTy, expr)
+        expr._result = result
+        return expr
+    }
+
+    /**
+     * Compares StartRegion references.
+     * @param other Expression to compare.
+     * @return true when both references are identical.
+     */
+    public operator func==(other: StartRegion): Bool {
+        return refEq(this, other)
+    }
+}
+
+/**
+ * Marks the end of a memory region.
+ */
+public class EndRegion <: Expression & Equatable<EndRegion> {
+    internal init() {
+        super(ExprKind.EndRegion)
+        addOperandUsers()
+    }
+
+    /**
+     * Creates an end-region marker expression.
+     * @param retTy Result type, typically Unit.
+     * @return The created EndRegion expression.
+     */
+    public static func create(retTy: Type): EndRegion {
+        let expr = EndRegion()
+        let result = LocalVar(retTy, expr)
+        expr._result = result
+        return expr
+    }
+
+    /**
+     * Compares EndRegion references.
+     * @param other Expression to compare.
+     * @return true when both references are identical.
+     */
+    public operator func==(other: EndRegion): Bool {
         return refEq(this, other)
     }
 }
@@ -2377,9 +2487,10 @@ public class Lambda <: Expression & Equatable<Lambda> {
     internal let _funcType: FuncType
     internal var _genericTypeParams = ArrayList<GenericType>()
     internal let _identifier: String
+    internal var _genericDecl: ?Lambda = None
     internal var _isCompileTimeValue: Bool = false
     internal var _isLocalFunc: Bool = false
-    internal var _paramDftValHostFunc: ?Lambda = None
+    internal var _paramDftValHostParam: ?Parameter = None
     internal var _parameters = ArrayList<Parameter>()
     internal var _returnValue: ?LocalVar = None
     internal let _srcCodeName: String
@@ -2489,15 +2600,28 @@ public class Lambda <: Expression & Equatable<Lambda> {
     }
 
     /**
-     * Host lambda used for default-parameter evaluation, when present.
-     * @type { ?Lambda }
+     * Host parameter of the default-value desugar function, when present.
+     * @type { ?Parameter }
      */
-    public mut prop paramDftValHostFunc: ?Lambda {
+    public mut prop paramDftValHostParam: ?Parameter {
         get() {
-            return _paramDftValHostFunc
+            return _paramDftValHostParam
         }
         set(v) {
-            _paramDftValHostFunc = v
+            _paramDftValHostParam = v
+        }
+    }
+
+    /**
+     * Generic Lambda of an instantiated nested local func, when present.
+     * @type { ?Lambda }
+     */
+    public mut prop genericDecl: ?Lambda {
+        get() {
+            return _genericDecl
+        }
+        set(v) {
+            _genericDecl = v
         }
     }
 
@@ -2533,7 +2657,7 @@ public class Lambda <: Expression & Equatable<Lambda> {
      */
     public func initBody(): Unit {
         let bodyId = topLevelFunc.generateBlockGroupId().toString()
-        let body = BlockGroup(bodyId, _result.getOrThrow())
+        let body = BlockGroup(bodyId, this)
         body._attributes.setAttr(Attribute.PluginAdded, true)
         addBlockGroup(body)
         let bb = body.appendBlock()
@@ -2563,8 +2687,11 @@ public class Lambda <: Expression & Equatable<Lambda> {
         if (!_srcCodeName.isEmpty()) {
             comments.add("srcCodeName: " + _srcCodeName)
         }
-        if (_paramDftValHostFunc.isSome()) {
-            comments.add("paramDftValHostFunc: " + _paramDftValHostFunc.getOrThrow().identifier)
+        if (let Some(host) <- _paramDftValHostParam) {
+            comments.add(paramDftValHostParamComment(host))
+        }
+        if (let Some(gDecl) <- _genericDecl) {
+            comments.add("genericDecl: " + gDecl.identifier)
         }
         if (comments.isEmpty()) {
             return ""

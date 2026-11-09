@@ -70,6 +70,8 @@ internal enum Attribute <: ToString {
     ObjCExport | ///< Mark whether it's a declaration exported to Objective-C.
     MatchPattern | ///< Mark CFG nodes that evaluate patterns, excluding case bodies and nested expressions.
     PluginAdded | ///< Mark that the declaration is added by chir plugin.
+    Demode | ///< Mark instance member as @Demode (@~local regardless of receiver modal).
+    Exclave | ///< Mark a function whether it's exclave.
 
     AttrEnd
 
@@ -120,7 +122,9 @@ internal enum Attribute <: ToString {
             case ObjCExport             => "objCExport"
             case MatchPattern           => "matchPattern"
             case PluginAdded            => "pluginAdded"
-            case AttrBegin | AttrEnd => "UNKNOWN"
+            case Demode                 => "demode"
+            case Exclave                => "exclave"
+            case AttrBegin | AttrEnd    => "UNKNOWN"
         }
     }
 
@@ -167,7 +171,9 @@ internal enum Attribute <: ToString {
             case DoesNotThrow           => ObjCExport
             case ObjCExport             => MatchPattern
             case MatchPattern           => PluginAdded
-            case PluginAdded            => AttrEnd
+            case PluginAdded            => Demode
+            case Demode                 => Exclave
+            case Exclave                => AttrEnd
             case AttrEnd                => AttrEnd
         }
     }
@@ -216,6 +222,8 @@ internal enum Attribute <: ToString {
             case ObjCExport             => 38
             case MatchPattern           => 39
             case PluginAdded            => 40
+            case Demode                 => 41
+            case Exclave                => 42
             case AttrEnd                => ATTR_SIZE  // Invalid, return size to indicate error
         }
     }

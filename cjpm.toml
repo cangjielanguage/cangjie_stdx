@@ -68,26 +68,31 @@
   compile-option = "-L build-script-cache/flatbuffers-private/flatbuffers -lflatbuffers"
 
 [target.x86_64-unknown-linux-gnu]
+  compile-option = "--experimental --enable-local-mode"
   link-option = "-L target/linux_ohos_aarch64_cjnative/static/stdx -L target/linux_x86_64_cjnative/static/stdx -L target/mock/linux_x86_64_cjnative/static/stdx -lstdx.fuzzFFI"
   [target.x86_64-unknown-linux-gnu.bin-dependencies.package-option]
     flatbuffers = "./build-script-cache/flatbuffers-private/flatbuffers/flatbuffers.cjo"
 
 [target.aarch64-unknown-linux-gnu]
+  compile-option = "--experimental --enable-local-mode"
   link-option = "-L target/linux_ohos_aarch64_cjnative/static/stdx -L target/linux_aarch64_cjnative/static/stdx -L target/mock/linux_aarch64_cjnative/static/stdx -lstdx.fuzzFFI"
   [target.aarch64-unknown-linux-gnu.bin-dependencies.package-option]
     flatbuffers = "./build-script-cache/flatbuffers-private/flatbuffers/flatbuffers.cjo"
 
 [target.aarch64-apple-darwin]
+  compile-option = "--experimental --enable-local-mode"
   link-option = "-L target/darwin_aarch64_cjnative/static/stdx -L /tmp/stdx/target/release/stdx -L target/mock/darwin_aarch64_cjnative/static/stdx -undefined suppress -flat_namespace -lstdx.fuzzFFI"
   [target.aarch64-apple-darwin.bin-dependencies.package-option]
     flatbuffers = "./build-script-cache/flatbuffers-private/flatbuffers/flatbuffers.cjo"
 
 [target.x86_64-apple-darwin]
+  compile-option = "--experimental --enable-local-mode"
   link-option = "-L target/darwin_x86_64_cjnative/static/stdx -L /tmp/stdx/target/release/stdx -L target/mock/darwin_x86_64_cjnative/static/stdx -undefined suppress -flat_namespace -lstdx.fuzzFFI"
   [target.x86_64-apple-darwin.bin-dependencies.package-option]
     flatbuffers = "./build-script-cache/flatbuffers-private/flatbuffers/flatbuffers.cjo"
 
 [target.x86_64-w64-mingw32]
+  compile-option = "--experimental --enable-local-mode"
   link-option = "-L target/windows_x86_64_cjnative/static/stdx -L target/mock/windows_x86_64_cjnative/static/stdx -lpthread -lws2_32 -lcrypt32"
   [target.x86_64-w64-mingw32.bin-dependencies.package-option]
     flatbuffers = "./build-script-cache/flatbuffers-private/flatbuffers/flatbuffers.cjo"

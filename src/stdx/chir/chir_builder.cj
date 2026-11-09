@@ -418,6 +418,17 @@ public class CHIRBuilder {
     }
 
     /**
+     * Creates an exclave terminator with an initialized body block group.
+     * @return The created Exclave expression.
+     */
+    public func createExclave(): Exclave {
+        let expr = Exclave.create()
+        insertAndAdvance(expr)
+        expr.initBody()
+        return expr
+    }
+
+    /**
      * Performs the public behavior of `createField`.
      * @param val The `val` parameter.
      * @param path The `path` parameter.

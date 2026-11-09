@@ -17898,15 +17898,15 @@ public mut prop returnValue: LocalVar
 
 类型：[LocalVar](#class-localvar)
 
-### prop paramDftValHostFunc
+### prop paramDftValHostParam
 
 ```cangjie
-public mut prop paramDftValHostFunc: ?Lambda
+public mut prop paramDftValHostParam: ?Parameter
 ```
 
-功能：用于默认参数求值的宿主 Lambda（若有）；无时为 `None`。
+功能：默认值解糖函数对应的宿主形参（若有）；无时为 `None`。
 
-类型：?[Lambda](#class-lambda)
+类型：?[Parameter](#class-parameter)
 
 示例：
 
@@ -17923,19 +17923,59 @@ main() {
     let lambdaType = FuncType.get([], UnitType.get())
     let expr = Lambda.create(lambdaType, "lambda_m", "myLambda", ArrayList<GenericType>())
     block.appendExpr(expr)
-    let host = Lambda.create(lambdaType, "host_m", "host", ArrayList<GenericType>())
-    block.appendExpr(host)
-    println("prop_paramDftValHostFunc_none: ${expr.paramDftValHostFunc.isNone()}")
-    expr.paramDftValHostFunc = Some(host)
-    println("prop_paramDftValHostFunc_some: ${expr.paramDftValHostFunc.getOrThrow().identifier}")
+    let hostFunc = pkg.addFunction(FuncType.get([IntType.getInt32()], UnitType.get()), "host_m", "host", "demo")
+    let hostParam = hostFunc.parameters[0]
+    println("prop_paramDftValHostParam_none: ${expr.paramDftValHostParam.isNone()}")
+    expr.paramDftValHostParam = Some(hostParam)
+    println("prop_paramDftValHostParam_some: ${expr.paramDftValHostParam.getOrThrow().identifier}")
 }
 ```
 
 运行结果：
 
 ```text
-prop_paramDftValHostFunc_none: true
-prop_paramDftValHostFunc_some: host_m
+prop_paramDftValHostParam_none: true
+prop_paramDftValHostParam_some: %0
+```
+
+### prop genericDecl
+
+```cangjie
+public mut prop genericDecl: ?Lambda
+```
+
+功能：实例化嵌套局部函数对应的泛型 `Lambda`（若有）；无时为 `None`。
+
+类型：?[Lambda](#class-lambda)
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+import std.collection.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let lambdaType = FuncType.get([], UnitType.get())
+    let genericLam = Lambda.create(lambdaType, "generic_m", "foo", ArrayList<GenericType>())
+    let instLam = Lambda.create(lambdaType, "inst_m", "foo", ArrayList<GenericType>())
+    block.appendExpr(genericLam)
+    block.appendExpr(instLam)
+    println("prop_genericDecl_none: ${instLam.genericDecl.isNone()}")
+    instLam.genericDecl = Some(genericLam)
+    println("prop_genericDecl_some: ${instLam.genericDecl.getOrThrow().identifier}")
+}
+```
+
+运行结果：
+
+```text
+prop_genericDecl_none: true
+prop_genericDecl_some: generic_m
 ```
 
 ### static func create(FuncType, String, String, ArrayList\<GenericType>)

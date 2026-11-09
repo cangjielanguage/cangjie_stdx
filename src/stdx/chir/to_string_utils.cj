@@ -152,8 +152,8 @@ internal func functionToString(obj: Function, indent: UInt64): String {
     if (obj._propLocation.isValid()) {
         comment.add("propLocation: " + obj._propLocation.toString())
     }
-    if (obj._paramDftValHostFunc.isSome()) {
-        comment.add("paramDftValHostFunc: " + obj._paramDftValHostFunc.getOrThrow().identifier)
+    if (let Some(host) <- obj._paramDftValHostParam) {
+        comment.add(paramDftValHostParamComment(host))
     }
     if (let Some(v) <- obj._originalLambdaInfo) {
         comment.add("originalLambdaInfo: " + v.toString())
@@ -199,7 +199,7 @@ internal func lambdaToString(expr: Lambda, indent: UInt64): String {
     var result = ""
     result += indentToString(indent)
     if (let Some(v) <- expr._result) {
-        result += v.identifier + ": " + v.ty.toString() + " = "
+        result += localVarResultToString(v)
     } else {
         throw CHIRException("Lambda result is not set.")
     }
@@ -214,10 +214,15 @@ internal func lambdaToString(expr: Lambda, indent: UInt64): String {
     // parameters
     var params = ArrayList<String>()
     for (param in expr.parameters) {
-        parameterToString(param, indent + INDENT_SPACE)
+        params.add(parameterToString(param, indent + INDENT_SPACE))
     }
-    result += "(" + String.join(params.toArray(), delimiter: ",\n")
-    result += "\n" + indentToString(indent) + ")"
+    result += "("
+    if (!params.isEmpty()) {
+        result += "\n"
+        result += String.join(params.toArray(), delimiter: ",\n")
+        result += "\n" + indentToString(indent)
+    }
+    result += ")"
     result += ": " + expr.funcType.returnType.toString()
     result += genericTypeParamsConstraintToString(expr.genericTypeParams)
     result += "\n"
@@ -234,12 +239,49 @@ internal func parameterToString(obj: Parameter, indent: UInt64): String {
     }
     result.append(indentToString(indent))
     result.append(obj._attributes.toString())
-    result.append(obj.identifier + ": " + obj.ty.toString())
+    result.append(obj.identifier)
+    if (!obj._srcCodeName.isEmpty()) {
+        result.append("[" + obj._srcCodeName + "]")
+    }
+    result.append(": " + obj.ty.toString())
+    var comments = ArrayList<String>()
     if (let str <- obj.baseCommentToString() && !str.isEmpty()) {
+        comments.add(str)
+    }
+    if (let Some(dft) <- obj._paramDftValFunc) {
+        comments.add("paramDftValFunc: " + dft.identifier)
+    }
+    if (!comments.isEmpty()) {
         result.append(" // ")
-        result.append(str)
+        result.append(String.join(comments.toArray(), delimiter: ", "))
     }
     return result.toString()
+}
+
+// Matches compiler Expression::ToString: `%id[srcCodeName]: type =`.
+internal func localVarResultToString(v: LocalVar): String {
+    var result = ""
+    if (v._isRetValue) {
+        result += "[ret] "
+    }
+    result += v.identifier
+    if (!v._srcCodeName.isEmpty()) {
+        result += "[" + v._srcCodeName + "]"
+    }
+    result += ": " + v.ty.toString() + " = "
+    return result
+}
+
+// Host may be a Function, or a Lambda whose result LocalVar owns the parameter.
+internal func paramDftValHostParamComment(param: Parameter): String {
+    let ownerId = if (let Some(owner) <- (param._owner as Function)) {
+        owner.identifier
+    } else if (let Some(lv) <- (param._owner as LocalVar) && lv.expr.isLambda()) {
+        (lv.expr as Lambda).getOrThrow().identifier
+    } else {
+        throw CHIRException("paramDftValHostParam owner is neither Function nor Lambda")
+    }
+    return "paramDftValHostParam: ${ownerId}[${param.identifier}]"
 }
 
 internal func typeVecToString<T>(start: String, types: Array<T>, end: String): String where T <: Type {
