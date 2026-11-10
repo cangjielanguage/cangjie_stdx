@@ -238,9 +238,7 @@ function(add_cangjie_library target_name
         endif()
     endif()
 
-    if(NOT OHOS)
-        list(APPEND cangjie_compile_flags "--experimental" "--enable-local-mode")
-    endif()
+    list(APPEND cangjie_compile_flags "--experimental" "--enable-local-mode")
 
     if(NOT ("${CANGJIELIB_MODULE_NAME}" STREQUAL ""))
         set(output_full_name "${output_dir}/${CANGJIELIB_MODULE_NAME}.${CANGJIELIB_PACKAGE_NAME}")
