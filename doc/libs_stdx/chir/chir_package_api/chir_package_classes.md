@@ -206,13 +206,17 @@ public class BoolType <: BuiltinType & Equatable<BoolType> {}
 - [BuiltinType](#class-builtintype)
 - Equatable\<[BoolType](#class-booltype)>
 
-### static func get()
+### static func get(ModalInfo)
 
 ```cangjie
-public static func get(): BoolType
+public static func get(modal!: ModalInfo = ModalInfo()): BoolType
 ```
 
 功能：获取 BoolType 的单例实例。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -565,10 +569,10 @@ main() {
 Int32
 ```
 
-### static func get(Type)
+### static func get(Type, ModalInfo)
 
 ```cangjie
-public static func get(elementType: Type): CPointerType
+public static func get(elementType: Type, modal!: ModalInfo = ModalInfo()): CPointerType
 ```
 
 功能：获取或创建给定元素类型的 CPointerType。
@@ -578,6 +582,7 @@ public static func get(elementType: Type): CPointerType
 参数：
 
 - elementType: Type - 指针所指向的类型。
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -682,13 +687,17 @@ public class CStringType <: BuiltinType & Equatable<CStringType> {}
 - [BuiltinType](#class-builtintype)
 - Equatable\<[CStringType](#class-cstringtype)>
 
-### static func get()
+### static func get(ModalInfo)
 
 ```cangjie
-public static func get(): CStringType
+public static func get(modal!: ModalInfo = ModalInfo()): CStringType
 ```
 
 功能：获取 CStringType 的单例实例。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -1009,10 +1018,10 @@ main() {
 C
 ```
 
-### static func get(ClassLikeDef, Array\<Type>)
+### static func get(ClassLikeDef, Array\<Type>, ModalInfo)
 
 ```cangjie
-public static func get(def: ClassLikeDef, genericTypeParams: Array<Type>): ClassLikeType
+public static func get(def: ClassLikeDef, genericTypeParams: Array<Type>, modal!: ModalInfo = ModalInfo()): ClassLikeType
 ```
 
 功能：按定义与泛型实参取得或创建缓存中的唯一实例。
@@ -1021,6 +1030,7 @@ public static func get(def: ClassLikeDef, genericTypeParams: Array<Type>): Class
 
 - def: ClassLikeDef - 类/接口定义。
 - genericTypeParams: Array\<Type> - 泛型实参（非泛型时为空数组）。
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -3154,10 +3164,10 @@ main() {
 E
 ```
 
-### static func get(EnumDef, Array\<Type>)
+### static func get(EnumDef, Array\<Type>, ModalInfo)
 
 ```cangjie
-public static func get(def: EnumDef, genericTypeParams: Array<Type>): EnumType
+public static func get(def: EnumDef, genericTypeParams: Array<Type>, modal!: ModalInfo = ModalInfo()): EnumType
 ```
 
 功能：按枚举定义与泛型实参取得或创建缓存实例。
@@ -3166,6 +3176,7 @@ public static func get(def: EnumDef, genericTypeParams: Array<Type>): EnumType
 
 - def: EnumDef - 枚举定义。
 - genericTypeParams: Array\<Type> - 泛型实参。
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -3282,13 +3293,17 @@ public class FloatType <: NumericType & Equatable<FloatType> {}
 - [NumericType](#class-numerictype)
 - Equatable\<[FloatType](#class-floattype)>
 
-### static func getFloat16()
+### static func getFloat16(ModalInfo)
 
 ```cangjie
-public static func getFloat16(): FloatType
+public static func getFloat16(modal!: ModalInfo = ModalInfo()): FloatType
 ```
 
 功能：获取 Float16 类型实例。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -3312,13 +3327,17 @@ main() {
 Float16 类型: Float16
 ```
 
-### static func getFloat32()
+### static func getFloat32(ModalInfo)
 
 ```cangjie
-public static func getFloat32(): FloatType
+public static func getFloat32(modal!: ModalInfo = ModalInfo()): FloatType
 ```
 
 功能：获取 Float32 类型实例。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -3342,13 +3361,17 @@ main() {
 Float32 类型: Float32
 ```
 
-### static func getFloat64()
+### static func getFloat64(ModalInfo)
 
 ```cangjie
-public static func getFloat64(): FloatType
+public static func getFloat64(modal!: ModalInfo = ModalInfo()): FloatType
 ```
 
 功能：获取 Float64 类型实例。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -3539,10 +3562,10 @@ main() {
 Int32
 ```
 
-### static func get(Array\<Type>, Type, Bool, Bool)
+### static func get(Array\<Type>, Type, Bool, Bool, ModalInfo)
 
 ```cangjie
-public static func get(paramTypes: Array<Type>, retType: Type, varArg!: Bool = false, cFunc!: Bool = false): FuncType
+public static func get(paramTypes: Array<Type>, retType: Type, varArg!: Bool = false, cFunc!: Bool = false, modal!: ModalInfo = ModalInfo()): FuncType
 ```
 
 功能：按形参列表、返回类型及可变参/C 函数标记取得或创建唯一缓存实例。
@@ -3553,6 +3576,7 @@ public static func get(paramTypes: Array<Type>, retType: Type, varArg!: Bool = f
 - retType: Type - 返回类型。
 - varArg!: Bool - 是否为可变参数函数类型，默认 `false`。
 - cFunc! - 是否为 `CFunc<...>` 形式，默认 `false`。
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -3713,10 +3737,10 @@ main() {
 0
 ```
 
-### static func get(String, String)
+### static func get(String, String, ModalInfo)
 
 ```cangjie
-public static func get(identifier: String, srcCodeName: String): GenericType
+public static func get(identifier: String, srcCodeName: String, modal!: ModalInfo = ModalInfo()): GenericType
 ```
 
 功能：按内部 `identifier` 缓存取得或创建泛型形参类型（如 `T`）。
@@ -3725,6 +3749,7 @@ public static func get(identifier: String, srcCodeName: String): GenericType
 
 - identifier: String - 内部唯一键（mangling 用）。
 - srcCodeName: String - 源码中的形参名。
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -3826,13 +3851,17 @@ public class IntType <: NumericType & Equatable<IntType> {}
 - [NumericType](#class-numerictype)
 - Equatable\<[IntType](#class-inttype)>
 
-### static func getInt16()
+### static func getInt16(ModalInfo)
 
 ```cangjie
-public static func getInt16(): IntType
+public static func getInt16(modal!: ModalInfo = ModalInfo()): IntType
 ```
 
 功能：获取 Int16 类型实例。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -3856,13 +3885,17 @@ main() {
 Int16 类型: Int16
 ```
 
-### static func getInt32()
+### static func getInt32(ModalInfo)
 
 ```cangjie
-public static func getInt32(): IntType
+public static func getInt32(modal!: ModalInfo = ModalInfo()): IntType
 ```
 
 功能：获取 Int32 类型实例。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -3886,13 +3919,17 @@ main() {
 Int32 类型: Int32
 ```
 
-### static func getInt64()
+### static func getInt64(ModalInfo)
 
 ```cangjie
-public static func getInt64(): IntType
+public static func getInt64(modal!: ModalInfo = ModalInfo()): IntType
 ```
 
 功能：获取 Int64 类型实例。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -3916,13 +3953,17 @@ main() {
 Int64 类型: Int64
 ```
 
-### static func getInt8()
+### static func getInt8(ModalInfo)
 
 ```cangjie
-public static func getInt8(): IntType
+public static func getInt8(modal!: ModalInfo = ModalInfo()): IntType
 ```
 
 功能：获取 Int8 类型实例。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -3946,13 +3987,17 @@ main() {
 Int8 类型: Int8
 ```
 
-### static func getIntNative()
+### static func getIntNative(ModalInfo)
 
 ```cangjie
-public static func getIntNative(): IntType
+public static func getIntNative(modal!: ModalInfo = ModalInfo()): IntType
 ```
 
 功能：获取 IntNative 类型实例。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -3976,13 +4021,17 @@ main() {
 IntNative 类型: IntNative
 ```
 
-### static func getUInt16()
+### static func getUInt16(ModalInfo)
 
 ```cangjie
-public static func getUInt16(): IntType
+public static func getUInt16(modal!: ModalInfo = ModalInfo()): IntType
 ```
 
 功能：获取 UInt16 类型实例。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -4006,13 +4055,17 @@ main() {
 UInt16 类型: UInt16
 ```
 
-### static func getUInt32()
+### static func getUInt32(ModalInfo)
 
 ```cangjie
-public static func getUInt32(): IntType
+public static func getUInt32(modal!: ModalInfo = ModalInfo()): IntType
 ```
 
 功能：获取 UInt32 类型实例。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -4036,13 +4089,17 @@ main() {
 UInt32 类型: UInt32
 ```
 
-### static func getUInt64()
+### static func getUInt64(ModalInfo)
 
 ```cangjie
-public static func getUInt64(): IntType
+public static func getUInt64(modal!: ModalInfo = ModalInfo()): IntType
 ```
 
 功能：获取 UInt64 类型实例。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -4066,13 +4123,17 @@ main() {
 UInt64 类型: UInt64
 ```
 
-### static func getUInt8()
+### static func getUInt8(ModalInfo)
 
 ```cangjie
-public static func getUInt8(): IntType
+public static func getUInt8(modal!: ModalInfo = ModalInfo()): IntType
 ```
 
 功能：获取 UInt8 类型实例。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -4096,13 +4157,17 @@ main() {
 UInt8 类型: UInt8
 ```
 
-### static func getUIntNative()
+### static func getUIntNative(ModalInfo)
 
 ```cangjie
-public static func getUIntNative(): IntType
+public static func getUIntNative(modal!: ModalInfo = ModalInfo()): IntType
 ```
 
 功能：获取 UIntNative 类型实例。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -4724,6 +4789,297 @@ main() {
 [pluginAdded]var x: Int32
 ```
 
+## class ModalInfo
+
+```cangjie
+public class ModalInfo <: Hashable & Equatable<ModalInfo> {
+    public let local: Mode
+    public init(local!: Mode = Mode.Absent)
+}
+```
+
+功能：表示类型所携带的**模态信息**，是 local mode 在 CHIR 类型系统中的载体。每个 [Type](#class-type) 都持有一份 ModalInfo，可通过 [prop modalInfo](#prop-modalinfo) 读取，并通过 [func withModal(ModalInfo)](#func-withmodalmodalinfo) 构造携带指定模态的等价类型。
+
+模态信息目前仅包含一个 local 限定符（[Mode](./chir_package_enums.md#enum-mode)），默认为 `Mode.Absent`，即非模态类型。
+
+父类型：
+
+- Hashable
+- Equatable\<[ModalInfo](#class-modalinfo)>
+
+### let local
+
+```cangjie
+public let local: Mode
+```
+
+功能：local 模态限定符，取值见 [Mode](./chir_package_enums.md#enum-mode)。该字段为不可变字段，构造后不可修改；如需不同模态，请新建 ModalInfo 实例。
+
+类型：[Mode](./chir_package_enums.md#enum-mode)
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let modal = ModalInfo(local: Mode.Must)
+    println("let_local: ${modal.local == Mode.Must}")
+}
+```
+
+运行结果：
+
+```text
+let_local: true
+```
+
+### init(Mode)
+
+```cangjie
+public init(local!: Mode = Mode.Absent)
+```
+
+功能：创建携带指定 local 限定符的模态信息。
+
+参数：
+
+- local!: [Mode](./chir_package_enums.md#enum-mode) - local 模态限定符，默认值为 `Mode.Absent`（非模态）。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let dflt = ModalInfo()
+    let must = ModalInfo(local: Mode.Must)
+    println("init_default_is_modal: ${dflt.isModal()}")
+    println("init_must_is_modal: ${must.isModal()}")
+}
+```
+
+运行结果：
+
+```text
+init_default_is_modal: false
+init_must_is_modal: true
+```
+
+### func isModal()
+
+```cangjie
+public func isModal(): Bool
+```
+
+功能：判断该模态信息是否携带 local 限定，即 `local` 是否不为 `Mode.Absent`。
+
+返回值：
+
+- Bool - 携带 local 限定时返回 true，否则返回 false。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    println("absent: ${ModalInfo().isModal()}")
+    println("maybe: ${ModalInfo(local: Mode.Maybe).isModal()}")
+    println("must: ${ModalInfo(local: Mode.Must).isModal()}")
+}
+```
+
+运行结果：
+
+```text
+absent: false
+maybe: true
+must: true
+```
+
+### func isSubModal(ModalInfo)
+
+```cangjie
+public func isSubModal(other: ModalInfo): Bool
+```
+
+功能：判断该模态是否为 `other` 的**子模态**。当前的子模态关系为：`Absent` 是 `Maybe` 的子模态，`Must` 是 `Maybe` 的子模态；其余组合（包括两者相等的情况）均返回 false。
+
+参数：
+
+- other: [ModalInfo](#class-modalinfo) - 待比较的模态信息。
+
+返回值：
+
+- Bool - 该模态为 `other` 的子模态时返回 true，否则返回 false。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let maybe = ModalInfo(local: Mode.Maybe)
+    println("absent_sub_maybe: ${ModalInfo().isSubModal(maybe)}")
+    println("must_sub_maybe: ${ModalInfo(local: Mode.Must).isSubModal(maybe)}")
+    println("maybe_sub_maybe: ${maybe.isSubModal(maybe)}")
+}
+```
+
+运行结果：
+
+```text
+absent_sub_maybe: true
+must_sub_maybe: true
+maybe_sub_maybe: false
+```
+
+### func isEqualOrSubModal(ModalInfo)
+
+```cangjie
+public func isEqualOrSubModal(other: ModalInfo): Bool
+```
+
+功能：判断该模态是否与 `other` 相等，或为 `other` 的子模态。等价于 `this == other || this.isSubModal(other)`。
+
+参数：
+
+- other: [ModalInfo](#class-modalinfo) - 待比较的模态信息。
+
+返回值：
+
+- Bool - 相等或为子模态时返回 true，否则返回 false。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let maybe = ModalInfo(local: Mode.Maybe)
+    println("maybe_eq_or_sub_maybe: ${maybe.isEqualOrSubModal(maybe)}")
+    println("absent_eq_or_sub_maybe: ${ModalInfo().isEqualOrSubModal(maybe)}")
+    println("maybe_eq_or_sub_absent: ${maybe.isEqualOrSubModal(ModalInfo())}")
+}
+```
+
+运行结果：
+
+```text
+maybe_eq_or_sub_maybe: true
+absent_eq_or_sub_maybe: true
+maybe_eq_or_sub_absent: false
+```
+
+### func toString()
+
+```cangjie
+public func toString(): String
+```
+
+功能：获取模态信息的字符串表示。`Absent` 为 `@~local`，`Maybe` 为 `@local?`，`Must` 为 `@local!`。
+
+> **注意：**
+>
+> ModalInfo 提供 `toString`，但其父类型列表中不含 ToString；[Mode](./chir_package_enums.md#enum-mode) 本身不提供 `toString`。
+
+返回值：
+
+- String - 模态限定符的字符串表示。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    println(ModalInfo().toString())
+    println(ModalInfo(local: Mode.Maybe).toString())
+    println(ModalInfo(local: Mode.Must).toString())
+}
+```
+
+运行结果：
+
+```text
+@~local
+@local?
+@local!
+```
+
+### func hashCode()
+
+```cangjie
+public func hashCode(): Int64
+```
+
+功能：获取该模态信息的哈希码，由 `local` 字段的哈希码决定。
+
+返回值：
+
+- Int64 - 模态信息的哈希码。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let a = ModalInfo(local: Mode.Must)
+    let b = ModalInfo(local: Mode.Must)
+    println("hash_eq: ${a.hashCode() == b.hashCode()}")
+}
+```
+
+运行结果：
+
+```text
+hash_eq: true
+```
+
+### operator func ==(ModalInfo)
+
+```cangjie
+public operator func ==(other: ModalInfo): Bool
+```
+
+功能：按值比较两个模态信息，当且仅当 `local` 字段相同时相等。
+
+参数：
+
+- other: [ModalInfo](#class-modalinfo) - 待比较的模态信息。
+
+返回值：
+
+- Bool - `local` 相同时返回 true，否则返回 false。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    println("op_eq_ModalInfo same: ${ModalInfo(local: Mode.Must) == ModalInfo(local: Mode.Must)}")
+    println("op_eq_ModalInfo diff: ${ModalInfo(local: Mode.Must) == ModalInfo()}")
+}
+```
+
+运行结果：
+
+```text
+op_eq_ModalInfo same: true
+op_eq_ModalInfo diff: false
+```
+
 ## class NothingType
 
 ```cangjie
@@ -4737,13 +5093,17 @@ public class NothingType <: BuiltinType & Equatable<NothingType> {}
 - [BuiltinType](#class-builtintype)
 - Equatable\<[NothingType](#class-nothingtype)>
 
-### static func get()
+### static func get(ModalInfo)
 
 ```cangjie
-public static func get(): NothingType
+public static func get(modal!: ModalInfo = ModalInfo()): NothingType
 ```
 
 功能：获取 NothingType 的单例实例。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -5727,13 +6087,17 @@ main() {
 3
 ```
 
-### static func get(Type, UInt32)
+### static func get(Type, UInt32, ModalInfo)
 
 ```cangjie
-public static func get(elementType: Type, dims: UInt32): RawArrayType
+public static func get(elementType: Type, dims: UInt32, modal!: ModalInfo = ModalInfo()): RawArrayType
 ```
 
 功能：获取或创建原始数组类型。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -5982,13 +6346,17 @@ public class RuneType <: BuiltinType & Equatable<RuneType> {}
 - [BuiltinType](#class-builtintype)
 - Equatable\<[RuneType](#class-runetype)>
 
-### static func get()
+### static func get(ModalInfo)
 
 ```cangjie
-public static func get(): RuneType
+public static func get(modal!: ModalInfo = ModalInfo()): RuneType
 ```
 
 功能：获取 RuneType 的单例实例。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -6119,6 +6487,38 @@ main() {
 mut_prop_isCStruct: true
 ```
 
+### prop isCopy
+
+```cangjie
+public mut prop isCopy: Bool
+```
+
+功能：该结构体是否实现 `Copyable`。默认值为 `false`。
+
+类型：Bool
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let s = pkg.addStruct("S_m", "S")
+    println("mut_prop_isCopy_default: ${s.isCopy}")
+    s.isCopy = true
+    println("mut_prop_isCopy: ${s.isCopy}")
+}
+```
+
+运行结果：
+
+```text
+mut_prop_isCopy_default: false
+mut_prop_isCopy: true
+```
+
 ### operator func ==(StructDef)
 
 ```cangjie
@@ -6197,10 +6597,10 @@ main() {
 S
 ```
 
-### static func get(StructDef, Array\<Type>)
+### static func get(StructDef, Array\<Type>, ModalInfo)
 
 ```cangjie
-public static func get(def: StructDef, genericTypeParams: Array<Type>): StructType
+public static func get(def: StructDef, genericTypeParams: Array<Type>, modal!: ModalInfo = ModalInfo()): StructType
 ```
 
 功能：按结构体定义与泛型实参取得或创建缓存实例。
@@ -6209,6 +6609,7 @@ public static func get(def: StructDef, genericTypeParams: Array<Type>): StructTy
 
 - def: StructDef - 结构体定义。
 - genericTypeParams: Array\<Type> - 泛型实参。
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -6284,13 +6685,17 @@ public class ThisType <: Type & Equatable<ThisType> {}
 - [Type](#class-type)
 - Equatable\<[ThisType](#class-thistype)>
 
-### static func get()
+### static func get(ModalInfo)
 
 ```cangjie
-public static func get(): ThisType
+public static func get(modal!: ModalInfo = ModalInfo()): ThisType
 ```
 
 功能：返回 `This` 类型的唯一单例。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -6390,10 +6795,10 @@ main() {
 2
 ```
 
-### static func get(Array\<Type>)
+### static func get(Array\<Type>, ModalInfo)
 
 ```cangjie
-public static func get(elementTypes: Array<Type>): TupleType
+public static func get(elementTypes: Array<Type>, modal!: ModalInfo = ModalInfo()): TupleType
 ```
 
 功能：按元素类型序列取得或创建唯一元组类型。
@@ -6401,6 +6806,7 @@ public static func get(elementTypes: Array<Type>): TupleType
 参数：
 
 - elementTypes: Array\<Type> - 从左到右的元素类型。
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -6542,6 +6948,39 @@ main() {
 
 ```text
 类型参数数量: 0
+```
+
+### prop modalInfo
+
+```cangjie
+public prop modalInfo: ModalInfo
+```
+
+功能：该类型携带的模态信息（local mode）。非模态类型返回默认的 [ModalInfo](#class-modalinfo)（`local` 为 `Mode.Absent`）。
+
+模态信息参与类型的相等性与哈希计算，因此 `Int32` 与 `Int32 @local!` 是两个不同的类型实例。
+
+类型：[ModalInfo](#class-modalinfo)
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let plain = IntType.getInt32()
+    let modal = IntType.getInt32(modal: ModalInfo(local: Mode.Must))
+    println("plain: ${plain.modalInfo.toString()}")
+    println("modal: ${modal.modalInfo.toString()}")
+}
+```
+
+运行结果：
+
+```text
+plain: @~local
+modal: @local!
 ```
 
 ### func dump()
@@ -7408,13 +7847,120 @@ main() {
 去除引用后: Int32
 ```
 
+### func isModal()
+
+```cangjie
+public func isModal(): Bool
+```
+
+功能：判断该类型是否携带 local 模态限定，等价于 `modalInfo.isModal()`。
+
+返回值：
+
+- Bool - 携带 local 模态限定时返回 true，否则返回 false。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    println("plain: ${IntType.getInt32().isModal()}")
+    println("modal: ${IntType.getInt32(modal: ModalInfo(local: Mode.Must)).isModal()}")
+}
+```
+
+运行结果：
+
+```text
+plain: false
+modal: true
+```
+
+### func getDataType()
+
+```cangjie
+public func getDataType(): Type
+```
+
+功能：获取去除模态信息后的数据类型，等价于 `withModal(ModalInfo())`。类型形状保持不变，仅将模态重置为默认的非模态状态。
+
+返回值：
+
+- [Type](#class-type) - 形状相同但不携带模态信息的类型。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let modal = IntType.getInt32(modal: ModalInfo(local: Mode.Must))
+    let data = modal.getDataType()
+    println("modal: ${modal.toString()}")
+    println("data: ${data.toString()}")
+    println("same_as_plain: ${data == IntType.getInt32()}")
+}
+```
+
+运行结果：
+
+```text
+modal: Int32 @local!
+data: Int32
+same_as_plain: true
+```
+
+### func withModal(ModalInfo)
+
+```cangjie
+public func withModal(modal: ModalInfo): Type
+```
+
+功能：获取携带指定模态信息的等价类型。类型实例由缓存管理，对同一形状与同一模态重复调用将返回同一实例。
+
+对于引用类型（`T&`）与 Box 类型，模态会作用于其内部的数据类型，而非引用或 Box 本身。若该类型已携带目标模态，则直接返回自身。
+
+参数：
+
+- modal: [ModalInfo](#class-modalinfo) - 待附加的模态信息。
+
+返回值：
+
+- [Type](#class-type) - 携带指定模态信息的类型。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let plain = IntType.getInt32()
+    let modal = plain.withModal(ModalInfo(local: Mode.Must))
+    println("plain: ${plain.toString()}")
+    println("modal: ${modal.toString()}")
+    println("cached: ${modal == IntType.getInt32(modal: ModalInfo(local: Mode.Must))}")
+}
+```
+
+运行结果：
+
+```text
+plain: Int32
+modal: Int32 @local!
+cached: true
+```
+
 ### func toString()
 
 ```cangjie
 public open func toString(): String
 ```
 
-功能：将类型转换为字符串表示。
+功能：将类型转换为字符串表示。携带模态信息时，在基础类型文本后追加一个空格与模态文本，例如 `Int32 @local!`。
 
 返回值：
 
@@ -7451,13 +7997,17 @@ public class UnitType <: BuiltinType & Equatable<UnitType> {}
 - [BuiltinType](#class-builtintype)
 - Equatable\<[UnitType](#class-unittype)>
 
-### static func get()
+### static func get(ModalInfo)
 
 ```cangjie
-public static func get(): UnitType
+public static func get(modal!: ModalInfo = ModalInfo()): UnitType
 ```
 
 功能：获取 UnitType 的单例实例。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -7585,13 +8135,17 @@ main() {
 8
 ```
 
-### static func get(Type, Int64)
+### static func get(Type, Int64, ModalInfo)
 
 ```cangjie
-public static func get(elementType: Type, size: Int64): VArrayType
+public static func get(elementType: Type, size: Int64, modal!: ModalInfo = ModalInfo()): VArrayType
 ```
 
 功能：获取或创建 VArray 类型。
+
+参数：
+
+- modal!: [ModalInfo](#class-modalinfo) - 类型携带的模态信息，默认为 `ModalInfo()`，即非模态类型。
 
 返回值：
 
@@ -9481,15 +10035,19 @@ main() {
 prop_entryBlock: true
 ```
 
-### prop owner
+### prop ownerFunc
 
 ```cangjie
-public prop owner: Value
+public prop ownerFunc: ?Function
 ```
 
-功能：所属父值（函数或 lambda 对应的局部变量）。
+功能：所属函数。仅当该基本块组是某个函数的函数体时有值；若该基本块组归属于某个表达式（如 [Lambda](#class-lambda)、[Exclave](#class-exclave) 的体），则为 `None`。
 
-类型：Value
+> **注意：**
+>
+> 该属性替代了旧的 `owner: Value` 属性。原 `owner` 返回函数或 lambda 对应的局部变量，现已拆分：函数宿主通过 `ownerFunc` 获取，表达式宿主请使用 [prop topLevelFunc](#prop-toplevelfunc) 获取所属顶层函数。
+
+类型：?[Function](#class-function)
 
 示例：
 
@@ -9502,14 +10060,14 @@ main() {
     let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
     f.initBody()
     let bg = f.body.getOrThrow()
-    println("prop_owner: ${bg.owner == f}")
+    println("prop_ownerFunc: ${bg.ownerFunc.getOrThrow() == f}")
 }
 ```
 
 运行结果：
 
 ```text
-prop_owner: true
+prop_ownerFunc: true
 ```
 
 ### prop topLevelFunc
@@ -15107,6 +15665,256 @@ main() {
 op_eq_Debug: true
 ```
 
+## class EndRegion
+
+```cangjie
+public class EndRegion <: Expression & Equatable<EndRegion> {}
+```
+
+功能：内存区域结束标记表达式，用于 local mode 下标记一个内存区域的结束位置，与 [StartRegion](#class-startregion) 成对使用。
+
+父类型：
+
+- Expression
+- Equatable\<EndRegion>
+
+### static func create(Type)
+
+```cangjie
+public static func create(retTy: Type): EndRegion
+```
+
+功能：创建内存区域结束标记表达式。
+
+参数：
+
+- retTy: [Type](#class-type) - 结果类型，通常为 [UnitType](#class-unittype)。
+
+返回值：
+
+- [EndRegion](#class-endregion) - 创建的区域结束标记表达式。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = EndRegion.create(UnitType.get())
+    block.appendExpr(expr)
+    println("static_func_create: ${block.exprs.size}")
+}
+```
+
+运行结果：
+
+```text
+static_func_create: 1
+```
+
+### operator func ==(EndRegion)
+
+```cangjie
+public operator func ==(other: EndRegion): Bool
+```
+
+功能：引用比较，判断两个 EndRegion 是否为同一实例。
+
+参数：
+
+- other: EndRegion - 另一区域结束标记表达式。
+
+返回值：
+
+- Bool - 是否为同一引用。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = EndRegion.create(UnitType.get())
+    block.appendExpr(expr)
+    println("op_eq_EndRegion: ${expr == expr}")
+}
+```
+
+运行结果：
+
+```text
+op_eq_EndRegion: true
+```
+
+## class Exclave
+
+```cangjie
+public class Exclave <: Expression & Equatable<Exclave> {}
+```
+
+功能：exclave 终止器表达式，用于 local mode 下表示一段在外层内存区域中求值的代码。该表达式持有一个独立的基本块组作为其体（body）。
+
+创建后需调用 `initBody` 初始化体；由于初始化过程需要通过所属基本块定位顶层函数，必须先将该表达式追加到基本块中，再调用 `initBody`。也可直接使用 [CHIRBuilder](#class-chirbuilder) 的 [func createExclave()](#func-createexclave) 一步完成插入与初始化。
+
+父类型：
+
+- Expression
+- Equatable\<Exclave>
+
+### prop body
+
+```cangjie
+public prop body: BlockGroup
+```
+
+功能：exclave 的体（基本块组）；未调用 `initBody` 初始化时访问将触发断言失败。
+
+类型：[BlockGroup](#class-blockgroup)
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Exclave.create()
+    block.appendExpr(expr)
+    expr.initBody()
+    println("prop_body: ${expr.body.blocks.size}")
+}
+```
+
+运行结果：
+
+```text
+prop_body: 1
+```
+
+### static func create()
+
+```cangjie
+public static func create(): Exclave
+```
+
+功能：创建 exclave 终止器表达式。该方法不会初始化体，需在追加到基本块后另行调用 `initBody`。
+
+返回值：
+
+- [Exclave](#class-exclave) - 创建的 exclave 表达式。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Exclave.create()
+    block.appendExpr(expr)
+    println("static_func_create: ${block.exprs.size}")
+}
+```
+
+运行结果：
+
+```text
+static_func_create: 1
+```
+
+### func initBody()
+
+```cangjie
+public func initBody(): Unit
+```
+
+功能：初始化 exclave 的体，创建一个新的基本块组，并在其中创建一个基本块作为入口块。
+
+> **注意：**
+>
+> 该方法需要通过所属基本块定位顶层函数以生成基本块组标识，因此调用前必须先将该表达式追加到某个基本块中，否则将抛出异常。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Exclave.create()
+    block.appendExpr(expr)
+    expr.initBody()
+    println("func_initBody: ${expr.body.blocks.size == 1}")
+}
+```
+
+运行结果：
+
+```text
+func_initBody: true
+```
+
+### operator func ==(Exclave)
+
+```cangjie
+public operator func ==(other: Exclave): Bool
+```
+
+功能：引用比较，判断两个 Exclave 是否为同一实例。
+
+参数：
+
+- other: Exclave - 另一 exclave 表达式。
+
+返回值：
+
+- Bool - 是否为同一引用。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Exclave.create()
+    block.appendExpr(expr)
+    println("op_eq_Exclave: ${expr == expr}")
+}
+```
+
+运行结果：
+
+```text
+op_eq_Exclave: true
+```
+
 ## class Exit
 
 ```cangjie
@@ -20030,6 +20838,97 @@ main() {
 op_eq_TrySpawn: true
 ```
 
+## class StartRegion
+
+```cangjie
+public class StartRegion <: Expression & Equatable<StartRegion> {}
+```
+
+功能：内存区域开始标记表达式，用于 local mode 下标记一个内存区域的开始位置，与 [EndRegion](#class-endregion) 成对使用。
+
+父类型：
+
+- Expression
+- Equatable\<StartRegion>
+
+### static func create(Type)
+
+```cangjie
+public static func create(retTy: Type): StartRegion
+```
+
+功能：创建内存区域开始标记表达式。
+
+参数：
+
+- retTy: [Type](#class-type) - 结果类型，通常为 [UnitType](#class-unittype)。
+
+返回值：
+
+- [StartRegion](#class-startregion) - 创建的区域开始标记表达式。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = StartRegion.create(UnitType.get())
+    block.appendExpr(expr)
+    println("static_func_create: ${block.exprs.size}")
+}
+```
+
+运行结果：
+
+```text
+static_func_create: 1
+```
+
+### operator func ==(StartRegion)
+
+```cangjie
+public operator func ==(other: StartRegion): Bool
+```
+
+功能：引用比较，判断两个 StartRegion 是否为同一实例。
+
+参数：
+
+- other: StartRegion - 另一区域开始标记表达式。
+
+返回值：
+
+- Bool - 是否为同一引用。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = StartRegion.create(UnitType.get())
+    block.appendExpr(expr)
+    println("op_eq_StartRegion: ${expr == expr}")
+}
+```
+
+运行结果：
+
+```text
+op_eq_StartRegion: true
+```
+
 ## class Store
 
 ```cangjie
@@ -23076,6 +23975,43 @@ main() {
 
 ```text
 createDebug: true
+```
+
+### func createExclave()
+
+```cangjie
+public func createExclave(): Exclave
+```
+
+功能：创建 exclave 表达式，插入到当前插入位置并推进插入点，同时完成体（基本块组）的初始化。
+
+相比直接使用 [Exclave](#class-exclave) 的 `create`，该方法已包含插入与 `initBody` 调用，返回的表达式可直接访问 `body`。
+
+返回值：
+
+- [Exclave](#class-exclave) - 创建的 exclave 表达式，其体已初始化。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let expr = builder.createExclave()
+    println("createExclave: ${expr.body.blocks.size}")
+}
+```
+
+运行结果：
+
+```text
+createExclave: 1
 ```
 
 ### func createExit()

@@ -1580,6 +1580,233 @@ op_ne_IRActionMode diff: true
 op_ne_IRActionMode same: false
 ```
 
+## enum Mode
+
+```cangjie
+public enum Mode {
+    | Absent
+    | Maybe
+    | Must
+}
+```
+
+Function: The **local modal qualifier** on a type, describing whether a type carries a `@local` qualifier under local mode. This enum is carried by [ModalInfo](./chir_package_classes.md#class-modalinfo) and exposed through the `modalInfo` property of [Type](./chir_package_classes.md#class-type).
+
+The three values form a sub-modal relationship: both `Absent` and `Must` are sub-modals of `Maybe`. See [func isSubModal(ModalInfo)](./chir_package_classes.md#func-issubmodalmodalinfo) for details.
+
+> **Note:**
+>
+> This enum gains `hashCode` and equality comparison through extensions; it does **not** implement `ToString`. For readable text, use the `toString` of [ModalInfo](./chir_package_classes.md#class-modalinfo).
+
+### Absent
+
+```cangjie
+Absent
+```
+
+Function: No local qualifier, that is, an ordinary (non-modal) type, whose text representation is `@~local`. This is the default value of [ModalInfo](./chir_package_classes.md#class-modalinfo).
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let modal = ModalInfo()
+    match (modal.local) {
+        case Absent => println("absent")
+        case Maybe => println("maybe")
+        case Must => println("must")
+    }
+}
+```
+
+Output:
+
+```text
+absent
+```
+
+### Maybe
+
+```cangjie
+Maybe
+```
+
+Function: Possibly carries a local qualifier, whose text representation is `@local?`. Both `Absent` and `Must` are its sub-modals.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let modal = ModalInfo(local: Mode.Maybe)
+    println("is_modal: ${modal.isModal()}")
+    println("to_string: ${modal.toString()}")
+}
+```
+
+Output:
+
+```text
+is_modal: true
+to_string: @local?
+```
+
+### Must
+
+```cangjie
+Must
+```
+
+Function: Must carry a local qualifier, whose text representation is `@local!`.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let modal = ModalInfo(local: Mode.Must)
+    println("to_string: ${modal.toString()}")
+    println("sub_of_maybe: ${modal.isSubModal(ModalInfo(local: Mode.Maybe))}")
+}
+```
+
+Output:
+
+```text
+to_string: @local!
+sub_of_maybe: true
+```
+
+### extend Mode <: Equatable\<Mode>
+
+```cangjie
+extend Mode <: Equatable<Mode>
+```
+
+Function: Extends the Equatable\<[Mode](#enum-mode)> interface for the [Mode](#enum-mode) enum to support equality comparison operations.
+
+Parent Types:
+
+- Equatable\<[Mode](#enum-mode)>
+
+#### operator func ==(Mode)
+
+```cangjie
+public operator func ==(other: Mode): Bool
+```
+
+Function: Determines whether two local modal qualifiers are the same.
+
+Parameters:
+
+- other: [Mode](#enum-mode) - The other modal qualifier.
+
+Return Value:
+
+- Bool - true if they are the same, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    println("op_eq_Mode same: ${Mode.Must == Mode.Must}")
+    println("op_eq_Mode diff: ${Mode.Must == Mode.Absent}")
+}
+```
+
+Output:
+
+```text
+op_eq_Mode same: true
+op_eq_Mode diff: false
+```
+
+#### operator func !=(Mode)
+
+```cangjie
+public operator func !=(other: Mode): Bool
+```
+
+Function: Determines whether two local modal qualifiers differ.
+
+Parameters:
+
+- other: [Mode](#enum-mode) - The other modal qualifier.
+
+Return Value:
+
+- Bool - true if they differ, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    println("op_ne_Mode diff: ${Mode.Maybe != Mode.Absent}")
+    println("op_ne_Mode same: ${Mode.Maybe != Mode.Maybe}")
+}
+```
+
+Output:
+
+```text
+op_ne_Mode diff: true
+op_ne_Mode same: false
+```
+
+### extend Mode <: Hashable
+
+```cangjie
+extend Mode <: Hashable
+```
+
+Function: Extends the Hashable interface for the [Mode](#enum-mode) enum to support hash value computation.
+
+Parent Types:
+
+- Hashable
+
+#### func hashCode()
+
+```cangjie
+public func hashCode(): Int64
+```
+
+Function: Gets the hash code of this modal qualifier.
+
+Return Value:
+
+- Int64 - The hash code of the modal qualifier.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    println("hash_eq: ${Mode.Must.hashCode() == Mode.Must.hashCode()}")
+}
+```
+
+Output:
+
+```text
+hash_eq: true
+```
+
 ## enum TypeActionMode
 
 ```cangjie
