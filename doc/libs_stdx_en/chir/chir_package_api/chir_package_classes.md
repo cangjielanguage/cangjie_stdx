@@ -206,13 +206,17 @@ Parent Types:
 - [BuiltinType](#class-builtintype)
 - Equatable\<[BoolType](#class-booltype)>
 
-### static func get()
+### static func get(ModalInfo)
 
 ```cangjie
-public static func get(): BoolType
+public static func get(modal!: ModalInfo = ModalInfo()): BoolType
 ```
 
 Function: Gets the singleton instance of BoolType.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -565,10 +569,10 @@ Output:
 Int32
 ```
 
-### static func get(Type)
+### static func get(Type, ModalInfo)
 
 ```cangjie
-public static func get(elementType: Type): CPointerType
+public static func get(elementType: Type, modal!: ModalInfo = ModalInfo()): CPointerType
 ```
 
 Function: Gets or creates the CPointerType for the given element type.
@@ -578,6 +582,7 @@ This method ensures there is at most one CPointerType instance per element type.
 Parameters:
 
 - elementType: Type - The type the pointer points to.
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -682,13 +687,17 @@ Parent Types:
 - [BuiltinType](#class-builtintype)
 - Equatable\<[CStringType](#class-cstringtype)>
 
-### static func get()
+### static func get(ModalInfo)
 
 ```cangjie
-public static func get(): CStringType
+public static func get(modal!: ModalInfo = ModalInfo()): CStringType
 ```
 
 Function: Gets the singleton instance of CStringType.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -1009,10 +1018,10 @@ Output:
 C
 ```
 
-### static func get(ClassLikeDef, Array\<Type>)
+### static func get(ClassLikeDef, Array\<Type>, ModalInfo)
 
 ```cangjie
-public static func get(def: ClassLikeDef, genericTypeParams: Array<Type>): ClassLikeType
+public static func get(def: ClassLikeDef, genericTypeParams: Array<Type>, modal!: ModalInfo = ModalInfo()): ClassLikeType
 ```
 
 Function: Gets or creates the cached unique instance from the definition and generic arguments.
@@ -1021,6 +1030,7 @@ Parameters:
 
 - def: ClassLikeDef - Class/interface definition.
 - genericTypeParams: Array\<Type> - Generic type arguments (empty array when not generic).
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -3154,10 +3164,10 @@ Output:
 E
 ```
 
-### static func get(EnumDef, Array\<Type>)
+### static func get(EnumDef, Array\<Type>, ModalInfo)
 
 ```cangjie
-public static func get(def: EnumDef, genericTypeParams: Array<Type>): EnumType
+public static func get(def: EnumDef, genericTypeParams: Array<Type>, modal!: ModalInfo = ModalInfo()): EnumType
 ```
 
 Function: Gets or creates the cached instance from the enum definition and generic arguments.
@@ -3166,6 +3176,7 @@ Parameters:
 
 - def: EnumDef - Enum definition.
 - genericTypeParams: Array\<Type> - Generic type arguments.
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -3282,13 +3293,17 @@ Parent Types:
 - [NumericType](#class-numerictype)
 - Equatable\<[FloatType](#class-floattype)>
 
-### static func getFloat16()
+### static func getFloat16(ModalInfo)
 
 ```cangjie
-public static func getFloat16(): FloatType
+public static func getFloat16(modal!: ModalInfo = ModalInfo()): FloatType
 ```
 
 Function: Gets the Float16 type instance.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -3312,13 +3327,17 @@ Output:
 Float16 type: Float16
 ```
 
-### static func getFloat32()
+### static func getFloat32(ModalInfo)
 
 ```cangjie
-public static func getFloat32(): FloatType
+public static func getFloat32(modal!: ModalInfo = ModalInfo()): FloatType
 ```
 
 Function: Gets the Float32 type instance.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -3342,13 +3361,17 @@ Output:
 Float32 type: Float32
 ```
 
-### static func getFloat64()
+### static func getFloat64(ModalInfo)
 
 ```cangjie
-public static func getFloat64(): FloatType
+public static func getFloat64(modal!: ModalInfo = ModalInfo()): FloatType
 ```
 
 Function: Gets the Float64 type instance.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -3539,10 +3562,10 @@ Output:
 Int32
 ```
 
-### static func get(Array\<Type>, Type, Bool, Bool)
+### static func get(Array\<Type>, Type, Bool, Bool, ModalInfo)
 
 ```cangjie
-public static func get(paramTypes: Array<Type>, retType: Type, varArg!: Bool = false, cFunc!: Bool = false): FuncType
+public static func get(paramTypes: Array<Type>, retType: Type, varArg!: Bool = false, cFunc!: Bool = false, modal!: ModalInfo = ModalInfo()): FuncType
 ```
 
 Function: Gets or creates the uniquely cached instance from parameter list, return type, and varargs/C flag.
@@ -3553,6 +3576,7 @@ Parameters:
 - retType: Type - Return type.
 - varArg! - Whether this is a varargs function type; default `false`.
 - cFunc! - Whether this is in `CFunc<...>` form; default `false`.
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -3713,10 +3737,10 @@ Output:
 0
 ```
 
-### static func get(String, String)
+### static func get(String, String, ModalInfo)
 
 ```cangjie
-public static func get(identifier: String, srcCodeName: String): GenericType
+public static func get(identifier: String, srcCodeName: String, modal!: ModalInfo = ModalInfo()): GenericType
 ```
 
 Function: Gets or creates the generic parameter type cached by internal `identifier` (e.g. `T`).
@@ -3725,6 +3749,7 @@ Parameters:
 
 - identifier: String - Internal unique key (for mangling).
 - srcCodeName: String - Parameter name in source.
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -3826,13 +3851,17 @@ Parent Types:
 - [NumericType](#class-numerictype)
 - Equatable\<[IntType](#class-inttype)>
 
-### static func getInt16()
+### static func getInt16(ModalInfo)
 
 ```cangjie
-public static func getInt16(): IntType
+public static func getInt16(modal!: ModalInfo = ModalInfo()): IntType
 ```
 
 Function: Gets the Int16 type instance.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -3856,13 +3885,17 @@ Output:
 Int16 type: Int16
 ```
 
-### static func getInt32()
+### static func getInt32(ModalInfo)
 
 ```cangjie
-public static func getInt32(): IntType
+public static func getInt32(modal!: ModalInfo = ModalInfo()): IntType
 ```
 
 Function: Gets the Int32 type instance.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -3886,13 +3919,17 @@ Output:
 Int32 type: Int32
 ```
 
-### static func getInt64()
+### static func getInt64(ModalInfo)
 
 ```cangjie
-public static func getInt64(): IntType
+public static func getInt64(modal!: ModalInfo = ModalInfo()): IntType
 ```
 
 Function: Gets the Int64 type instance.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -3916,13 +3953,17 @@ Output:
 Int64 type: Int64
 ```
 
-### static func getInt8()
+### static func getInt8(ModalInfo)
 
 ```cangjie
-public static func getInt8(): IntType
+public static func getInt8(modal!: ModalInfo = ModalInfo()): IntType
 ```
 
 Function: Gets the Int8 type instance.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -3946,13 +3987,17 @@ Output:
 Int8 type: Int8
 ```
 
-### static func getIntNative()
+### static func getIntNative(ModalInfo)
 
 ```cangjie
-public static func getIntNative(): IntType
+public static func getIntNative(modal!: ModalInfo = ModalInfo()): IntType
 ```
 
 Function: Gets the IntNative type instance.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -3976,13 +4021,17 @@ Output:
 IntNative type: IntNative
 ```
 
-### static func getUInt16()
+### static func getUInt16(ModalInfo)
 
 ```cangjie
-public static func getUInt16(): IntType
+public static func getUInt16(modal!: ModalInfo = ModalInfo()): IntType
 ```
 
 Function: Gets the UInt16 type instance.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -4006,13 +4055,17 @@ Output:
 UInt16 type: UInt16
 ```
 
-### static func getUInt32()
+### static func getUInt32(ModalInfo)
 
 ```cangjie
-public static func getUInt32(): IntType
+public static func getUInt32(modal!: ModalInfo = ModalInfo()): IntType
 ```
 
 Function: Gets the UInt32 type instance.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -4036,13 +4089,17 @@ Output:
 UInt32 type: UInt32
 ```
 
-### static func getUInt64()
+### static func getUInt64(ModalInfo)
 
 ```cangjie
-public static func getUInt64(): IntType
+public static func getUInt64(modal!: ModalInfo = ModalInfo()): IntType
 ```
 
 Function: Gets the UInt64 type instance.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -4066,13 +4123,17 @@ Output:
 UInt64 type: UInt64
 ```
 
-### static func getUInt8()
+### static func getUInt8(ModalInfo)
 
 ```cangjie
-public static func getUInt8(): IntType
+public static func getUInt8(modal!: ModalInfo = ModalInfo()): IntType
 ```
 
 Function: Gets the UInt8 type instance.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -4096,13 +4157,17 @@ Output:
 UInt8 type: UInt8
 ```
 
-### static func getUIntNative()
+### static func getUIntNative(ModalInfo)
 
 ```cangjie
-public static func getUIntNative(): IntType
+public static func getUIntNative(modal!: ModalInfo = ModalInfo()): IntType
 ```
 
 Function: Gets the UIntNative type instance.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -4724,6 +4789,297 @@ Output:
 [pluginAdded]var x: Int32
 ```
 
+## class ModalInfo
+
+```cangjie
+public class ModalInfo <: Hashable & Equatable<ModalInfo> {
+    public let local: Mode
+    public init(local!: Mode = Mode.Absent)
+}
+```
+
+Function: Represents the **modal metadata** carried by a type, the vehicle for local mode in the CHIR type system. Every [Type](#class-type) holds one ModalInfo, readable through [prop modalInfo](#prop-modalinfo); use [func withModal(ModalInfo)](#func-withmodalmodalinfo) to build an equivalent type carrying the requested modal.
+
+Modal metadata currently holds a single local qualifier ([Mode](./chir_package_enums.md#enum-mode)), defaulting to `Mode.Absent`, that is, a non-modal type.
+
+Parent Types:
+
+- Hashable
+- Equatable\<[ModalInfo](#class-modalinfo)>
+
+### let local
+
+```cangjie
+public let local: Mode
+```
+
+Function: The local modal qualifier; see [Mode](./chir_package_enums.md#enum-mode) for the possible values. This field is immutable and cannot be changed after construction; create a new ModalInfo instance for a different modal.
+
+Type: [Mode](./chir_package_enums.md#enum-mode)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let modal = ModalInfo(local: Mode.Must)
+    println("let_local: ${modal.local == Mode.Must}")
+}
+```
+
+Output:
+
+```text
+let_local: true
+```
+
+### init(Mode)
+
+```cangjie
+public init(local!: Mode = Mode.Absent)
+```
+
+Function: Creates modal metadata carrying the given local qualifier.
+
+Parameters:
+
+- local!: [Mode](./chir_package_enums.md#enum-mode) - The local modal qualifier; defaults to `Mode.Absent` (non-modal).
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let dflt = ModalInfo()
+    let must = ModalInfo(local: Mode.Must)
+    println("init_default_is_modal: ${dflt.isModal()}")
+    println("init_must_is_modal: ${must.isModal()}")
+}
+```
+
+Output:
+
+```text
+init_default_is_modal: false
+init_must_is_modal: true
+```
+
+### func isModal()
+
+```cangjie
+public func isModal(): Bool
+```
+
+Function: Checks whether this modal metadata carries a local qualifier, that is, whether `local` is not `Mode.Absent`.
+
+Return Value:
+
+- Bool - true if a local qualifier is carried, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    println("absent: ${ModalInfo().isModal()}")
+    println("maybe: ${ModalInfo(local: Mode.Maybe).isModal()}")
+    println("must: ${ModalInfo(local: Mode.Must).isModal()}")
+}
+```
+
+Output:
+
+```text
+absent: false
+maybe: true
+must: true
+```
+
+### func isSubModal(ModalInfo)
+
+```cangjie
+public func isSubModal(other: ModalInfo): Bool
+```
+
+Function: Checks whether this modal is a **sub-modal** of `other`. The current sub-modal relationships are: `Absent` is a sub-modal of `Maybe`, and `Must` is a sub-modal of `Maybe`. All other combinations, including two equal modals, return false.
+
+Parameters:
+
+- other: [ModalInfo](#class-modalinfo) - The modal metadata to compare against.
+
+Return Value:
+
+- Bool - true if this modal is a sub-modal of `other`, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let maybe = ModalInfo(local: Mode.Maybe)
+    println("absent_sub_maybe: ${ModalInfo().isSubModal(maybe)}")
+    println("must_sub_maybe: ${ModalInfo(local: Mode.Must).isSubModal(maybe)}")
+    println("maybe_sub_maybe: ${maybe.isSubModal(maybe)}")
+}
+```
+
+Output:
+
+```text
+absent_sub_maybe: true
+must_sub_maybe: true
+maybe_sub_maybe: false
+```
+
+### func isEqualOrSubModal(ModalInfo)
+
+```cangjie
+public func isEqualOrSubModal(other: ModalInfo): Bool
+```
+
+Function: Checks whether this modal equals `other` or is a sub-modal of it. Equivalent to `this == other || this.isSubModal(other)`.
+
+Parameters:
+
+- other: [ModalInfo](#class-modalinfo) - The modal metadata to compare against.
+
+Return Value:
+
+- Bool - true if equal or a sub-modal, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let maybe = ModalInfo(local: Mode.Maybe)
+    println("maybe_eq_or_sub_maybe: ${maybe.isEqualOrSubModal(maybe)}")
+    println("absent_eq_or_sub_maybe: ${ModalInfo().isEqualOrSubModal(maybe)}")
+    println("maybe_eq_or_sub_absent: ${maybe.isEqualOrSubModal(ModalInfo())}")
+}
+```
+
+Output:
+
+```text
+maybe_eq_or_sub_maybe: true
+absent_eq_or_sub_maybe: true
+maybe_eq_or_sub_absent: false
+```
+
+### func toString()
+
+```cangjie
+public func toString(): String
+```
+
+Function: Gets the string representation of the modal metadata: `@~local` for `Absent`, `@local?` for `Maybe`, and `@local!` for `Must`.
+
+> **Note:**
+>
+> ModalInfo provides `toString`, but ToString is not in its parent type list; [Mode](./chir_package_enums.md#enum-mode) itself does not provide `toString`.
+
+Return Value:
+
+- String - The string representation of the modal qualifier.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    println(ModalInfo().toString())
+    println(ModalInfo(local: Mode.Maybe).toString())
+    println(ModalInfo(local: Mode.Must).toString())
+}
+```
+
+Output:
+
+```text
+@~local
+@local?
+@local!
+```
+
+### func hashCode()
+
+```cangjie
+public func hashCode(): Int64
+```
+
+Function: Gets the hash code of this modal metadata, determined by the hash code of the `local` field.
+
+Return Value:
+
+- Int64 - The hash code of the modal metadata.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let a = ModalInfo(local: Mode.Must)
+    let b = ModalInfo(local: Mode.Must)
+    println("hash_eq: ${a.hashCode() == b.hashCode()}")
+}
+```
+
+Output:
+
+```text
+hash_eq: true
+```
+
+### operator func ==(ModalInfo)
+
+```cangjie
+public operator func ==(other: ModalInfo): Bool
+```
+
+Function: Compares two modal metadata by value; they are equal if and only if their `local` fields are the same.
+
+Parameters:
+
+- other: [ModalInfo](#class-modalinfo) - The modal metadata to compare against.
+
+Return Value:
+
+- Bool - true if `local` is the same, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    println("op_eq_ModalInfo same: ${ModalInfo(local: Mode.Must) == ModalInfo(local: Mode.Must)}")
+    println("op_eq_ModalInfo diff: ${ModalInfo(local: Mode.Must) == ModalInfo()}")
+}
+```
+
+Output:
+
+```text
+op_eq_ModalInfo same: true
+op_eq_ModalInfo diff: false
+```
+
 ## class NothingType
 
 ```cangjie
@@ -4737,13 +5093,17 @@ Parent Types:
 - [BuiltinType](#class-builtintype)
 - Equatable\<[NothingType](#class-nothingtype)>
 
-### static func get()
+### static func get(ModalInfo)
 
 ```cangjie
-public static func get(): NothingType
+public static func get(modal!: ModalInfo = ModalInfo()): NothingType
 ```
 
 Function: Gets the singleton instance of NothingType.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -5727,13 +6087,17 @@ Output:
 3
 ```
 
-### static func get(Type, UInt32)
+### static func get(Type, UInt32, ModalInfo)
 
 ```cangjie
-public static func get(elementType: Type, dims: UInt32): RawArrayType
+public static func get(elementType: Type, dims: UInt32, modal!: ModalInfo = ModalInfo()): RawArrayType
 ```
 
 Function: Gets or creates a raw array type.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -5982,13 +6346,17 @@ Parent Types:
 - [BuiltinType](#class-builtintype)
 - Equatable\<[RuneType](#class-runetype)>
 
-### static func get()
+### static func get(ModalInfo)
 
 ```cangjie
-public static func get(): RuneType
+public static func get(modal!: ModalInfo = ModalInfo()): RuneType
 ```
 
 Function: Gets the singleton instance of RuneType.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -6119,6 +6487,38 @@ Output:
 mut_prop_isCStruct: true
 ```
 
+### prop isCopy
+
+```cangjie
+public mut prop isCopy: Bool
+```
+
+Function: Whether this struct implements `Copyable`. Defaults to `false`.
+
+Type: Bool
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let s = pkg.addStruct("S_m", "S")
+    println("mut_prop_isCopy_default: ${s.isCopy}")
+    s.isCopy = true
+    println("mut_prop_isCopy: ${s.isCopy}")
+}
+```
+
+Output:
+
+```text
+mut_prop_isCopy_default: false
+mut_prop_isCopy: true
+```
+
 ### operator func ==(StructDef)
 
 ```cangjie
@@ -6197,10 +6597,10 @@ Output:
 S
 ```
 
-### static func get(StructDef, Array\<Type>)
+### static func get(StructDef, Array\<Type>, ModalInfo)
 
 ```cangjie
-public static func get(def: StructDef, genericTypeParams: Array<Type>): StructType
+public static func get(def: StructDef, genericTypeParams: Array<Type>, modal!: ModalInfo = ModalInfo()): StructType
 ```
 
 Function: Gets or creates the cached instance from the struct definition and generic arguments.
@@ -6209,6 +6609,7 @@ Parameters:
 
 - def: StructDef - Struct definition.
 - genericTypeParams: Array\<Type> - Generic type arguments.
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -6284,13 +6685,17 @@ Parent Types:
 - [Type](#class-type)
 - Equatable\<[ThisType](#class-thistype)>
 
-### static func get()
+### static func get(ModalInfo)
 
 ```cangjie
-public static func get(): ThisType
+public static func get(modal!: ModalInfo = ModalInfo()): ThisType
 ```
 
 Function: Returns the unique singleton of `This` type.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -6390,10 +6795,10 @@ Output:
 2
 ```
 
-### static func get(Array\<Type>)
+### static func get(Array\<Type>, ModalInfo)
 
 ```cangjie
-public static func get(elementTypes: Array<Type>): TupleType
+public static func get(elementTypes: Array<Type>, modal!: ModalInfo = ModalInfo()): TupleType
 ```
 
 Function: Gets or creates the unique tuple type for the given element type sequence.
@@ -6401,6 +6806,7 @@ Function: Gets or creates the unique tuple type for the given element type seque
 Parameters:
 
 - elementTypes: Array\<Type> - Element types from left to right.
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -6542,6 +6948,39 @@ Output:
 
 ```text
 Type argument count: 0
+```
+
+### prop modalInfo
+
+```cangjie
+public prop modalInfo: ModalInfo
+```
+
+Function: The modal metadata (local mode) carried by this type. A non-modal type returns the default [ModalInfo](#class-modalinfo), whose `local` is `Mode.Absent`.
+
+Modal metadata takes part in type equality and hashing, so `Int32` and `Int32 @local!` are two distinct type instances.
+
+Type: [ModalInfo](#class-modalinfo)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let plain = IntType.getInt32()
+    let modal = IntType.getInt32(modal: ModalInfo(local: Mode.Must))
+    println("plain: ${plain.modalInfo.toString()}")
+    println("modal: ${modal.modalInfo.toString()}")
+}
+```
+
+Output:
+
+```text
+plain: @~local
+modal: @local!
 ```
 
 ### func dump()
@@ -7408,13 +7847,120 @@ Reference type: Int32&
 After stripping reference: Int32
 ```
 
+### func isModal()
+
+```cangjie
+public func isModal(): Bool
+```
+
+Function: Checks whether this type carries a local modal qualifier; equivalent to `modalInfo.isModal()`.
+
+Return Value:
+
+- Bool - true if a local modal qualifier is carried, false otherwise.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    println("plain: ${IntType.getInt32().isModal()}")
+    println("modal: ${IntType.getInt32(modal: ModalInfo(local: Mode.Must)).isModal()}")
+}
+```
+
+Output:
+
+```text
+plain: false
+modal: true
+```
+
+### func getDataType()
+
+```cangjie
+public func getDataType(): Type
+```
+
+Function: Gets the data type with modal metadata stripped; equivalent to `withModal(ModalInfo())`. The type shape is unchanged; only the modal is reset to the default non-modal state.
+
+Return Value:
+
+- [Type](#class-type) - The same type shape without modal metadata.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let modal = IntType.getInt32(modal: ModalInfo(local: Mode.Must))
+    let data = modal.getDataType()
+    println("modal: ${modal.toString()}")
+    println("data: ${data.toString()}")
+    println("same_as_plain: ${data == IntType.getInt32()}")
+}
+```
+
+Output:
+
+```text
+modal: Int32 @local!
+data: Int32
+same_as_plain: true
+```
+
+### func withModal(ModalInfo)
+
+```cangjie
+public func withModal(modal: ModalInfo): Type
+```
+
+Function: Gets an equivalent type carrying the given modal metadata. Type instances are cached, so repeated calls for the same shape and the same modal return the same instance.
+
+For reference types (`T&`) and box types, the modal is applied to the underlying data type rather than to the reference or box itself. If the type already carries the requested modal, it is returned as is.
+
+Parameters:
+
+- modal: [ModalInfo](#class-modalinfo) - The modal metadata to attach.
+
+Return Value:
+
+- [Type](#class-type) - The type carrying the given modal metadata.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let plain = IntType.getInt32()
+    let modal = plain.withModal(ModalInfo(local: Mode.Must))
+    println("plain: ${plain.toString()}")
+    println("modal: ${modal.toString()}")
+    println("cached: ${modal == IntType.getInt32(modal: ModalInfo(local: Mode.Must))}")
+}
+```
+
+Output:
+
+```text
+plain: Int32
+modal: Int32 @local!
+cached: true
+```
+
 ### func toString()
 
 ```cangjie
 public open func toString(): String
 ```
 
-Function: Converts this type to a string representation.
+Function: Converts this type to a string representation. When modal metadata is carried, the modal text is appended after the base type text separated by a space, for example `Int32 @local!`.
 
 Return Value:
 
@@ -7451,13 +7997,17 @@ Parent Types:
 - [BuiltinType](#class-builtintype)
 - Equatable\<[UnitType](#class-unittype)>
 
-### static func get()
+### static func get(ModalInfo)
 
 ```cangjie
-public static func get(): UnitType
+public static func get(modal!: ModalInfo = ModalInfo()): UnitType
 ```
 
 Function: Gets the singleton instance of UnitType.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -7585,13 +8135,17 @@ Output:
 8
 ```
 
-### static func get(Type, Int64)
+### static func get(Type, Int64, ModalInfo)
 
 ```cangjie
-public static func get(elementType: Type, size: Int64): VArrayType
+public static func get(elementType: Type, size: Int64, modal!: ModalInfo = ModalInfo()): VArrayType
 ```
 
 Function: Gets or creates a VArray type.
+
+Parameters:
+
+- modal!: [ModalInfo](#class-modalinfo) - The modal information carried by the type. Defaults to `ModalInfo()`, a non-modal type.
 
 Return Value:
 
@@ -9481,15 +10035,19 @@ Output:
 prop_entryBlock: true
 ```
 
-### prop owner
+### prop ownerFunc
 
 ```cangjie
-public prop owner: Value
+public prop ownerFunc: ?Function
 ```
 
-Function: The owning parent value (the function or the local variable corresponding to a lambda).
+Function: The owning function. Present only when this block group is a function body; `None` when the block group belongs to an expression (such as the body of a [Lambda](#class-lambda) or an [Exclave](#class-exclave)).
 
-Type: Value
+> **Note:**
+>
+> This property replaces the former `owner: Value` property. The old `owner` returned either the function or the local variable corresponding to a lambda; those cases are now split. Use `ownerFunc` for a function host, and [prop topLevelFunc](#prop-toplevelfunc) to reach the owning top-level function for an expression host.
+
+Type: ?[Function](#class-function)
 
 Example:
 
@@ -9502,14 +10060,14 @@ main() {
     let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
     f.initBody()
     let bg = f.body.getOrThrow()
-    println("prop_owner: ${bg.owner == f}")
+    println("prop_ownerFunc: ${bg.ownerFunc.getOrThrow() == f}")
 }
 ```
 
 Output:
 
 ```text
-prop_owner: true
+prop_ownerFunc: true
 ```
 
 ### prop topLevelFunc
@@ -15106,6 +15664,256 @@ Output:
 op_eq_Debug: true
 ```
 
+## class EndRegion
+
+```cangjie
+public class EndRegion <: Expression & Equatable<EndRegion> {}
+```
+
+Function: Memory region end marker expression, marking where a memory region ends under local mode. Used in pairs with [StartRegion](#class-startregion).
+
+Parent Types:
+
+- Expression
+- Equatable\<EndRegion>
+
+### static func create(Type)
+
+```cangjie
+public static func create(retTy: Type): EndRegion
+```
+
+Function: Creates a memory region end marker expression.
+
+Parameters:
+
+- retTy: [Type](#class-type) - Result type, typically [UnitType](#class-unittype).
+
+Return Value:
+
+- [EndRegion](#class-endregion) - The created region end marker expression.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = EndRegion.create(UnitType.get())
+    block.appendExpr(expr)
+    println("static_func_create: ${block.exprs.size}")
+}
+```
+
+Output:
+
+```text
+static_func_create: 1
+```
+
+### operator func ==(EndRegion)
+
+```cangjie
+public operator func ==(other: EndRegion): Bool
+```
+
+Function: Reference comparison, determining whether two EndRegion values are the same instance.
+
+Parameters:
+
+- other: EndRegion - The other region end marker expression.
+
+Return Value:
+
+- Bool - Whether they are the same reference.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = EndRegion.create(UnitType.get())
+    block.appendExpr(expr)
+    println("op_eq_EndRegion: ${expr == expr}")
+}
+```
+
+Output:
+
+```text
+op_eq_EndRegion: true
+```
+
+## class Exclave
+
+```cangjie
+public class Exclave <: Expression & Equatable<Exclave> {}
+```
+
+Function: Exclave terminator expression, representing code evaluated in an outer memory region under local mode. This expression holds a separate block group as its body.
+
+After creation, call `initBody` to initialize the body. Because initialization locates the top-level function through the owning block, the expression must first be appended to a block and only then have `initBody` called. Alternatively, use [func createExclave()](#func-createexclave) on [CHIRBuilder](#class-chirbuilder), which performs the insertion and initialization in one step.
+
+Parent Types:
+
+- Expression
+- Equatable\<Exclave>
+
+### prop body
+
+```cangjie
+public prop body: BlockGroup
+```
+
+Function: The body of the exclave (a block group). Accessing it before `initBody` has been called triggers an assertion failure.
+
+Type: [BlockGroup](#class-blockgroup)
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Exclave.create()
+    block.appendExpr(expr)
+    expr.initBody()
+    println("prop_body: ${expr.body.blocks.size}")
+}
+```
+
+Output:
+
+```text
+prop_body: 1
+```
+
+### static func create()
+
+```cangjie
+public static func create(): Exclave
+```
+
+Function: Creates an exclave terminator expression. This method does not initialize the body; call `initBody` separately after appending the expression to a block.
+
+Return Value:
+
+- [Exclave](#class-exclave) - The created exclave expression.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Exclave.create()
+    block.appendExpr(expr)
+    println("static_func_create: ${block.exprs.size}")
+}
+```
+
+Output:
+
+```text
+static_func_create: 1
+```
+
+### func initBody()
+
+```cangjie
+public func initBody(): Unit
+```
+
+Function: Initializes the exclave body, creating a new block group and creating one block inside it as the entry block.
+
+> **Note:**
+>
+> This method locates the top-level function through the owning block in order to generate the block group identifier, so the expression must be appended to a block before calling it; otherwise an exception is thrown.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Exclave.create()
+    block.appendExpr(expr)
+    expr.initBody()
+    println("func_initBody: ${expr.body.blocks.size == 1}")
+}
+```
+
+Output:
+
+```text
+func_initBody: true
+```
+
+### operator func ==(Exclave)
+
+```cangjie
+public operator func ==(other: Exclave): Bool
+```
+
+Function: Reference comparison, determining whether two Exclave values are the same instance.
+
+Parameters:
+
+- other: Exclave - The other exclave expression.
+
+Return Value:
+
+- Bool - Whether they are the same reference.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = Exclave.create()
+    block.appendExpr(expr)
+    println("op_eq_Exclave: ${expr == expr}")
+}
+```
+
+Output:
+
+```text
+op_eq_Exclave: true
+```
+
 ## class Exit
 
 ```cangjie
@@ -20029,6 +20837,97 @@ Output:
 op_eq_TrySpawn: true
 ```
 
+## class StartRegion
+
+```cangjie
+public class StartRegion <: Expression & Equatable<StartRegion> {}
+```
+
+Function: Memory region start marker expression, marking where a memory region begins under local mode. Used in pairs with [EndRegion](#class-endregion).
+
+Parent Types:
+
+- Expression
+- Equatable\<StartRegion>
+
+### static func create(Type)
+
+```cangjie
+public static func create(retTy: Type): StartRegion
+```
+
+Function: Creates a memory region start marker expression.
+
+Parameters:
+
+- retTy: [Type](#class-type) - Result type, typically [UnitType](#class-unittype).
+
+Return Value:
+
+- [StartRegion](#class-startregion) - The created region start marker expression.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = StartRegion.create(UnitType.get())
+    block.appendExpr(expr)
+    println("static_func_create: ${block.exprs.size}")
+}
+```
+
+Output:
+
+```text
+static_func_create: 1
+```
+
+### operator func ==(StartRegion)
+
+```cangjie
+public operator func ==(other: StartRegion): Bool
+```
+
+Function: Reference comparison, determining whether two StartRegion values are the same instance.
+
+Parameters:
+
+- other: StartRegion - The other region start marker expression.
+
+Return Value:
+
+- Bool - Whether they are the same reference.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let expr = StartRegion.create(UnitType.get())
+    block.appendExpr(expr)
+    println("op_eq_StartRegion: ${expr == expr}")
+}
+```
+
+Output:
+
+```text
+op_eq_StartRegion: true
+```
+
 ## class Store
 
 ```cangjie
@@ -23075,6 +23974,43 @@ Output:
 
 ```text
 createDebug: true
+```
+
+### func createExclave()
+
+```cangjie
+public func createExclave(): Exclave
+```
+
+Function: Creates an exclave expression, inserts it at the current insertion position, advances the insertion point, and initializes its body (block group).
+
+Compared with calling `create` on [Exclave](#class-exclave) directly, this method already performs the insertion and the `initBody` call, so `body` is immediately accessible on the returned expression.
+
+Return Value:
+
+- [Exclave](#class-exclave) - The created exclave expression, with its body initialized.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    f.initBody()
+    let block = f.body.getOrThrow().entryBlock
+    let builder = CHIRBuilder(InsertPosition.AtEnd(block))
+    let expr = builder.createExclave()
+    println("createExclave: ${expr.body.blocks.size}")
+}
+```
+
+Output:
+
+```text
+createExclave: 1
 ```
 
 ### func createExit()

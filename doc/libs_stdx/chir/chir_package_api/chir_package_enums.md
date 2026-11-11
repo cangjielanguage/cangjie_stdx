@@ -1581,6 +1581,233 @@ op_ne_IRActionMode diff: true
 op_ne_IRActionMode same: false
 ```
 
+## enum Mode
+
+```cangjie
+public enum Mode {
+    | Absent
+    | Maybe
+    | Must
+}
+```
+
+功能：类型上的 **local 模态限定符**，用于 local mode 下描述一个类型是否带有 `@local` 限定。该枚举由 [ModalInfo](./chir_package_classes.md#class-modalinfo) 承载，并通过 [Type](./chir_package_classes.md#class-type) 的 `modalInfo` 属性暴露。
+
+三个取值之间构成子模态关系：`Absent` 与 `Must` 都是 `Maybe` 的子模态，详见 [func isSubModal(ModalInfo)](./chir_package_classes.md#func-issubmodalmodalinfo)。
+
+> **注意：**
+>
+> 该枚举通过扩展提供 `hashCode` 与相等性比较，**不实现** `ToString`。如需可读文本，请使用 [ModalInfo](./chir_package_classes.md#class-modalinfo) 的 `toString`。
+
+### Absent
+
+```cangjie
+Absent
+```
+
+功能：无 local 限定，即普通（非模态）类型，对应文本表示 `@~local`。这是 [ModalInfo](./chir_package_classes.md#class-modalinfo) 的默认取值。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let modal = ModalInfo()
+    match (modal.local) {
+        case Absent => println("absent")
+        case Maybe => println("maybe")
+        case Must => println("must")
+    }
+}
+```
+
+运行结果：
+
+```text
+absent
+```
+
+### Maybe
+
+```cangjie
+Maybe
+```
+
+功能：可能带 local 限定，对应文本表示 `@local?`。`Absent` 与 `Must` 均为其子模态。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let modal = ModalInfo(local: Mode.Maybe)
+    println("is_modal: ${modal.isModal()}")
+    println("to_string: ${modal.toString()}")
+}
+```
+
+运行结果：
+
+```text
+is_modal: true
+to_string: @local?
+```
+
+### Must
+
+```cangjie
+Must
+```
+
+功能：必须带 local 限定，对应文本表示 `@local!`。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let modal = ModalInfo(local: Mode.Must)
+    println("to_string: ${modal.toString()}")
+    println("sub_of_maybe: ${modal.isSubModal(ModalInfo(local: Mode.Maybe))}")
+}
+```
+
+运行结果：
+
+```text
+to_string: @local!
+sub_of_maybe: true
+```
+
+### extend Mode <: Equatable\<Mode>
+
+```cangjie
+extend Mode <: Equatable<Mode>
+```
+
+功能：为 [Mode](#enum-mode) 枚举扩展 Equatable\<[Mode](#enum-mode)> 接口，支持判等操作。
+
+父类型：
+
+- Equatable\<[Mode](#enum-mode)>
+
+#### operator func ==(Mode)
+
+```cangjie
+public operator func ==(other: Mode): Bool
+```
+
+功能：判断两个 local 模态限定符是否相同。
+
+参数：
+
+- other: [Mode](#enum-mode) - 另一个模态限定符。
+
+返回值：
+
+- Bool - 相同时返回 true，否则返回 false。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    println("op_eq_Mode same: ${Mode.Must == Mode.Must}")
+    println("op_eq_Mode diff: ${Mode.Must == Mode.Absent}")
+}
+```
+
+运行结果：
+
+```text
+op_eq_Mode same: true
+op_eq_Mode diff: false
+```
+
+#### operator func !=(Mode)
+
+```cangjie
+public operator func !=(other: Mode): Bool
+```
+
+功能：判断两个 local 模态限定符是否不同。
+
+参数：
+
+- other: [Mode](#enum-mode) - 另一个模态限定符。
+
+返回值：
+
+- Bool - 不同时返回 true，否则返回 false。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    println("op_ne_Mode diff: ${Mode.Maybe != Mode.Absent}")
+    println("op_ne_Mode same: ${Mode.Maybe != Mode.Maybe}")
+}
+```
+
+运行结果：
+
+```text
+op_ne_Mode diff: true
+op_ne_Mode same: false
+```
+
+### extend Mode <: Hashable
+
+```cangjie
+extend Mode <: Hashable
+```
+
+功能：为 [Mode](#enum-mode) 枚举扩展 Hashable 接口，支持计算哈希值。
+
+父类型：
+
+- Hashable
+
+#### func hashCode()
+
+```cangjie
+public func hashCode(): Int64
+```
+
+功能：获取该模态限定符的哈希码。
+
+返回值：
+
+- Int64 - 模态限定符的哈希码。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    println("hash_eq: ${Mode.Must.hashCode() == Mode.Must.hashCode()}")
+}
+```
+
+运行结果：
+
+```text
+hash_eq: true
+```
+
 ## enum TypeActionMode
 
 ```cangjie
