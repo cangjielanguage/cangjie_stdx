@@ -40,10 +40,6 @@ sealed abstract class JsonValue <: ToString {
      * @throws JsonException if there exists JsonValue which cannot be converted to String.
      */
     public func toString(): String
-    @When[env != "ohos"]
-    public open func toString(this @local?): String @local! {
-        throw UnimplementedException("JsonValue.toString(this @local?) not implemented")
-    }
 
     /**
      * Convert JsonValue to json-String.
@@ -55,10 +51,6 @@ sealed abstract class JsonValue <: ToString {
      * @throws JsonException if there exists JsonValue which cannot be converted to String.
      */
     public func toJsonString(): String
-    @When[env != "ohos"]
-    public open func toJsonString(this @local!): String @local! {
-        throw UnimplementedException("JsonValue.toJsonString(this @local!) not implemented")
-    }
 
     /**
      * Convert JsonValue to String Without Escaping.
@@ -68,10 +60,6 @@ sealed abstract class JsonValue <: ToString {
      * @throws JsonException if there exists JsonValue which cannot be converted to String.
      */
     public func toStringWithoutEscaping(): String
-    @When[env != "ohos"]
-    public open func toStringWithoutEscaping(this @local!): String @local! {
-        throw UnimplementedException("JsonValue.toStringWithoutEscaping(this @local!) not implemented")
-    }
 
     /**
      * Convert JsonValue to json-String Without Escaping.
@@ -81,10 +69,6 @@ sealed abstract class JsonValue <: ToString {
      * @throws JsonException if there exists JsonValue which cannot be converted to String.
      */
     public func toJsonStringWithoutEscaping(): String
-    @When[env != "ohos"]
-    public open func toJsonStringWithoutEscaping(this @local!): String @local! {
-        throw UnimplementedException("JsonValue.toJsonStringWithoutEscaping(this @local!) not implemented")
-    }
 
     /**
      * Parses string data into JsonValue.
@@ -125,6 +109,29 @@ sealed abstract class JsonValue <: ToString {
      * @since 0.17.4
      */
     public func kind(): JsonKind
+
+    // Local-mode overloads are appended after every pre-existing virtual member so that
+    // the dispatch slots of the released API keep their original indices.
+    @When[env != "ohos"]
+    public open func toString(this @local?): String @local! {
+        throw UnimplementedException("JsonValue.toString(this @local?) not implemented")
+    }
+
+    @When[env != "ohos"]
+    public open func toJsonString(this @local!): String @local! {
+        throw UnimplementedException("JsonValue.toJsonString(this @local!) not implemented")
+    }
+
+    @When[env != "ohos"]
+    public open func toStringWithoutEscaping(this @local!): String @local! {
+        throw UnimplementedException("JsonValue.toStringWithoutEscaping(this @local!) not implemented")
+    }
+
+    @When[env != "ohos"]
+    public open func toJsonStringWithoutEscaping(this @local!): String @local! {
+        throw UnimplementedException("JsonValue.toJsonStringWithoutEscaping(this @local!) not implemented")
+    }
+
     @When[env != "ohos"]
     public open func kind(this @local?): JsonKind {
         throw UnimplementedException("JsonValue.kind(this @local?) not implemented")
