@@ -1261,6 +1261,15 @@ if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CANGJIE_BUILD_WITHOUT_SYNTAX)
     else()
         set(syntaxFFI_flags -lstdc++)
     endif()
+    # Both static and shared syntaxFFI variants are produced now; link the
+    # shared one explicitly so libstdx.syntax.so records a deterministic
+    # DT_NEEDED on libstdx.syntaxFFI.so instead of whichever variant the
+    # linker happens to pick from the build lib dir.
+    if(DARWIN)
+        set(syntaxFFI_link_flag -lstdx.syntaxFFI)
+    else()
+        set(syntaxFFI_link_flag -l:libstdx.syntaxFFI${CMAKE_SHARED_LIBRARY_SUFFIX})
+    endif()
 
     make_cangjie_lib(
         syntax IS_SHARED
@@ -1268,13 +1277,14 @@ if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CANGJIE_BUILD_WITHOUT_SYNTAX)
         DEPENDS
             cangjie${BACKEND_TYPE}Syntax
             stdx.syntaxFFI
+            stdx.syntaxFFI-shared
             cangjie-flatbuffers
             cangjie${BACKEND_TYPE}Flatbuffers
         CANGJIE_STD_LIB_LINK std-core std-collection std-sync std-convert std-fs std-sort std-ast
         OBJECTS ${output_cj_object_dir}/stdx/syntax.o
         FORCE_LINK_ARCHIVES stdx.syntaxFFI cangjie-flatbuffers
         FLAGS ${syntaxFFI_flags}
-            -lstdx.syntaxFFI
+            ${syntaxFFI_link_flag}
             $<$<BOOL:${OHOS}>:-lunwind>
             $<$<NOT:$<BOOL:${WIN32}>>:-ldl>
             ${EXCLUDE_FLATBUFFERS_OPTION}
