@@ -166,6 +166,7 @@ chir（Cangjie High-level IR）包提供类型系统与 CHIR 声明表示，包�
 | [BinaryExprKind](./chir_package_api/chir_package_enums.md#enum-binaryexprkind) | 二元运算符类别。 |
 | [InsertPosition](./chir_package_api/chir_package_enums.md#enum-insertposition) | CHIRBuilder 插入位置。 |
 | [IRActionMode](./chir_package_api/chir_package_enums.md#enum-iractionmode) | CHIRVisitor 遍历行为模式。 |
+| [LinkType](./chir_package_api/chir_package_enums.md#enum-linktype) | 全局值的链接类型。 |
 | [OverflowStrategy](./chir_package_api/chir_package_enums.md#enum-overflowstrategy) | 溢出处理策略。 |
 | [TypeActionMode](./chir_package_api/chir_package_enums.md#enum-typeactionmode) | TypeVisitor 遍历行为模式。 |
 | [UnaryExprKind](./chir_package_api/chir_package_enums.md#enum-unaryexprkind) | 一元运算符类别。 |

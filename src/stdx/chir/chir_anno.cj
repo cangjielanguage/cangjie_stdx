@@ -10,14 +10,22 @@ package stdx.chir
 
 import std.deriving.*
 
+/**
+ * Selects the linkage of a function or global variable.
+ * A global value has one active linkage; unset linkage defaults to external.
+ */
 @Derive[Equatable]
-internal enum LinkType <: ToString {
+public enum LinkType <: ToString {
     External
     | Internal
     | WeakOdr
     | LinkonceOdr
     | ExternalWeak
 
+    /**
+     * Gets the linkage name used in CHIR annotations.
+     * @return The linkage name in lowercase, with underscores between words.
+     */
     public func toString(): String {
         match (this) {
             case External => "external"

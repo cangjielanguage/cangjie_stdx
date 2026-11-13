@@ -10898,7 +10898,7 @@ func_isConst: false
 public func isExternalLinkage(): Bool
 ```
 
-功能：判断该全局值是否具有外部链接（`LinkType.External`）。
+功能：判断该全局值是否具有外部链接（`LinkType.External`）。 未设置链接类型注解时，默认返回 `true`。
 
 返回值：
 
@@ -11232,6 +11232,57 @@ main() {
 func_setInternal: true
 ```
 
+### func setLinkageType(LinkType)
+
+```cangjie
+public func setLinkageType(lt: LinkType): Unit
+```
+
+功能：设置函数或全局变量的链接类型。新链接类型替换原有链接类型，使另一种链接类型不再生效；重复调用不会添加重复注解。
+
+> **说明：**
+>
+> - 未设置链接类型注解时，默认链接类型为 `LinkType.External`。
+> - 链接类型与访问级别相互独立，设置 `LinkType.Internal` 不会更改访问级别。
+
+以下示例先设置为 `LinkType.Internal`，确认函数和全局变量的 `isExternalLinkage()` 均返回 `false`，再按字母顺序设置每种链接类型。第一次循环设置为 `LinkType.External`，确认均返回 `true`。
+
+参数：
+
+- lt: [LinkType](./chir_package_enums.md#enum-linktype) - 要启用的链接类型。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    let gv = pkg.addGlobalVar(IntType.getInt32(), "g_m", "g", "demo")
+    f.setLinkageType(LinkType.Internal)
+    gv.setLinkageType(LinkType.Internal)
+    println("before: ${f.isExternalLinkage()} ${gv.isExternalLinkage()}")
+    for (item in [LinkType.External, LinkType.ExternalWeak, LinkType.Internal, LinkType.LinkonceOdr, LinkType.WeakOdr]) {
+        f.setLinkageType(item)
+        gv.setLinkageType(item)
+        println("${item}: ${f.isExternalLinkage()} ${gv.isExternalLinkage()}")
+    }
+}
+```
+
+运行结果：
+
+```text
+before: false false
+external: true true
+external_weak: false false
+internal: false false
+linkonce_odr: false false
+weak_odr: false false
+```
+
 ### func setPrivate()
 
 ```cangjie
@@ -11483,6 +11534,35 @@ main() {
 prop_funcType: () -> Unit
 ```
 
+### prop genericDecl
+
+```cangjie
+public prop genericDecl: ?Function
+```
+
+功能：当前函数实例化所依据的泛型函数声明。此属性只读；未关联泛型函数声明时返回 `None`。
+
+类型: ?[Function](#class-function)
+
+示例:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    let pkg = Package("demo", AccessLevel.Public)
+    let f = pkg.addFunction(FuncType.get([], UnitType.get()), "f_m", "f", "demo")
+    println("prop_genericDecl: ${f.genericDecl.isNone()}")
+}
+```
+
+运行结果:
+
+```text
+prop_genericDecl: true
+```
+
 ### prop genericTypeParams
 
 ```cangjie
@@ -11569,6 +11649,22 @@ main() {
 ```text
 mut_prop_returnValue: true
 ```
+
+### func getFirstInitializerCall()
+
+```cangjie
+public func getFirstInitializerCall(): ?Expression
+```
+
+功能：使用 [CHIRVisitor](#class-chirvisitor) 遍历此包初始化函数，返回第一个 `Preinitialize` 内建调用之后访问到的第一个表达式。遍历按基本块组、基本块及表达式的存储顺序进行，并进入嵌套基本块组；跳过其他包的初始化调用，找到结果后立即停止。
+
+返回值：
+
+- ?[Expression](#class-expression) - 内建调用之后的第一个表达式；没有函数体、没有匹配的内建调用、其后没有表达式或紧接着为 `Exit` 时返回 `None`。
+
+异常：
+
+- [CHIRException](#class-chirexception) - 此函数不具有初始化标记或编译器生成的包初始化函数名称时抛出；普通函数以及文件、变量和字面量初始化函数不能调用此方法。
 
 ### func initBody()
 

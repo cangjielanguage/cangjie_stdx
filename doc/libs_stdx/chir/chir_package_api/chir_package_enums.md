@@ -194,6 +194,132 @@ op_ne_AccessLevel diff: true
 op_ne_AccessLevel same: false
 ```
 
+## enum LinkType
+
+```cangjie
+public enum LinkType <: ToString & Equatable<LinkType> {
+    | External
+    | Internal
+    | WeakOdr
+    | LinkonceOdr
+    | ExternalWeak
+}
+```
+
+功能：表示 [GlobalValue.setLinkageType(LinkType)](./chir_package_classes.md#func-setlinkagetypelinktype) 可设置的链接类型。同一全局值一次只能启用一种链接类型。
+
+父类型：
+
+- ToString
+- Equatable\<[LinkType](#enum-linktype)>
+
+### External
+
+```cangjie
+External
+```
+
+功能：外部链接；未设置链接类型注解时的默认值。
+
+### ExternalWeak
+
+```cangjie
+ExternalWeak
+```
+
+功能：外部弱链接。
+
+### Internal
+
+```cangjie
+Internal
+```
+
+功能：内部链接；与内部访问级别相互独立。
+
+### LinkonceOdr
+
+```cangjie
+LinkonceOdr
+```
+
+功能：遵循单一定义规则的链接一次类型。
+
+### WeakOdr
+
+```cangjie
+WeakOdr
+```
+
+功能：遵循单一定义规则的弱链接。
+
+### func toString()
+
+```cangjie
+public func toString(): String
+```
+
+功能：返回链接类型名称。
+
+返回值：
+
+- String - `"external"`、`"external_weak"`、`"internal"`、`"linkonce_odr"` 或 `"weak_odr"`。
+
+示例：
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    for (item in [LinkType.External, LinkType.ExternalWeak, LinkType.Internal, LinkType.LinkonceOdr, LinkType.WeakOdr]) {
+        println(item.toString())
+    }
+}
+```
+
+运行结果：
+
+```text
+external
+external_weak
+internal
+linkonce_odr
+weak_odr
+```
+
+### operator func ==(LinkType)
+
+```cangjie
+public operator func ==(other: LinkType): Bool
+```
+
+功能：判断两个链接类型是否相同。
+
+参数：
+
+- other: [LinkType](#enum-linktype) - 用于比较的链接类型。
+
+返回值：
+
+- Bool - 相同时返回 `true`，否则返回 `false`。
+
+### operator func !=(LinkType)
+
+```cangjie
+public operator func !=(other: LinkType): Bool
+```
+
+功能：判断两个链接类型是否不同。
+
+参数：
+
+- other: [LinkType](#enum-linktype) - 用于比较的链接类型。
+
+返回值：
+
+- Bool - 不同时返回 `true`，否则返回 `false`。
+
 ## enum OverflowStrategy
 
 ```cangjie

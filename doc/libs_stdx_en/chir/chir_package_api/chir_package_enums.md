@@ -194,6 +194,133 @@ op_ne_AccessLevel diff: true
 op_ne_AccessLevel same: false
 ```
 
+## enum LinkType
+
+```cangjie
+public enum LinkType <: ToString & Equatable<LinkType> {
+    | External
+    | Internal
+    | WeakOdr
+    | LinkonceOdr
+    | ExternalWeak
+}
+```
+
+Function: Selects linkage with [GlobalValue.setLinkageType(LinkType)](./chir_package_classes.md#func-setlinkagetypelinktype).
+A global value has only one active linkage at a time.
+
+Parent Types:
+
+- ToString
+- Equatable\<[LinkType](#enum-linktype)>
+
+### External
+
+```cangjie
+External
+```
+
+Function: External linkage; the default when no linkage annotation is set.
+
+### ExternalWeak
+
+```cangjie
+ExternalWeak
+```
+
+Function: External weak linkage.
+
+### Internal
+
+```cangjie
+Internal
+```
+
+Function: Internal linkage; independent of internal access level.
+
+### LinkonceOdr
+
+```cangjie
+LinkonceOdr
+```
+
+Function: Link-once linkage under the one-definition rule.
+
+### WeakOdr
+
+```cangjie
+WeakOdr
+```
+
+Function: Weak linkage under the one-definition rule.
+
+### func toString()
+
+```cangjie
+public func toString(): String
+```
+
+Function: Returns the linkage name.
+
+Return Value:
+
+- String - `"external"`, `"external_weak"`, `"internal"`, `"linkonce_odr"`, or `"weak_odr"`.
+
+Example:
+
+<!-- verify -->
+```cangjie
+import stdx.chir.*
+
+main() {
+    for (item in [LinkType.External, LinkType.ExternalWeak, LinkType.Internal, LinkType.LinkonceOdr, LinkType.WeakOdr]) {
+        println(item.toString())
+    }
+}
+```
+
+Output:
+
+```text
+external
+external_weak
+internal
+linkonce_odr
+weak_odr
+```
+
+### operator func ==(LinkType)
+
+```cangjie
+public operator func ==(other: LinkType): Bool
+```
+
+Function: Checks whether two linkage kinds are the same.
+
+Parameters:
+
+- other: [LinkType](#enum-linktype) - The linkage to compare.
+
+Return Value:
+
+- Bool - `true` for the same linkage; otherwise, `false`.
+
+### operator func !=(LinkType)
+
+```cangjie
+public operator func !=(other: LinkType): Bool
+```
+
+Function: Checks whether two linkage kinds differ.
+
+Parameters:
+
+- other: [LinkType](#enum-linktype) - The linkage to compare.
+
+Return Value:
+
+- Bool - `true` for different linkages; otherwise, `false`.
+
 ## enum OverflowStrategy
 
 ```cangjie
