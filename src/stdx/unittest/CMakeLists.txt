@@ -5,4 +5,6 @@
 #
 # See https://cangjie-lang.cn/pages/LICENSE for license information.
 
+add_subdirectory(concurrent)
 add_subdirectory(data)
+add_subdirectory(sync)

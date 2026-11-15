@@ -67,6 +67,11 @@ set(UNITTEST_DATA_DEPENDENCIES
     cangjie${BACKEND_TYPE}Serialization
     cangjie${BACKEND_TYPE}Json)
 
+set(UNITTEST_CONCURRENT_DEPENDENCIES)
+
+set(UNITTEST_SYNC_DEPENDENCIES
+    cangjie${BACKEND_TYPE}StdxUnittestConcurrent)
+
 set(COMPRESS_DEPENDENCIES
     cangjie${BACKEND_TYPE}ZLIB
     cangjie${BACKEND_TYPE}Tar)
