@@ -92,7 +92,7 @@ public class SimpleLogger <: Logger {
 }
 ```
 
-Functionality: This class implements text-formatted log output, with entries like `2024-07-27T11:50:47.6616733+08:00 INFO foo  name="bar"`.
+Functionality: This class implements text-formatted log output, with entries like `2024-07-27T11:50:47.6616733+08:00 INFO foo name="bar"`.
 
 Parent Type:
 

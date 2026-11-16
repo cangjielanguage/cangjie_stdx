@@ -296,7 +296,7 @@ Type: Array\<[Attr](log_package_types.md#type-attr)>
 public prop level: LogLevel
 ```
 
-Functionality: Gets the log level. Only logs with a level less than or equal to this value will be printed.Type: [LogLevel](log_package_structs.md#struct-loglevel)
+Functionality: Gets the log level of this log record.Type: [LogLevel](log_package_structs.md#struct-loglevel)
 
 ### prop message
 
@@ -491,7 +491,7 @@ Exceptions:
 public func writeKey(v: String): Unit
 ```
 
-Function: Writes a name to the log output target.
+Function: Writes the key name specified by the parameter `v` to the log output target.
 
 Parameters:
 
@@ -499,7 +499,7 @@ Parameters:
 
 Exceptions:
 
-- IllegalStateException - When the current writer's state should not write the string specified by the parameter `name`.
+- IllegalStateException - When the current writer's state should not write the string specified by the parameter `v`.
 
 ### func writeNone()
 
@@ -537,7 +537,7 @@ public func writeValue(v: LogValue): Unit
 
 Function: Writes a type that implements the [LogValue](log_package_interfaces.md#interface-logvalue) interface to the log output target. This method calls the [writeTo](log_package_interfaces.md#func-writetologwriter) method of [LogValue](log_package_interfaces.md#interface-logvalue) to write data to the log output target.
 
-The log package has extended implementations of [LogValue](log_package_interfaces.md#interface-logvalue) for basic types Int64, Float64, Bool, String, as well as for DateTime, Duration, Collection types Array, HashMap, TreeMap, and Option\<T>.
+The log package has extended implementations of [LogValue](log_package_interfaces.md#interface-logvalue) for basic types Int64, Float64, Bool, String, as well as for DateTime, Duration, Exception, Collection types Array, HashMap, TreeMap, and Option\<T>.
 
 Parameters:
 
