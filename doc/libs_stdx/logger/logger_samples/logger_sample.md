@@ -61,9 +61,9 @@ main() {
 可能的运行结果：
 
 ```text
-{"time":"2026-07-15T01:52:27Z","level":"INFO","msg":"服务启动","port":8080,"mode":"production"}
-{"time":"2026-07-15T01:52:27Z","level":"WARN","msg":"连接超时","host":"example.com","timeout":30}
-{"time":"2026-07-15T01:52:27Z","level":"ERROR","msg":"数据库连接失败","error":"connection refused"}
+2026-07-15T01:52:27Z INFO 服务启动 port=8080
+2026-07-15T01:52:27Z WARN 内存使用率高 usage="85%"
+2026-07-15T01:52:27Z ERROR 请求失败 code=500
 ```
 
 ## TextLogger 示例

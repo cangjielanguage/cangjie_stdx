@@ -772,7 +772,7 @@ main() {
 public prop level: LogLevel
 ```
 
-功能：获取日志打印级别，只有级别小于等于该值的日志会被打印。
+功能：获取该条日志的打印级别。
 
 类型：[LogLevel](log_package_structs.md#struct-loglevel)
 
@@ -1269,7 +1269,7 @@ public func writeInt(v: Int64): Unit
 public func writeKey(v: String): Unit
 ```
 
-功能：向日志输出目标中写入 name。
+功能：向日志输出目标中写入参数 `v` 指定的键名。
 
 参数：
 
@@ -1277,7 +1277,7 @@ public func writeKey(v: String): Unit
 
 异常：
 
-- IllegalStateException - 当前 writer 的状态不应写入参数 `name` 指定字符串时。
+- IllegalStateException - 当前 writer 的状态不应写入参数 `v` 指定字符串时。
 
 示例：
 <!-- associated_example -->
@@ -1327,7 +1327,7 @@ public func writeValue(v: LogValue): Unit
 
 功能：将实现了 [LogValue](log_package_interfaces.md#interface-logvalue) 接口的类型写入到日志输出目标中。该接口会调用 [LogValue](log_package_interfaces.md#interface-logvalue) 的 [writeTo](log_package_interfaces.md#func-writetologwriter) 方法向日志输出目标中写入数据。
 
-log 包已经为基础类型 Int64、Float64、Bool、String 类型扩展实现了 [LogValue](log_package_interfaces.md#interface-logvalue)，并且为 DateTime、Duration、 Collection 类型 Array、HashMap 和 TreeMap 以及 Option\<T> 扩展实现了 [LogValue](log_package_interfaces.md#interface-logvalue)。
+log 包已经为基础类型 Int64、Float64、Bool、String 类型扩展实现了 [LogValue](log_package_interfaces.md#interface-logvalue)，并且为 DateTime、Duration、Exception、Collection 类型 Array、HashMap 和 TreeMap 以及 Option\<T> 扩展实现了 [LogValue](log_package_interfaces.md#interface-logvalue)。
 
 参数：
 
