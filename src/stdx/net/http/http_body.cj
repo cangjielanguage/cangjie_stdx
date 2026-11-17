@@ -383,10 +383,22 @@ class HttpChunkedBodyProvider <: InputStream & Resource {
         return trailersArray |> splitValuesByComma |> name.toAsciiLower().caseInsensitiveMatchOne
     }
 
+    /// Throws:
+    /// - HttpStatusException, when the request direction reads a bare-LF
+    ///   terminated line or a line containing raw CR (RFC 9112 2.2).
+    /// - HttpException, when the response direction reads an invalid line.
     private func readLine(): Str {
         let line: Str
         try {
-            line = conn.readLine()
+            // the request direction requires CRLF terminators; the response
+            // direction stays lenient (a bare LF is accepted, like in Go)
+            line = conn.readLine(strictCrlf: isReq)
+        } catch (e: HttpStatusException) {
+            if (isReq) {
+                throw e
+            } else {
+                throw HttpException(e.message)
+            }
         } catch (e: HttpException) {
             if (isReq) {
                 throw HttpStatusException(HttpStatusCode.STATUS_BAD_REQUEST, "Invalid line.")

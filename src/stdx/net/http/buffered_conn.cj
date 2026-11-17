@@ -224,7 +224,9 @@ class BufferedConn <: StreamingSocket {
         }
     }
 
-    func readLine(): Str {
+    // strictCrlf: reject bare-LF (LF without CR) line terminators, e.g. for
+    // the server-side request parsing to prevent header smuggling
+    func readLine(strictCrlf!: Bool = false): Str {
         if (bufferedReader.remainingData == 0) {
             fill() // lazy to read the first chunk
         }
@@ -234,6 +236,7 @@ class BufferedConn <: StreamingSocket {
             throw HttpException("ReadLine size ${line.size} exceeds limit ${MAX_LINE_SIZE}.")
         }
         if (line.endWith(LF)) {
+            checkLineTerminator(line, strictCrlf)
             return line.removeLast(LF).removeLast(CR)
         }
 
@@ -251,7 +254,21 @@ class BufferedConn <: StreamingSocket {
             }
         } while (!line.endWith(LF)) // read to r'\n'
 
-        return Str(sb.toString()).removeLast(LF).removeLast(CR)
+        let fullLine = Str(sb.toString())
+        checkLineTerminator(fullLine, strictCrlf)
+        return fullLine.removeLast(LF).removeLast(CR)
+    }
+
+    // A field line must be terminated by CRLF; a bare LF is a classic request
+    // smuggling primitive, so the request direction rejects it with 400.
+    // RFC 9112 2.2, RFC 9110 5.1
+    /// Throws: HttpStatusException, when strictCrlf is enabled and the line
+    /// terminator is a bare LF (RFC 9112 2.2).
+    func checkLineTerminator(line: Str, strictCrlf: Bool): Unit {
+        if (strictCrlf && !line.removeLast(LF).endWith(CR)) {
+            throw HttpStatusException(HttpStatusCode.STATUS_BAD_REQUEST,
+                "Invalid line: bare LF is not allowed as a line terminator.")
+        }
     }
 
     // read util the buf is full
