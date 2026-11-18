@@ -43,6 +43,8 @@
 | import stdx.actors.macros.*               | stdx.actors.macros                                                                                                                                                                                                             |
 | import stdx.aspect_cj.*                    | stdx.aspect_cj                                                                                                                                                                                                                  |
 | import stdx.chir.*                         | stdx.chir                                                                                                                                                                                                                       |
+| import stdx.contract.macros.*             | stdx.contract.macros、stdx.contract.runtime                                                                                                                                                                                     |
+| import stdx.contract.runtime.*            | stdx.contract.runtime                                                                                                                                                                                                           |
 | import stdx.compress.zlib.*               | stdx.compress.zlib                                                                                                                                                                                                             |
 | import stdx.compress.tar.*               | stdx.compress.tar                                                                                                                                                                                                             |
 | import stdx.crypto.common.*               | stdx.crypto.common、stdx.encoding.base64                                                                                                                                                                                       |
@@ -86,6 +88,7 @@ cjc 的介绍和编译请查看 cangjie 用户手册。
 import stdx.actors.*
 import stdx.actors.macros.*
 import stdx.aspect_cj.*
+import stdx.contract.macros.*
 import stdx.compress.zlib.*
 import stdx.compress.tar.*
 import stdx.crypto.crypto.*
@@ -113,13 +116,13 @@ main() {
 Linux 和 macOS 的编译命令：
 
 ```shell
-cjc main.cj -L $CANGJIE_STDX_PATH -lstdx.actors -lstdx.aspect_cj -lstdx.effect -lstdx.encoding.json -lstdx.serialization.serialization -lstdx.net.http -lstdx.net.tls -lstdx.net.tls.common -lstdx.logger -lstdx.log -lstdx.encoding.url -lstdx.encoding.json.stream -lstdx.crypto.kit -lstdx.crypto.keys -lstdx.crypto.x509 -lstdx.encoding.hex -lstdx.crypto.crypto -lstdx.crypto.digest -lstdx.crypto.common -lstdx.encoding.base64 -lstdx.compress.zlib -lstdx.compress.tar -lstdx.syntax -lstdx.syntaxFFI -ldl --import-path $CANGJIE_STDX_PATH -o main.out
+cjc main.cj -L $CANGJIE_STDX_PATH -lstdx.actors -lstdx.aspect_cj -lstdx.contract.runtime -lstdx.effect -lstdx.encoding.json -lstdx.serialization.serialization -lstdx.net.http -lstdx.net.tls -lstdx.net.tls.common -lstdx.logger -lstdx.log -lstdx.encoding.url -lstdx.encoding.json.stream -lstdx.crypto.kit -lstdx.crypto.keys -lstdx.crypto.x509 -lstdx.encoding.hex -lstdx.crypto.crypto -lstdx.crypto.digest -lstdx.crypto.common -lstdx.encoding.base64 -lstdx.compress.zlib -lstdx.compress.tar -lstdx.syntax -lstdx.syntaxFFI -ldl --import-path $CANGJIE_STDX_PATH -o main.out
 ```
 
 Windows 编译命令：
 
 ```bat
-cjc main.cj -L %CANGJIE_STDX_PATH% -lstdx.actors -lstdx.aspect_cj -lstdx.effect -lstdx.encoding.json -lstdx.serialization.serialization -lstdx.net.http -lstdx.net.tls -lstdx.net.tls.common -lstdx.logger -lstdx.log -lstdx.encoding.url -lstdx.encoding.json.stream -lstdx.crypto.kit -lstdx.crypto.keys -lstdx.crypto.x509 -lstdx.encoding.hex -lstdx.crypto.crypto -lstdx.crypto.digest -lstdx.crypto.common -lstdx.encoding.base64 -lstdx.compress.zlib -lstdx.compress.tar -lstdx.syntax -lstdx.syntaxFFI -lcrypt32 --import-path %CANGJIE_STDX_PATH% -o main.out
+cjc main.cj -L %CANGJIE_STDX_PATH% -lstdx.actors -lstdx.aspect_cj -lstdx.contract.runtime -lstdx.effect -lstdx.encoding.json -lstdx.serialization.serialization -lstdx.net.http -lstdx.net.tls -lstdx.net.tls.common -lstdx.logger -lstdx.log -lstdx.encoding.url -lstdx.encoding.json.stream -lstdx.crypto.kit -lstdx.crypto.keys -lstdx.crypto.x509 -lstdx.encoding.hex -lstdx.crypto.crypto -lstdx.crypto.digest -lstdx.crypto.common -lstdx.encoding.base64 -lstdx.compress.zlib -lstdx.compress.tar -lstdx.syntax -lstdx.syntaxFFI -lcrypt32 --import-path %CANGJIE_STDX_PATH% -o main.out
 ```
 
 其中 `CANGJIE_STDX_PATH` 为扩展库的安装路径。不同系统设置示例：
@@ -184,6 +187,8 @@ stdx 包含多个功能包，提供丰富的扩展能力：
 | [actors.macros](./actors/macros/macros_package_overview.md)                    | actors.macros 包提供将 class 转换为 active object 的能力。                                                                                                                  |
 | [aspect_cj](./aspect_cj/aspect_cj_package_overview.md)                            | aspect_cj 包提供仓颉语言中面向切面编程（Aspect Oriented Programming, AOP）的能力。                                                                                            |
 | [chir](./chir/chir_package_overview.md)                                        | chir 包提供类型系统与 CHIR 声明表示，用于构建和遍历 CHIR 中间表示。                                                                                                           |
+| [contract](./contract/contract_package_overview.md)                            | contract 包提供契约式设计（Design by Contract）能力，支持在函数、属性、类型和循环上声明运行期契约检查。                                                                        |
+| [contract.runtime](./contract/runtime/contract_runtime_package_overview.md)    | contract.runtime 包提供契约检查开关、契约异常类型及运行时辅助函数。                                                                                                          |
 | [compress.zlib](./compress/zlib/zlib_package_overview.md)                      | compress.zlib 包提供压缩与解压缩能力。                                                                                                                                             |
 | [compress.tar](./compress/tar/tar_package_overview.md)                      | compress.tar 包提供 tar 归档和读取功能。                                                                                                                                             |
 | [crypto.common](./crypto/common/crypto_common_package_overview.md)             | crypto.common 包提供加解密相关的通用接口。                                                                                                                                      |

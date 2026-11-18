@@ -540,6 +540,46 @@ else()
     install(FILES ${actors_macros_full_name} DESTINATION ${output_stdx_cj_lib_dir}/static/stdx)
 endif()
 
+make_cangjie_lib(
+    contract.runtime IS_SHARED
+    DEPENDS cangjie${BACKEND_TYPE}ContractRuntime
+    CANGJIE_STD_LIB_LINK std-core std-sync
+    OBJECTS ${output_cj_object_dir}/stdx/contract.runtime.o)
+
+add_library(stdx.contract.runtime STATIC ${output_cj_object_dir}/stdx/contract.runtime.o)
+set_target_properties(stdx.contract.runtime PROPERTIES LINKER_LANGUAGE C)
+install(TARGETS stdx.contract.runtime DESTINATION ${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx)
+
+if(NOT CMAKE_BUILD_STAGE STREQUAL "postBuild")
+    make_cangjie_lib(
+        contract.macros IS_SHARED IS_MACRO
+        DEPENDS
+            cangjie${BACKEND_TYPE}ContractRuntime
+            cangjie${BACKEND_TYPE}ContractMacrosTokens
+            cangjie${BACKEND_TYPE}ContractMacrosSyntax
+            cangjie${BACKEND_TYPE}ContractMacrosParse
+            cangjie${BACKEND_TYPE}ContractMacrosValidation
+            cangjie${BACKEND_TYPE}ContractMacrosInheritance
+            cangjie${BACKEND_TYPE}ContractMacrosGenerate
+            cangjie${BACKEND_TYPE}ContractMacros
+        CANGJIE_STD_LIB_LINK std-core std-ast std-collection std-fs std-env std-convert std-sync
+        OBJECTS
+            ${output_cj_object_dir}/stdx/contract.runtime.o
+            ${output_cj_object_dir}/stdx/contract.macros.tokens.o
+            ${output_cj_object_dir}/stdx/contract.macros.syntax.o
+            ${output_cj_object_dir}/stdx/contract.macros.parse.o
+            ${output_cj_object_dir}/stdx/contract.macros.validation.o
+            ${output_cj_object_dir}/stdx/contract.macros.inheritance.o
+            ${output_cj_object_dir}/stdx/contract.macros.generate.o
+            ${output_cj_object_dir}/stdx/contract.macros.o)
+else()
+    string(TOLOWER ${TARGET_TRIPLE_DIRECTORY_PREFIX}_${CJNATIVE_BACKEND} output_stdx_cj_lib_dir)
+    set(output_stdx_cj_lib_dir ${output_stdx_cj_lib_dir}${SANITIZER_SUBPATH})
+    set(contract_macros_full_name ${CANGJIE_CJPM_DIR}/${target_dir}/${lowercase_build_type}/stdx/lib-macro_stdx.contract.macros${CMAKE_SHARED_LIBRARY_SUFFIX})
+    install(FILES ${contract_macros_full_name} DESTINATION ${output_stdx_cj_lib_dir}/dynamic/stdx)
+    install(FILES ${contract_macros_full_name} DESTINATION ${output_stdx_cj_lib_dir}/static/stdx)
+endif()
+
 if(NOT CANGJIE_BUILD_WITHOUT_EFFECT_HANDLERS)
 make_cangjie_lib(
     effect IS_SHARED
@@ -1310,6 +1350,99 @@ add_cangjie_library(
     MODULE_NAME "stdx"
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/actors/macros
     DEPENDS ${ACTORS_MACROS_DEPENDENCIES})
+
+add_cangjie_library(
+    cangjie${BACKEND_TYPE}ContractRuntime
+    NO_SUB_PKG
+    IS_PACKAGE
+    IS_CJNATIVE_BACKEND
+    PACKAGE_NAME "contract.runtime"
+    MODULE_NAME "stdx"
+    SOURCES ${CONTRACT_RUNTIME_SRCS}
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/contract/runtime
+    # The global switch in runtime.cj is baked in when this package is compiled. cjc reads
+    # `cfg.toml` from the working directory, which is the build directory here (not the
+    # package source dir), so the shipped runtime must be built with the checks explicitly
+    # enabled; disabling them requires rebuilding this package with `--cfg "contract_check=off"`.
+    EXTRA_COMPILE_FLAGS --cfg "contract_check=on"
+    DEPENDS ${CONTRACT_RUNTIME_DEPENDENCIES})
+
+add_cangjie_library(
+    cangjie${BACKEND_TYPE}ContractMacrosTokens
+    NO_SUB_PKG
+    IS_PACKAGE
+    IS_CJNATIVE_BACKEND
+    PACKAGE_NAME "contract.macros.tokens"
+    MODULE_NAME "stdx"
+    SOURCES ${CONTRACT_MACROS_TOKENS_SRCS}
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/contract/macros/tokens
+    DEPENDS ${CONTRACT_MACROS_TOKENS_DEPENDENCIES})
+
+add_cangjie_library(
+    cangjie${BACKEND_TYPE}ContractMacrosSyntax
+    NO_SUB_PKG
+    IS_PACKAGE
+    IS_CJNATIVE_BACKEND
+    PACKAGE_NAME "contract.macros.syntax"
+    MODULE_NAME "stdx"
+    SOURCES ${CONTRACT_MACROS_SYNTAX_SRCS}
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/contract/macros/syntax
+    DEPENDS ${CONTRACT_MACROS_SYNTAX_DEPENDENCIES})
+
+add_cangjie_library(
+    cangjie${BACKEND_TYPE}ContractMacrosParse
+    NO_SUB_PKG
+    IS_PACKAGE
+    IS_CJNATIVE_BACKEND
+    PACKAGE_NAME "contract.macros.parse"
+    MODULE_NAME "stdx"
+    SOURCES ${CONTRACT_MACROS_PARSE_SRCS}
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/contract/macros/parse
+    DEPENDS ${CONTRACT_MACROS_PARSE_DEPENDENCIES})
+
+add_cangjie_library(
+    cangjie${BACKEND_TYPE}ContractMacrosValidation
+    NO_SUB_PKG
+    IS_PACKAGE
+    IS_CJNATIVE_BACKEND
+    PACKAGE_NAME "contract.macros.validation"
+    MODULE_NAME "stdx"
+    SOURCES ${CONTRACT_MACROS_VALIDATION_SRCS}
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/contract/macros/validation
+    DEPENDS ${CONTRACT_MACROS_VALIDATION_DEPENDENCIES})
+
+add_cangjie_library(
+    cangjie${BACKEND_TYPE}ContractMacrosInheritance
+    NO_SUB_PKG
+    IS_PACKAGE
+    IS_CJNATIVE_BACKEND
+    PACKAGE_NAME "contract.macros.inheritance"
+    MODULE_NAME "stdx"
+    SOURCES ${CONTRACT_MACROS_INHERITANCE_SRCS}
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/contract/macros/inheritance
+    DEPENDS ${CONTRACT_MACROS_INHERITANCE_DEPENDENCIES})
+
+add_cangjie_library(
+    cangjie${BACKEND_TYPE}ContractMacrosGenerate
+    NO_SUB_PKG
+    IS_PACKAGE
+    IS_CJNATIVE_BACKEND
+    PACKAGE_NAME "contract.macros.generate"
+    MODULE_NAME "stdx"
+    SOURCES ${CONTRACT_MACROS_GENERATE_SRCS}
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/contract/macros/generate
+    DEPENDS ${CONTRACT_MACROS_GENERATE_DEPENDENCIES})
+
+add_cangjie_library(
+    cangjie${BACKEND_TYPE}ContractMacros
+    NO_SUB_PKG
+    IS_PACKAGE
+    IS_CJNATIVE_BACKEND
+    PACKAGE_NAME "contract.macros"
+    MODULE_NAME "stdx"
+    SOURCES ${CONTRACT_MACROS_SRCS}
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/contract/macros
+    DEPENDS ${CONTRACT_MACROS_DEPENDENCIES})
 
 if(NOT CANGJIE_CJPM_BUILD_TYPE AND NOT CANGJIE_BUILD_WITHOUT_SYNTAX)
     if(DARWIN)
