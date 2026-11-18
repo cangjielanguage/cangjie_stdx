@@ -44,7 +44,7 @@ http 包提供 HTTP/1.1、HTTP/2 和 WebSocket 协议的 server、client 端实�
 
 http 库默认使用 HTTP/1.1 版本。当开发者需要使用 HTTP/2 协议时，需要为 Client/Server 配置 tls，并且设置 alpn 的值为 `h2`；不支持 HTTP/1.1 通过 `Upgrade: h2c` 协议升级的方式升级到 HTTP/2。
 
-如果创建 HTTP/2 连接握手失败，Client/Server 会自动将协议退回 HTTP/1.1。
+当请求未显式指定 HTTP/1.1 版本，且 Client 的 TLS 配置中 ALPN 协议列表包含 `h2` 时，Client 会尝试以 HTTP/2 建立连接：若 TLS 握手成功但 ALPN 协商结果不是 `h2`（如服务端选择了 `http/1.1`，或未回应 ALPN 扩展），Client 会自动将协议退回 HTTP/1.1 并重新发起请求。若 TLS 握手本身失败（如两端 ALPN 协议列表无交集，服务端发送 no_application_protocol 告警），请求将抛出异常，不会自动回退，因此请确保 Client 与 Server 的 ALPN 配置存在交集。Server 端依据 TLS 握手的 ALPN 协商结果，自动选择以 HTTP/2 或 HTTP/1.1 协议服务该连接。
 
 - 用户通过 [ClientBuilder](./http_package_api/http_package_classes.md#class-clientbuilder) 构建一个 Client 实例，构建过程可以指定多个参数，如 httpProxy、logger、cookieJar、是否自动 redirect、连接池大小等。
 
