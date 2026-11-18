@@ -605,6 +605,8 @@ func isHexNum(char: UInt8): Bool {
 }
 
 func parseJsonString(parser: JsonParser): JsonString {
+    const INVALID_JSON_STRING_CONTROL_CHARACTER = "Unescaped control character in JSON string."
+
     if (requireCurrentByte(parser) != b'\"') {
         throw JsonException("Failed to parse JSON string.")
     }
@@ -623,7 +625,7 @@ func parseJsonString(parser: JsonParser): JsonString {
         // JSON strings must escape all control characters (U+0000..U+001F).
         // Accepting them here creates values that strict JSON parsers reject.
         if (next < 0x20) {
-            throw JsonException()
+            throw JsonException(INVALID_JSON_STRING_CONTROL_CHARACTER)
         }
         parser.offset++
     }
@@ -637,7 +639,7 @@ func parseJsonString(parser: JsonParser): JsonString {
     while (next != b'\"') {
         // Control characters are not allowed unescaped inside a JSON string.
         if (next < 0x20) {
-            throw JsonException()
+            throw JsonException(INVALID_JSON_STRING_CONTROL_CHARACTER)
         }
         if (next == b'\\') {
             parser.strCache.add(all: parser.data[tmpStart..parser.offset])

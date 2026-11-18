@@ -24,5 +24,5 @@ public func setGlobalTlsKit(kit: TlsKit): Unit {
 
 public func getGlobalTlsKit(): TlsKit {
     globalTlsKit ?? throw TlsException("Global TLS kit is not set. " +
-        "If you want to use the default implementation, make sure that package `stdx.net.tls` is imported.")
+        "The default implementation provided by package 'stdx.net.tls' is not imported.")
 }

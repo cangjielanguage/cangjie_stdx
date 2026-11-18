@@ -132,7 +132,7 @@ public class GeneralPublicKey <: PublicKey {
         body: Array<Byte>,
         exception: CPointer<ExceptionData>
     ): Unit {
-        describeImpl(body, exception, CJX509DescribePublicKey, "Failed to load PublicKey")
+        describeImpl(body, exception, CJX509DescribePublicKey, "Failed to load PublicKey.")
     }
 }
 
