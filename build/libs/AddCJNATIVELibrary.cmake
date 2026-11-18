@@ -272,6 +272,40 @@ set_target_properties(stdx.unittest.data PROPERTIES LINKER_LANGUAGE C)
 install(TARGETS stdx.unittest.data DESTINATION ${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx)
 
 make_cangjie_lib(
+    unittest.concurrent IS_SHARED
+    DEPENDS cangjie${BACKEND_TYPE}StdxUnittestConcurrent
+    CANGJIE_STD_LIB_LINK
+        std-core
+        std-math
+        std-time
+        std-runtime
+        std-random
+        std-ref
+        std-sync
+        std-collection
+        std-collection.concurrent
+        std-unittest.common
+    OBJECTS ${output_cj_object_dir}/stdx/unittest.concurrent.o)
+
+add_library(stdx.unittest.concurrent STATIC ${output_cj_object_dir}/stdx/unittest.concurrent.o)
+set_target_properties(stdx.unittest.concurrent PROPERTIES LINKER_LANGUAGE C)
+install(TARGETS stdx.unittest.concurrent DESTINATION ${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx)
+
+make_cangjie_lib(
+    unittest.sync IS_SHARED
+    DEPENDS cangjie${BACKEND_TYPE}StdxUnittestSync
+    CANGJIE_STDX_LIB_DEPENDS unittest.concurrent
+    CANGJIE_STD_LIB_LINK
+        std-core
+        std-sync
+        std-time
+    OBJECTS ${output_cj_object_dir}/stdx/unittest.sync.o)
+
+add_library(stdx.unittest.sync STATIC ${output_cj_object_dir}/stdx/unittest.sync.o)
+set_target_properties(stdx.unittest.sync PROPERTIES LINKER_LANGUAGE C)
+install(TARGETS stdx.unittest.sync DESTINATION ${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx)
+
+make_cangjie_lib(
     net IS_SHARED
     DEPENDS cangjie${BACKEND_TYPE}StdxNet
     CANGJIE_STD_LIB_LINK std-core
@@ -1162,6 +1196,30 @@ add_cangjie_library(
     SOURCES ${UNITTEST_DATA_SRCS}
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/unittest/data
     DEPENDS ${UNITTEST_DATA_DEPENDENCIES})
+
+add_cangjie_library(
+    cangjie${BACKEND_TYPE}StdxUnittestConcurrent
+    NO_SUB_PKG
+    IS_STDXLIB
+    IS_PACKAGE
+    IS_CJNATIVE_BACKEND
+    PACKAGE_NAME "unittest.concurrent"
+    MODULE_NAME "stdx"
+    SOURCES ${UNITTEST_CONCURRENT_SRCS}
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/unittest/concurrent
+    DEPENDS ${UNITTEST_CONCURRENT_DEPENDENCIES})
+
+add_cangjie_library(
+    cangjie${BACKEND_TYPE}StdxUnittestSync
+    NO_SUB_PKG
+    IS_STDXLIB
+    IS_PACKAGE
+    IS_CJNATIVE_BACKEND
+    PACKAGE_NAME "unittest.sync"
+    MODULE_NAME "stdx"
+    SOURCES ${UNITTEST_SYNC_SRCS}
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/unittest/sync
+    DEPENDS ${UNITTEST_SYNC_DEPENDENCIES})
 
 add_cangjie_library(
     cangjie${BACKEND_TYPE}StdxNet
