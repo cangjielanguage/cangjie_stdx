@@ -24,7 +24,7 @@ func validateJsonStringFormat(depth: Int64, indent: String): Unit {
     }
 }
 
-@When[env != "ohos"]
+@When[local_mode_api == "on"]
 func validateJsonStringFormat(depth: Int64, indent: String @local?): Unit {
     if (depth < 0) {
         throw IllegalArgumentException("Invalid argument 'depth': value cannot be negative, got '${depth}'.")
@@ -40,7 +40,7 @@ func bufferToString(buff: WriteBuffer): String {
     unsafe { String.fromUtf8Unchecked(buff.getAndClear()) }
 }
 
-@When[env != "ohos"]
+@When[local_mode_api == "on"]
 exclave func bufferToString(buff: WriteBuffer @local!): String @local! {
     unsafe { String.fromUtf8Unchecked(buff.getAndClear()) }
 }
@@ -51,14 +51,14 @@ func jsonValueToCompactString(value: JsonValue, htmlSafe!: Bool = true): String 
     return bufferToString(buff)
 }
 
-@When[env != "ohos"]
+@When[local_mode_api == "on"]
 exclave func jsonValueToCompactString(value: JsonValue @local?, htmlSafe!: Bool = true): String @local! {
     let buff = WriteBuffer(asumecapacity(value)) @local!
     jsonWriteWithoutFormat(value, buff, htmlSafe: htmlSafe)
     bufferToString(buff)
 }
 
-@When[env != "ohos"]
+@When[local_mode_api == "on"]
 func jsonValueToCompactStringHeap(value: JsonValue @local?, htmlSafe!: Bool = true): String {
     let buff = WriteBuffer(asumecapacity(value)) @local!
     jsonWriteWithoutFormat(value, buff, htmlSafe: htmlSafe)
@@ -89,7 +89,7 @@ func jsonArrayToFormattedString(
     return bufferToString(buff)
 }
 
-@When[env != "ohos"]
+@When[local_mode_api == "on"]
 func jsonArrayToFormattedString(
     value: JsonArray @local?,
     depth: Int64,
@@ -103,7 +103,7 @@ func jsonArrayToFormattedString(
     String(unsafe { String.fromUtf8Unchecked(buff.getAndClear()) })
 }
 
-@When[env != "ohos"]
+@When[local_mode_api == "on"]
 exclave func jsonArrayToFormattedString(
     value: JsonArray @local!,
     depth: Int64,
@@ -130,7 +130,7 @@ func jsonObjectToFormattedString(
     return bufferToString(buff)
 }
 
-@When[env != "ohos"]
+@When[local_mode_api == "on"]
 func jsonObjectToFormattedString(
     value: JsonObject @local?,
     depth: Int64,
@@ -144,7 +144,7 @@ func jsonObjectToFormattedString(
     String(unsafe { String.fromUtf8Unchecked(buff.getAndClear()) })
 }
 
-@When[env != "ohos"]
+@When[local_mode_api == "on"]
 exclave func jsonObjectToFormattedString(
     value: JsonObject @local!,
     depth: Int64,
@@ -163,7 +163,7 @@ exclave func jsonObjectToFormattedString(
 public class JsonNull <: JsonValue { // cjlint-ignore !G.ENU.01
     public init() {}
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave init(this @local!) {}
 
     /**
@@ -177,7 +177,7 @@ public class JsonNull <: JsonValue { // cjlint-ignore !G.ENU.01
         return JsNull
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func kind(this @local?): JsonKind {
         JsNull
     }
@@ -189,7 +189,7 @@ public class JsonNull <: JsonValue { // cjlint-ignore !G.ENU.01
         return 4  // "null"
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     protected func calculateCapacity(this @local?): Int64 {
         return 4  // "null"
     }
@@ -205,7 +205,7 @@ public class JsonNull <: JsonValue { // cjlint-ignore !G.ENU.01
         return "null"
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toString(this @local?): String @local! {
         "null"
     }
@@ -221,7 +221,7 @@ public class JsonNull <: JsonValue { // cjlint-ignore !G.ENU.01
         return toString()
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toJsonString(this @local!): String @local! {
         toString()
     }
@@ -235,7 +235,7 @@ public class JsonNull <: JsonValue { // cjlint-ignore !G.ENU.01
         return "null"
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toStringWithoutEscaping(this @local!): String @local! {
         "null"
     }
@@ -249,7 +249,7 @@ public class JsonNull <: JsonValue { // cjlint-ignore !G.ENU.01
         return toJsonString()
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toJsonStringWithoutEscaping(this @local!): String @local! {
         toJsonString()
     }
@@ -274,7 +274,7 @@ public class JsonBool <: JsonValue { // cjlint-ignore !G.ENU.01
         this.value = bv
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave init(this @local!, bv: Bool) {
         this.value = bv
     }
@@ -290,7 +290,7 @@ public class JsonBool <: JsonValue { // cjlint-ignore !G.ENU.01
         return value
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func getValue(this @local?): Bool {
         value
     }
@@ -306,7 +306,7 @@ public class JsonBool <: JsonValue { // cjlint-ignore !G.ENU.01
         return JsBool
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func kind(this @local?): JsonKind {
         JsBool
     }
@@ -318,7 +318,7 @@ public class JsonBool <: JsonValue { // cjlint-ignore !G.ENU.01
         return 5  // max of "true" and "false"
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     protected func calculateCapacity(this @local?): Int64 {
         return 5  // max of "true" and "false"
     }
@@ -334,7 +334,7 @@ public class JsonBool <: JsonValue { // cjlint-ignore !G.ENU.01
         return jsonPrimitiveToString(value)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toString(this @local?): String @local! {
         value.toString()
     }
@@ -350,7 +350,7 @@ public class JsonBool <: JsonValue { // cjlint-ignore !G.ENU.01
         return toString()
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toJsonString(this @local!): String @local! {
         toString()
     }
@@ -364,7 +364,7 @@ public class JsonBool <: JsonValue { // cjlint-ignore !G.ENU.01
         return jsonPrimitiveToString(value)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toStringWithoutEscaping(this @local!): String @local! {
         value.toString()
     }
@@ -378,7 +378,7 @@ public class JsonBool <: JsonValue { // cjlint-ignore !G.ENU.01
         return toString()
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toJsonStringWithoutEscaping(this @local!): String @local! {
         toJsonString()
     }
@@ -403,7 +403,7 @@ public class JsonInt <: JsonValue {
         this.value = iv
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave init(this @local!, iv: Int64) {
         this.value = iv
     }
@@ -419,7 +419,7 @@ public class JsonInt <: JsonValue {
         return value
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func getValue(this @local?): Int64 {
         value
     }
@@ -435,7 +435,7 @@ public class JsonInt <: JsonValue {
         return JsInt
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func kind(this @local?): JsonKind {
         JsInt
     }
@@ -447,7 +447,7 @@ public class JsonInt <: JsonValue {
         return 22  // max length of Int64 string
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     protected func calculateCapacity(this @local?): Int64 {
         return 22  // max length of Int64 string
     }
@@ -463,7 +463,7 @@ public class JsonInt <: JsonValue {
         return jsonPrimitiveToString(value)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toString(this @local?): String @local! {
         value.toString()
     }
@@ -479,7 +479,7 @@ public class JsonInt <: JsonValue {
         return toString()
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toJsonString(this @local!): String @local! {
         toString()
     }
@@ -493,7 +493,7 @@ public class JsonInt <: JsonValue {
         return jsonPrimitiveToString(value)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toStringWithoutEscaping(this @local!): String @local! {
         value.toString()
     }
@@ -507,7 +507,7 @@ public class JsonInt <: JsonValue {
         return toString()
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toJsonStringWithoutEscaping(this @local!): String @local! {
         toJsonString()
     }
@@ -532,7 +532,7 @@ public class JsonFloat <: JsonValue {
         this.value = fv
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave init(this @local!, fv: Float64) {
         this.value = fv
     }
@@ -549,7 +549,7 @@ public class JsonFloat <: JsonValue {
         this.value = Float64(v)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave init(this @local!, v: Int64) {
         this.value = Float64(v)
     }
@@ -565,7 +565,7 @@ public class JsonFloat <: JsonValue {
         return value
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func getValue(this @local?): Float64 {
         value
     }
@@ -581,7 +581,7 @@ public class JsonFloat <: JsonValue {
         return JsFloat
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func kind(this @local?): JsonKind {
         JsFloat
     }
@@ -593,7 +593,7 @@ public class JsonFloat <: JsonValue {
         return 200  // conservative estimate for float representation
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     protected func calculateCapacity(this @local?): Int64 {
         return 200  // conservative estimate for float representation
     }
@@ -609,7 +609,7 @@ public class JsonFloat <: JsonValue {
         return jsonFloatToString(value)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toString(this @local?): String @local! {
         if (isJsonFloatInfinite(value)) {
             throw JsonException("Failed to serialize JSON float.")
@@ -628,7 +628,7 @@ public class JsonFloat <: JsonValue {
         return toString()
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toJsonString(this @local!): String @local! {
         toString()
     }
@@ -642,7 +642,7 @@ public class JsonFloat <: JsonValue {
         return jsonFloatToString(value)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toStringWithoutEscaping(this @local!): String @local! {
         toString()
     }
@@ -656,7 +656,7 @@ public class JsonFloat <: JsonValue {
         return toString()
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toJsonStringWithoutEscaping(this @local!): String @local! {
         toJsonString()
     }
@@ -681,7 +681,7 @@ public class JsonString <: JsonValue { // cjlint-ignore !G.ENU.01
         this.value = sv
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave init(this @local!, sv: String @local!) {
         this.value = sv
     }
@@ -697,12 +697,12 @@ public class JsonString <: JsonValue { // cjlint-ignore !G.ENU.01
         return value
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func getValue(this @local!): String @local! {
         value
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func getValue(this @local?): String @local? {
         value
     }
@@ -718,7 +718,7 @@ public class JsonString <: JsonValue { // cjlint-ignore !G.ENU.01
         return JsString
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func kind(this @local?): JsonKind {
         JsString
     }
@@ -736,7 +736,7 @@ public class JsonString <: JsonValue { // cjlint-ignore !G.ENU.01
         return value.size + 2 + escapenum  // 2 bytes for the surrounding JSON quotes
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     protected func calculateCapacity(this @local?): Int64 {
         var escapenum: Int64 = 0
         unsafe {
@@ -760,7 +760,7 @@ public class JsonString <: JsonValue { // cjlint-ignore !G.ENU.01
         return bufferToString(buff)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toString(this @local?): String @local! {
         let buff = WriteBuffer(value.size + 2) @local!
         jsonWriteWithoutFormat(this, buff)
@@ -780,7 +780,7 @@ public class JsonString <: JsonValue { // cjlint-ignore !G.ENU.01
         return bufferToString(buff)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toJsonString(this @local!): String @local! {
         let buff = WriteBuffer(value.size + 2) @local!
         jsonWriteWithoutFormat(this, buff)
@@ -798,7 +798,7 @@ public class JsonString <: JsonValue { // cjlint-ignore !G.ENU.01
         return bufferToString(buff)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toStringWithoutEscaping(this @local!): String @local! {
         let buff = WriteBuffer(value.size + 2) @local!
         jsonWriteWithoutFormat(this, buff, htmlSafe: false)
@@ -816,7 +816,7 @@ public class JsonString <: JsonValue { // cjlint-ignore !G.ENU.01
         return bufferToString(buff)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toJsonStringWithoutEscaping(this @local!): String @local! {
         let buff = WriteBuffer(value.size + 2) @local!
         jsonWriteWithoutFormat(this, buff, htmlSafe: false)
@@ -841,7 +841,7 @@ public class JsonArray <: JsonValue {
         items = ArrayList<JsonValue>(capacity)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     exclave init(this @local!, capacity: Int64) {
         items = ArrayList<JsonValue>(capacity) @local!
     }
@@ -850,7 +850,7 @@ public class JsonArray <: JsonValue {
         items = ArrayList<JsonValue>()
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave init(this @local!) {
         items = ArrayList<JsonValue>() @local!
     }
@@ -866,7 +866,7 @@ public class JsonArray <: JsonValue {
         items = list
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave init(this @local!, list: ArrayList<JsonValue> @local!) {
         items = list
     }
@@ -883,7 +883,7 @@ public class JsonArray <: JsonValue {
         items = ArrayList<JsonValue>(list)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave init(this @local!, list: Array<JsonValue> @local!) {
         items = ArrayList<JsonValue>(list) @local!
     }
@@ -899,7 +899,7 @@ public class JsonArray <: JsonValue {
         return JsArray
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func kind(this @local?): JsonKind {
         JsArray
     }
@@ -915,7 +915,7 @@ public class JsonArray <: JsonValue {
         return sum
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     protected func calculateCapacity(this @local?): Int64 {
         var sum: Int64 = 2  // []
         for (v in items) {
@@ -937,12 +937,12 @@ public class JsonArray <: JsonValue {
         return toJsonStringBase(0)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toJsonString(this @local!): String @local! {
         jsonArrayToFormattedString(this, 0, false, "  ")
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func toJsonString(this @local?): String {
         jsonArrayToFormattedString(this, 0, false, "  ")
     }
@@ -958,12 +958,12 @@ public class JsonArray <: JsonValue {
         return toJsonStringBase(0, htmlSafe: false)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toJsonStringWithoutEscaping(this @local!): String @local! {
         jsonArrayToFormattedString(this, 0, false, "  ", htmlSafe: false)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func toJsonStringWithoutEscaping(this @local?): String {
         jsonArrayToFormattedString(this, 0, false, "  ", htmlSafe: false)
     }
@@ -982,13 +982,13 @@ public class JsonArray <: JsonValue {
         return toJsonStringBase(depth, bracketInNewLine: bracketInNewLine, indent: indent)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toJsonString(this @local!, depth: Int64, bracketInNewLine!: Bool = false,
         indent!: String @~local = "  "): String @local! {
         jsonArrayToFormattedString(this, depth, bracketInNewLine, indent)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func toJsonString(this @local?, depth: Int64, bracketInNewLine!: Bool = false,
         indent!: String @local? = "  "): String {
         jsonArrayToFormattedString(this, depth, bracketInNewLine, indent)
@@ -1018,13 +1018,13 @@ public class JsonArray <: JsonValue {
         return toJsonStringBase(depth, bracketInNewLine: bracketInNewLine, indent: indent, htmlSafe: false)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toJsonStringWithoutEscaping(this @local!, depth: Int64,
         bracketInNewLine!: Bool = false, indent!: String @~local = "  "): String @local! {
         jsonArrayToFormattedString(this, depth, bracketInNewLine, indent, htmlSafe: false)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func toJsonStringWithoutEscaping(this @local?, depth: Int64,
         bracketInNewLine!: Bool = false, indent!: String @local? = "  "): String {
         jsonArrayToFormattedString(this, depth, bracketInNewLine, indent, htmlSafe: false)
@@ -1043,7 +1043,7 @@ public class JsonArray <: JsonValue {
         return jsonValueToCompactString(this)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toString(this @local?): String @local! {
         jsonValueToCompactString(this)
     }
@@ -1059,12 +1059,12 @@ public class JsonArray <: JsonValue {
         return jsonValueToCompactString(this, htmlSafe: false)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toStringWithoutEscaping(this @local!): String @local! {
         jsonValueToCompactString(this, htmlSafe: false)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func toStringWithoutEscaping(this @local?): String {
         jsonValueToCompactStringHeap(this, htmlSafe: false)
     }
@@ -1080,7 +1080,7 @@ public class JsonArray <: JsonValue {
         return items.size
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func size(this @local?): Int64 {
         items.size
     }
@@ -1097,7 +1097,7 @@ public class JsonArray <: JsonValue {
         return this
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func add(this @local!, jv: JsonValue @local!): JsonArray @local! {
         items.add(jv)
         this
@@ -1115,12 +1115,12 @@ public class JsonArray <: JsonValue {
         return items.get(index)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func get(this @local!, index: Int64): Option<JsonValue> @local! {
         items.get(index)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func get(this @local?, index: Int64): Option<JsonValue> @local? {
         items.get(index)
     }
@@ -1142,7 +1142,7 @@ public class JsonArray <: JsonValue {
         }
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave operator func [](this @local!, index: Int64): JsonValue @local! {
         match (get(index)) {
             case Some(v) => v
@@ -1150,7 +1150,7 @@ public class JsonArray <: JsonValue {
         }
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave operator func [](this @local?, index: Int64): JsonValue @local? {
         match (get(index)) {
             case Some(v) => v
@@ -1169,12 +1169,12 @@ public class JsonArray <: JsonValue {
         return items
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func getItems(this @local!): ArrayList<JsonValue> @local! {
         items
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func getItems(this @local?): ArrayList<JsonValue> @local? {
         items
     }
@@ -1197,7 +1197,7 @@ public class JsonObject <: JsonValue {
         fields = HashMap<String, JsonValue>()
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave init(this @local!) {
         fields = HashMap<String, JsonValue>() @local!
     }
@@ -1206,7 +1206,7 @@ public class JsonObject <: JsonValue {
         fields = HashMap<String, JsonValue>(capacity)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     exclave init(this @local!, capacity: Int64) {
         fields = HashMap<String, JsonValue>(capacity) @local!
     }
@@ -1223,7 +1223,7 @@ public class JsonObject <: JsonValue {
         fields = map
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave init(this @local!, map: HashMap<String, JsonValue> @local!) {
         fields = map
     }
@@ -1239,7 +1239,7 @@ public class JsonObject <: JsonValue {
         return JsObject
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func kind(this @local?): JsonKind {
         JsObject
     }
@@ -1256,7 +1256,7 @@ public class JsonObject <: JsonValue {
         return sum
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     protected func calculateCapacity(this @local?): Int64 {
         var sum: Int64 = 2  // {}
         for ((k, v) in fields) {
@@ -1279,12 +1279,12 @@ public class JsonObject <: JsonValue {
         return toJsonStringBase(0)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toJsonString(this @local!): String @local! {
         jsonObjectToFormattedString(this, 0, false, "  ")
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func toJsonString(this @local?): String {
         jsonObjectToFormattedString(this, 0, false, "  ")
     }
@@ -1300,12 +1300,12 @@ public class JsonObject <: JsonValue {
         return toJsonStringBase(0, htmlSafe: false)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toJsonStringWithoutEscaping(this @local!): String @local! {
         jsonObjectToFormattedString(this, 0, false, "  ", htmlSafe: false)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func toJsonStringWithoutEscaping(this @local?): String {
         jsonObjectToFormattedString(this, 0, false, "  ", htmlSafe: false)
     }
@@ -1324,13 +1324,13 @@ public class JsonObject <: JsonValue {
         return toJsonStringBase(depth, bracketInNewLine: bracketInNewLine, indent: indent)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toJsonString(this @local!, depth: Int64, bracketInNewLine!: Bool = false,
         indent!: String @~local = "  "): String @local! {
         jsonObjectToFormattedString(this, depth, bracketInNewLine, indent)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func toJsonString(this @local?, depth: Int64, bracketInNewLine!: Bool = false,
         indent!: String @local? = "  "): String {
         jsonObjectToFormattedString(this, depth, bracketInNewLine, indent)
@@ -1360,13 +1360,13 @@ public class JsonObject <: JsonValue {
         return toJsonStringBase(depth, bracketInNewLine: bracketInNewLine, indent: indent, htmlSafe: false)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toJsonStringWithoutEscaping(this @local!, depth: Int64,
         bracketInNewLine!: Bool = false, indent!: String @~local = "  "): String @local! {
         jsonObjectToFormattedString(this, depth, bracketInNewLine, indent, htmlSafe: false)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func toJsonStringWithoutEscaping(this @local?, depth: Int64,
         bracketInNewLine!: Bool = false, indent!: String @local? = "  "): String {
         jsonObjectToFormattedString(this, depth, bracketInNewLine, indent, htmlSafe: false)
@@ -1385,7 +1385,7 @@ public class JsonObject <: JsonValue {
         return jsonValueToCompactString(this)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toString(this @local?): String @local! {
         jsonValueToCompactString(this)
     }
@@ -1401,12 +1401,12 @@ public class JsonObject <: JsonValue {
         return jsonValueToCompactString(this, htmlSafe: false)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func toStringWithoutEscaping(this @local!): String @local! {
         jsonValueToCompactString(this, htmlSafe: false)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func toStringWithoutEscaping(this @local?): String {
         jsonValueToCompactStringHeap(this, htmlSafe: false)
     }
@@ -1422,7 +1422,7 @@ public class JsonObject <: JsonValue {
         return fields.size
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func size(this @local?): Int64 {
         fields.size
     }
@@ -1439,7 +1439,7 @@ public class JsonObject <: JsonValue {
         return fields.contains(key)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func containsKey(this @local?, key: String @local?): Bool {
         fields.contains(key)
     }
@@ -1456,12 +1456,12 @@ public class JsonObject <: JsonValue {
         fields.add(key, v)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func put(this @local!, key: String @local!, v: JsonValue @local!): Unit {
         fields.add(key, v)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func put(this @local!, key: String @local?, v: JsonValue @local!): Unit {
         // Keys are stored as owned heap Strings.
         fields.add(unsafe { String.fromUtf8Unchecked(key.toString().rawData()) }, v)
@@ -1479,7 +1479,7 @@ public class JsonObject <: JsonValue {
         return fields.get(key)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func get(this @local!, key: String @local!): Option<JsonValue> @local! {
         // Bind through a typed local: an explicit `Option<JsonValue>.Some(v) @local!` loses
         // the payload's dynamic type in a `@local!` context.
@@ -1492,7 +1492,7 @@ public class JsonObject <: JsonValue {
         }
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func get(this @local?, key: String @local?): Option<JsonValue> @local? {
         fields.get(key)
     }
@@ -1514,7 +1514,7 @@ public class JsonObject <: JsonValue {
         }
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave operator func [](this @local!, key: String @local!): JsonValue @local! {
         match (get(key)) {
             case Some(value) => value
@@ -1522,7 +1522,7 @@ public class JsonObject <: JsonValue {
         }
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave operator func [](this @local?, key: String @local?): JsonValue @local? {
         match (get(key)) {
             case Some(value) => value
@@ -1541,12 +1541,12 @@ public class JsonObject <: JsonValue {
         return fields
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func getFields(this @local!): HashMap<String, JsonValue> @local! {
         fields
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func getFields(this @local?): HashMap<String, JsonValue> @local? {
         fields
     }

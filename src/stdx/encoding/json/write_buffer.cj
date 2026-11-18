@@ -192,7 +192,7 @@ class WriteBuffer {
         return ret
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave init(this @local!, capacity: Int64) {
         let cap = if (capacity > MIN_CAPACITY) {
             capacity
@@ -202,7 +202,7 @@ class WriteBuffer {
         _buffer = Array<Byte>(cap, repeat: BLANK) @local!
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func checkAndExpend(this @local!, addition: Int64): Unit {
         let minCapacity = _size + addition
         let oldCapacity: Int64 = _buffer.size
@@ -219,17 +219,17 @@ class WriteBuffer {
         _buffer = newArr
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func append(this @local!, arr: Array<Byte> @local!): WriteBuffer @local! {
         appendBytes(arr)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func append(this @local!, arr: Array<Byte> @local?): WriteBuffer @local! { // cjlint-ignore !G.DCL.01
         appendBytes(arr)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     private exclave func appendBytes(this @local!, arr: Array<Byte> @local?): WriteBuffer @local! {
         checkAndExpend(arr.size)
 
@@ -245,17 +245,17 @@ class WriteBuffer {
         this
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func append(this @local!, str: String @local!): WriteBuffer @local! { // cjlint-ignore !G.DCL.01
         append(unsafe { str.rawData() })
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func append(this @local!, str: String @local?): WriteBuffer @local! { // cjlint-ignore !G.DCL.01
         append(unsafe { str.toString().rawData() })
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func append(this @local!, byte: Byte): WriteBuffer @local! {
         checkAndExpend(1)
         _buffer[_size] = byte
@@ -263,7 +263,7 @@ class WriteBuffer {
         this
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func append(this @local!, n: Int64): WriteBuffer @local! {
         checkAndExpend(22)
         unsafe {
@@ -275,7 +275,7 @@ class WriteBuffer {
         this
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func append(this @local!, fl: Float64): WriteBuffer @local! {
         if (isJsonFloatInfinite(fl)) {
             throw JsonException("Failed to serialize JSON float.")
@@ -303,7 +303,7 @@ class WriteBuffer {
         this
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func append(this @local!, b: Bool): WriteBuffer @local! {
         if (b) {
             append(b't').append(b'r').append(b'u').append(b'e')
@@ -312,14 +312,14 @@ class WriteBuffer {
         }
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func appendBlank(this @local!, n: Int64): WriteBuffer @local! {
         checkAndExpend(n)
         _size += n
         this
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func removetail(this @local!): WriteBuffer @local! {
         if (_size > 0) {
             _size--
@@ -327,17 +327,17 @@ class WriteBuffer {
         this
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func appendEscape(this @local!, str: String @local!, htmlSafe!: Bool = true): WriteBuffer @local! { // cjlint-ignore !G.DCL.01
         appendEscapeOwned(str, htmlSafe)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func appendEscape(this @local!, str: String @local?, htmlSafe!: Bool = true): WriteBuffer @local! { // cjlint-ignore !G.DCL.01
         appendEscapeOwned(str.toString(), htmlSafe)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     private exclave func appendEscapeOwned(this @local!, materialised: String @local!, htmlSafe: Bool): WriteBuffer @local! {
         var escapenum = 0
 
@@ -364,7 +364,7 @@ class WriteBuffer {
         this
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func getAndClear(this @local!): Array<Byte> @local! {
         let ret: Array<Byte> @local! = _buffer[0.._size]
         _buffer = Array<Byte>(0, repeat: BLANK) @local!
@@ -373,12 +373,12 @@ class WriteBuffer {
     }
 }
 
-@When[env != "ohos"]
+@When[local_mode_api == "on"]
 exclave func jsonWriteWithoutFormat(json: JsonValue @local?, buff: WriteBuffer @local!, htmlSafe!: Bool = true): Unit {
     jsonWriteWithoutFormat(json, buff, 0, htmlSafe: htmlSafe)
 }
 
-@When[env != "ohos"]
+@When[local_mode_api == "on"]
 exclave func jsonWriteWithoutFormat(json: JsonValue @local?, buff: WriteBuffer @local!, depth: Int64,
     htmlSafe!: Bool = true): Unit {
     checkJsonWriteDepth(depth)
@@ -419,7 +419,7 @@ exclave func jsonWriteWithoutFormat(json: JsonValue @local?, buff: WriteBuffer @
     }
 }
 
-@When[env != "ohos"]
+@When[local_mode_api == "on"]
 exclave func jsonWriteObject(json: JsonObject @local?, buff: WriteBuffer @local!, depth: Int64,
     bracketInNewLine: Bool, indent: String @local?, htmlSafe!: Bool = true): Unit {
     checkJsonWriteDepth(depth)
@@ -457,7 +457,7 @@ exclave func jsonWriteObject(json: JsonObject @local?, buff: WriteBuffer @local!
     buff.append(b'}')
 }
 
-@When[env != "ohos"]
+@When[local_mode_api == "on"]
 exclave func jsonWriteArray(json: JsonArray @local?, buff: WriteBuffer @local!, depth: Int64,
     bracketInNewLine: Bool, indent: String @local?, htmlSafe!: Bool = true): Unit {
     checkJsonWriteDepth(depth)
@@ -496,7 +496,7 @@ exclave func jsonWriteArray(json: JsonArray @local?, buff: WriteBuffer @local!, 
     buff.append(b']')
 }
 
-@When[env != "ohos"]
+@When[local_mode_api == "on"]
 func asumecapacity(json: JsonValue @local?, depth: Int64): Int64 {
     checkJsonWriteDepth(depth)
     match (json) {
@@ -524,7 +524,7 @@ func asumecapacity(json: JsonValue @local?, depth: Int64): Int64 {
     }
 }
 
-@When[env != "ohos"]
+@When[local_mode_api == "on"]
 func asumecapacity(json: JsonValue @local?): Int64 {
     asumecapacity(json, 0)
 }

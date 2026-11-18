@@ -27,7 +27,7 @@ public enum JsonKind {
 sealed abstract class JsonValue <: ToString {
     public init() {}
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave init(this @local!) {}
 
     /**
@@ -90,12 +90,12 @@ sealed abstract class JsonValue <: ToString {
     // the plain overload above, `@local!` binds this one, `@local?` binds the shared one.
     // The same-name overloads are required by the local-mode adaptation, so the shadow
     // warning does not apply.
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave static func fromStr(s: String @local!): JsonValue @local! { // cjlint-ignore !G.DCL.01
         parseString(s)
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave static func fromStr(s: String @local?): JsonValue @local! { // cjlint-ignore !G.DCL.01
         let ls: String @local! = s.toString()
         parseString(ls)
@@ -112,27 +112,27 @@ sealed abstract class JsonValue <: ToString {
 
     // Local-mode overloads are appended after every pre-existing virtual member so that
     // the dispatch slots of the released API keep their original indices.
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public open func toString(this @local?): String @local! {
         throw UnimplementedException("JsonValue.toString(this @local?) not implemented")
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public open func toJsonString(this @local!): String @local! {
         throw UnimplementedException("JsonValue.toJsonString(this @local!) not implemented")
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public open func toStringWithoutEscaping(this @local!): String @local! {
         throw UnimplementedException("JsonValue.toStringWithoutEscaping(this @local!) not implemented")
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public open func toJsonStringWithoutEscaping(this @local!): String @local! {
         throw UnimplementedException("JsonValue.toJsonStringWithoutEscaping(this @local!) not implemented")
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public open func kind(this @local?): JsonKind {
         throw UnimplementedException("JsonValue.kind(this @local?) not implemented")
     }
@@ -141,7 +141,7 @@ sealed abstract class JsonValue <: ToString {
         return calculateCapacity()
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public func estimateCapacity(this @local?): Int64 {
         return calculateCapacity()
     }
@@ -150,7 +150,7 @@ sealed abstract class JsonValue <: ToString {
      * Calculate capacity (to be overridden by subclasses)
      */
     protected func calculateCapacity(): Int64
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     protected func calculateCapacity(this @local?): Int64
 
     /**
@@ -160,7 +160,7 @@ sealed abstract class JsonValue <: ToString {
         return
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     protected func invalidateCapacity(this @local!): Unit {
         return
     }
@@ -181,7 +181,7 @@ sealed abstract class JsonValue <: ToString {
         }
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func asNull(this @local!): JsonNull @local! {
         match (this) {
             case jsonNull: JsonNull => jsonNull
@@ -205,7 +205,7 @@ sealed abstract class JsonValue <: ToString {
         }
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func asBool(this @local!): JsonBool @local! {
         match (this) {
             case jsonBool: JsonBool => jsonBool
@@ -229,7 +229,7 @@ sealed abstract class JsonValue <: ToString {
         }
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func asInt(this @local!): JsonInt @local! {
         match (this) {
             case jsonInt: JsonInt => jsonInt
@@ -254,7 +254,7 @@ sealed abstract class JsonValue <: ToString {
         }
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func asFloat(this @local!): JsonFloat @local! {
         match (this) {
             case jsonFloat: JsonFloat => jsonFloat
@@ -281,7 +281,7 @@ sealed abstract class JsonValue <: ToString {
         }
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func asString(this @local!): JsonString @local! {
         match (this) {
             case jsonString: JsonString => jsonString
@@ -305,7 +305,7 @@ sealed abstract class JsonValue <: ToString {
         }
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func asArray(this @local!): JsonArray @local! {
         match (this) {
             case jsonArray: JsonArray => jsonArray
@@ -329,7 +329,7 @@ sealed abstract class JsonValue <: ToString {
         }
     }
 
-    @When[env != "ohos"]
+    @When[local_mode_api == "on"]
     public exclave func asObject(this @local!): JsonObject @local! {
         match (this) {
             case jsonObject: JsonObject => jsonObject
