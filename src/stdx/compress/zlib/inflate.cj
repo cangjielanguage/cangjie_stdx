@@ -94,6 +94,10 @@ class Inflate {
             releaseArrayRawData(nextIn)
             releaseArrayRawData(nextOut)
 
+            // No progress (Z_BUF_ERROR) while the stream is not finished: compressed data is incomplete (truncated or empty input)
+            if (ret == ZLIB_BUFFER_ERROR && !finished) {
+                throw ZlibException("Unexpected end of compressed data: no progress (Z_BUF_ERROR), decompression is not finished.")
+            }
             if (ret != ZLIB_OK && ret != ZLIB_STREAM_END) {
                 throw ZlibException(ret)
             }

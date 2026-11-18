@@ -272,7 +272,7 @@ Return Value:
 
 Exceptions:
 
-- [ZlibException](zlib_package_exceptions.md#class-zlibexception) - Thrown if `outBuf` is empty or data decompression fails.
+- [ZlibException](zlib_package_exceptions.md#class-zlibexception) - Thrown if `outBuf` is empty, data decompression fails, or the compressed data ends before decompression is finished (for example, the compressed data is truncated).
 
 Example:
 
@@ -363,7 +363,7 @@ Upon closing, it writes any remaining decompressed data and releases the occupie
 
 Exceptions:
 
-- [ZlibException](zlib_package_exceptions.md#class-zlibexception) - Thrown if the current decompression output stream has already been closed, the input data for decompression is incomplete, or decompression resource release fails.
+- [ZlibException](zlib_package_exceptions.md#class-zlibexception) - Thrown if the current decompression output stream has already been closed, the input data for decompression is incomplete (including the case where no data was passed to the [write](./zlib_package_classes.md#func-writearraybyte-1) function), or decompression resource release fails.
 
 ### func flush()
 

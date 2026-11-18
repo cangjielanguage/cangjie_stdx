@@ -435,7 +435,7 @@ public func read(outBuf: Array<Byte>): Int64
 
 异常：
 
-- [ZlibException](zlib_package_exceptions.md#class-zlibexception) - 当 `outBuf` 为空，或解压数据失败，抛出异常。
+- [ZlibException](zlib_package_exceptions.md#class-zlibexception) - 当 `outBuf` 为空，解压数据失败，或压缩数据在解压完成前结束（例如压缩数据被截断），抛出异常。
 
 示例：
 
@@ -596,7 +596,7 @@ public func close(): Unit
 
 异常：
 
-- [ZlibException](zlib_package_exceptions.md#class-zlibexception) - 如果当前压缩输出流已经被关闭，通过 [write](./zlib_package_classes.md#func-writearraybyte-1) 函数传入的待解压数据不完整，或释放压缩资源失败，抛出异常。
+- [ZlibException](zlib_package_exceptions.md#class-zlibexception) - 如果当前压缩输出流已经被关闭，通过 [write](./zlib_package_classes.md#func-writearraybyte-1) 函数传入的待解压数据不完整（含未调用 [write](./zlib_package_classes.md#func-writearraybyte-1) 传入任何数据的情形），或释放压缩资源失败，抛出异常。
 
 示例：
 
