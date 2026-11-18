@@ -23,7 +23,7 @@ It provides two static functions:
 - [toCookieString](#static-func-tocookiestringarraylistcookie) converts ArrayList\<[Cookie](http_package_classes.md#class-cookie)> into a string for setting the [Cookie](http_package_classes.md#class-cookie) header in requests.
 - [parseSetCookieHeader](#static-func-parsesetcookieheaderhttpresponse) parses the `Set-Cookie` header from received responses.
 
-If [Client](http_package_classes.md#class-client) is configured with [CookieJar](http_package_interfaces.md#interface-cookiejar), the parsing and transmission of [Cookie](http_package_classes.md#class-cookie) are handled automatically.
+[Client](http_package_classes.md#class-client) enables a built-in [CookieJar](http_package_interfaces.md#interface-cookiejar) by default, which automatically stores and sends back [Cookie](http_package_classes.md#class-cookie)s. It can be disabled by setting None via [ClientBuilder.cookieJar](http_package_classes.md#func-cookiejarcookiejar), or replaced with a custom implementation.
 
 > **Note**
 >
@@ -168,7 +168,7 @@ func storeCookies(url: URL, cookies: ArrayList<Cookie>): Unit
 
 Functionality: Stores ArrayList\<[Cookie](http_package_classes.md#class-cookie)> in the [CookieJar](http_package_interfaces.md#interface-cookiejar).
 
-If storing [Cookie](http_package_classes.md#class-cookie) exceeds the limit (3000 entries), at least 1000 [Cookie](http_package_classes.md#class-cookie) will be cleared from the [CookieJar](http_package_interfaces.md#interface-cookiejar) before storage. The priority for clearing [Cookie](http_package_classes.md#class-cookie) follows [RFC 6265 5.3.12.](https://httpwg.org/specs/rfc6265.html#storage-model).
+If storing [Cookie](http_package_classes.md#class-cookie) exceeds the limit (3000 entries), at least 1000 [Cookie](http_package_classes.md#class-cookie) will be cleared from the [CookieJar](http_package_interfaces.md#interface-cookiejar) before storage. The priority for clearing [Cookie](http_package_classes.md#class-cookie) follows [RFC 6265 5.3.12.](https://httpwg.org/specs/rfc6265.html#storage-model). This rule also applies to the built-in [CookieJar](http_package_interfaces.md#interface-cookiejar) enabled by default in [Client](http_package_classes.md#class-client) (see the [ClientBuilder.cookieJar](http_package_classes.md#func-cookiejarcookiejar) description).
 
 [Cookie](http_package_classes.md#class-cookie) are cleared in the following order:
 
