@@ -39,7 +39,7 @@ Users can select the HTTP protocol version, such as HTTP/1.1 or HTTP/2. Most API
 
 The http library defaults to HTTP/1.1. To use HTTP/2, developers must configure TLS for the Client/Server and set the ALPN value to `h2`. Upgrading from HTTP/1.1 to HTTP/2 via `Upgrade: h2c` is not supported.
 
-If HTTP/2 connection handshake fails, the Client/Server will automatically fall back to HTTP/1.1.
+When the request does not explicitly specify the HTTP/1.1 version, and the ALPN protocol list in the Client's TLS configuration contains `h2`, the Client attempts to establish an HTTP/2 connection: if the TLS handshake succeeds but the ALPN negotiation result is not `h2` (e.g., the server selects `http/1.1`, or does not respond with an ALPN extension), the Client automatically falls back to HTTP/1.1 and resends the request. If the TLS handshake itself fails (e.g., the two ends' ALPN protocol lists have no intersection and the server sends a no_application_protocol alert), the request throws an exception without automatic fallback; therefore, ensure that the ALPN configurations of the Client and the Server have a common protocol. On the Server side, the connection is served with either HTTP/2 or HTTP/1.1 automatically, according to the ALPN negotiation result of the TLS handshake.
 
 - Users construct a Client instance via [ClientBuilder](./http_package_api/http_package_classes.md#class-clientbuilder), specifying parameters such as httpProxy, logger, cookieJar, auto-redirect, connection pool size, etc.
 
