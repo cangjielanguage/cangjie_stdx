@@ -370,6 +370,13 @@ extend Float32 <: Serializable<Float32> {
     public static func deserialize(dm: DataModel): Float32 {
         return match (dm) {
             case dmf: DataModelFloat => Float32(dmf.getValue())
+            case dmi: DataModelInt =>
+                let value = dmi.getValue()
+                const maxSafeInt: Int64 = 16777215 // The largest integer that can be precisely represented by Float32.
+                if (value > maxSafeInt || value < -maxSafeInt) {
+                    throw DataModelException("Integer value '${value}' exceeds Float32 safe integer range [-${maxSafeInt}, ${maxSafeInt}].")
+                }
+                Float32(value)
             case _ => throw DataModelException("Expected DataModelFloat.")
         }
     }
@@ -403,6 +410,13 @@ extend Float16 <: Serializable<Float16> {
     public static func deserialize(dm: DataModel): Float16 {
         return match (dm) {
             case dmf: DataModelFloat => Float16(dmf.getValue())
+            case dmi: DataModelInt =>
+                let value = dmi.getValue()
+                const maxSafeInt: Int64 = 2047 // The largest integer that can be precisely represented by Float16.
+                if (value > maxSafeInt || value < -maxSafeInt) {
+                    throw DataModelException("Integer value '${value}' exceeds Float16 safe integer range [-${maxSafeInt}, ${maxSafeInt}].")
+                }
+                Float16(value)
             case _ => throw DataModelException("Expected DataModelFloat.")
         }
     }
@@ -681,7 +695,7 @@ extend<K, V> HashMap<K, V> <: Serializable<HashMap<K, V>> where K <: Serializabl
         for ((k, v) in this) {
             match (k) {
                 case k: String => dms.add(field<V>(k, v))
-                case _ => throw DataModelException("Expected String.")
+                case _ => throw DataModelException("HashMap serialization requires the key type to be String.")
             }
         }
         return dms
@@ -706,7 +720,7 @@ extend<K, V> HashMap<K, V> <: Serializable<HashMap<K, V>> where K <: Serializabl
         for (i in data.getFields()) {
             match (i.getName()) {
                 case k: K => arr.add(k, V.deserialize(i.getData()))
-                case _ => throw DataModelException("Expected String.")
+                case _ => throw DataModelException("HashMap deserialization requires the key type to be String.")
             }
         }
         return arr

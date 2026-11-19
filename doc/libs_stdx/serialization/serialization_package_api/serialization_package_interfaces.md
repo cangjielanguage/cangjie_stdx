@@ -162,7 +162,7 @@ public static func deserialize(dm: DataModel): Float16
 
 异常：
 
-- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelFloat](serialization_package_classes.md#class-datamodelfloat) 或者 [DataModelInt](serialization_package_classes.md#class-datamodelint) 时，抛出异常。
+- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelFloat](serialization_package_classes.md#class-datamodelfloat) 或者 [DataModelInt](serialization_package_classes.md#class-datamodelint)，或当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 Float16 的安全整数范围（-2047 ~ 2047）时，抛出异常。
 
 示例：
 
@@ -243,7 +243,7 @@ public static func deserialize(dm: DataModel): Float32
 
 异常：
 
-- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelFloat](serialization_package_classes.md#class-datamodelfloat) 或者 [DataModelInt](serialization_package_classes.md#class-datamodelint) 时，抛出异常。
+- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelFloat](serialization_package_classes.md#class-datamodelfloat) 或者 [DataModelInt](serialization_package_classes.md#class-datamodelint)，或当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 Float32 的安全整数范围（-16777215 ~ 16777215）时，抛出异常。
 
 示例：
 
@@ -324,7 +324,7 @@ public static func deserialize(dm: DataModel): Float64
 
 异常：
 
-- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelFloat](serialization_package_classes.md#class-datamodelfloat) 或者 [DataModelInt](serialization_package_classes.md#class-datamodelint) 时，抛出异常。
+- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelFloat](serialization_package_classes.md#class-datamodelfloat) 或者 [DataModelInt](serialization_package_classes.md#class-datamodelint)，或当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 Float64 的安全整数范围（-9007199254740991 ~ 9007199254740991）时，抛出异常。
 
 示例：
 
@@ -406,6 +406,7 @@ public static func deserialize(dm: DataModel): Int16
 异常：
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 时，则抛出异常。
+- Exception - 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 Int16 可表示范围（-32768 ~ 32767）时，抛出异常，不做截断。
 
 示例：
 
@@ -487,6 +488,7 @@ public static func deserialize(dm: DataModel): Int32
 异常：
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 时，抛出异常
+- Exception - 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 Int32 可表示范围（-2147483648 ~ 2147483647）时，抛出异常，不做截断。
 
 示例：
 
@@ -649,6 +651,7 @@ public static func deserialize(dm: DataModel): Int8
 异常：
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 时，抛出异常。
+- Exception - 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 Int8 可表示范围（-128 ~ 127）时，抛出异常，不做截断。
 
 示例：
 
@@ -730,7 +733,7 @@ public static func deserialize(dm: DataModel): Rune
 异常：
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelString](serialization_package_classes.md#class-datamodelstring) 时，则抛出此异常。
-- Exception - 当 `dm` 的类型不是 Rune 时，则抛出此异常。
+- Exception - 当 `dm` 为 [DataModelString](serialization_package_classes.md#class-datamodelstring) 且其内容不是一个单独的字符时，抛出此异常。
 
 示例：
 
@@ -893,6 +896,7 @@ public static func deserialize(dm: DataModel): UInt16
 异常：
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 时，则抛出异常。
+- Exception - 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 UInt16 可表示范围（0 ~ 65535）时，抛出异常，不做截断。
 
 示例：
 
@@ -974,6 +978,7 @@ public static func deserialize(dm: DataModel): UInt32
 异常：
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 时，则抛出异常。
+- Exception - 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 UInt32 可表示范围（0 ~ 4294967295）时，抛出异常，不做截断。
 
 示例：
 
@@ -1055,6 +1060,7 @@ public static func deserialize(dm: DataModel): UInt64
 异常：
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 时，则抛出异常。
+- Exception - 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 UInt64 可表示范围（0 ~ 18446744073709551615）时，抛出异常，不做截断。
 
 示例：
 
@@ -1086,7 +1092,7 @@ UInt64反序列化成功: 123
 public func serialize(): DataModel
 ```
 
-功能：将 UInt64 序列化为 [DataModelInt](serialization_package_classes.md#class-datamodelint)。
+功能：将 UInt64 序列化为 [DataModelInt](serialization_package_classes.md#class-datamodelint)。当 UInt64 值大于 Int64 最大值（9223372036854775807）时，因 [DataModelInt](serialization_package_classes.md#class-datamodelint) 载体无法表示，抛出 Exception。
 
 返回值：
 
@@ -1136,6 +1142,7 @@ public static func deserialize(dm: DataModel): UInt8
 异常：
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 时，则抛出异常。
+- Exception - 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 UInt8 可表示范围（0 ~ 255）时，抛出异常，不做截断。
 
 示例：
 
@@ -1216,7 +1223,8 @@ public static func deserialize(dm: DataModel): HashMap<K, V>
 
 异常：
 
-- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 不是 [DataModelStruct](serialization_package_classes.md#class-datamodelstruct) 类型，或者 [DataModelStruct](serialization_package_classes.md#class-datamodelstruct) 类型的 `dm` 中的 [Field](serialization_package_classes.md#class-field) 不是 String 类型时，抛出异常。
+- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 不是 [DataModelStruct](serialization_package_classes.md#class-datamodelstruct) 类型时，抛出异常。
+- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 K 不是 String 类型时，抛出异常（[DataModelStruct](serialization_package_classes.md#class-datamodelstruct) 的 [Field](serialization_package_classes.md#class-field) 名必须为 String，仅支持 HashMap\<String, V> 的反序列化）。
 
 示例：
 
@@ -1252,11 +1260,11 @@ HashMap反序列化成功: [(key1, 100), (key2, 200)]
 public func serialize(): DataModel
 ```
 
-功能：将 HashMap\<K, V> 序列化为 [DataModelSeq](serialization_package_classes.md#class-datamodelseq)。
+功能：将 HashMap\<K, V> 序列化为 [DataModelStruct](serialization_package_classes.md#class-datamodelstruct)，其中每个键值对封装为一个 [Field](serialization_package_classes.md#class-field)（Field 名为键，Field 数据为值）。
 
 返回值：
 
-- [DataModel](serialization_package_classes.md#class-datamodel) - 序列化的 [DataModelSeq](serialization_package_classes.md#class-datamodelseq)。
+- [DataModel](serialization_package_classes.md#class-datamodel) - 序列化的 [DataModelStruct](serialization_package_classes.md#class-datamodelstruct)。
 
 异常：
 
