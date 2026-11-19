@@ -34,6 +34,7 @@ func checkSafeIntRange(value: Int64, maxSafeInt: Int64, typeName: String): Unit 
         throw DataModelException("Integer value '${value}' exceeds ${typeName} safe integer range [-${maxSafeInt}, ${maxSafeInt}].")
     }
 }
+
 /**
  * This interface used for canonical serialization.
  */
@@ -202,6 +203,8 @@ extend UInt64 <: Serializable<UInt64> {
      *
      * @return serialized DataModelInt.
      *
+     * @throws OverflowException if the value exceeds Int64.Max (the carrier of DataModelInt).
+     *
      * @since 0.17.4
      */
     public func serialize(): DataModel {
@@ -358,8 +361,9 @@ extend Float64 <: Serializable<Float64> {
         return match (dm) {
             case dmf: DataModelFloat => dmf.getValue()
             case dmi: DataModelInt =>
-                checkSafeIntRange(dmi.getValue(), FLOAT64_MAX_SAFE_INT, "Float64")
-                Float64(dmi.getValue())
+                let value = dmi.getValue()
+                checkSafeIntRange(value, FLOAT64_MAX_SAFE_INT, "Float64")
+                Float64(value)
             case _ => throw DataModelException("Expected DataModelFloat or DataModelInt.")
         }
     }
@@ -394,8 +398,9 @@ extend Float32 <: Serializable<Float32> {
         return match (dm) {
             case dmf: DataModelFloat => Float32(dmf.getValue())
             case dmi: DataModelInt =>
-                checkSafeIntRange(dmi.getValue(), FLOAT32_MAX_SAFE_INT, "Float32")
-                Float32(dmi.getValue())
+                let value = dmi.getValue()
+                checkSafeIntRange(value, FLOAT32_MAX_SAFE_INT, "Float32")
+                Float32(value)
             case _ => throw DataModelException("Expected DataModelFloat or DataModelInt.")
         }
     }
@@ -430,8 +435,9 @@ extend Float16 <: Serializable<Float16> {
         return match (dm) {
             case dmf: DataModelFloat => Float16(dmf.getValue())
             case dmi: DataModelInt =>
-                checkSafeIntRange(dmi.getValue(), FLOAT16_MAX_SAFE_INT, "Float16")
-                Float16(dmi.getValue())
+                let value = dmi.getValue()
+                checkSafeIntRange(value, FLOAT16_MAX_SAFE_INT, "Float16")
+                Float16(value)
             case _ => throw DataModelException("Expected DataModelFloat or DataModelInt.")
         }
     }
@@ -527,7 +533,7 @@ extend Rune <: Serializable<Rune> {
      * @since 0.17.4
      *
      * @throws DataModelException if data is not DataModelString
-     * @throws Exception if data is not Rune
+     * @throws Exception if data is a DataModelString whose content is not a single character
      */
     public static func deserialize(dm: DataModel): Rune {
         let charStr: String = match (dm) {
