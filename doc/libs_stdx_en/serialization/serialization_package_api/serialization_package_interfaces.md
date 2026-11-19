@@ -213,7 +213,7 @@ Return value:
 
 Exceptions:
 
-- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - Thrown when `dm` type is neither [DataModelFloat](serialization_package_classes.md#class-datamodelfloat) nor [DataModelInt](serialization_package_classes.md#class-datamodelint), or when `dm` is a [DataModelInt](serialization_package_classes.md#class-datamodelint) but its value is out of the safe integer range of Float16 (-2047 ~ 2047).
+- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - Thrown when `dm` type is neither [DataModelFloat](serialization_package_classes.md#class-datamodelfloat) nor [DataModelInt](serialization_package_classes.md#class-datamodelint), or when `dm` is a [DataModelInt](serialization_package_classes.md#class-datamodelint) but its value is out of the safe integer range of Float16.
 
 #### func serialize()
 
@@ -257,7 +257,7 @@ Return value:
 
 Exceptions:
 
-- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - Thrown when `dm` type is neither [DataModelFloat](serialization_package_classes.md#class-datamodelfloat) nor [DataModelInt](serialization_package_classes.md#class-datamodelint), or when `dm` is a [DataModelInt](serialization_package_classes.md#class-datamodelint) but its value is out of the safe integer range of Float32 (-16777215 ~ 16777215).
+- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - Thrown when `dm` type is neither [DataModelFloat](serialization_package_classes.md#class-datamodelfloat) nor [DataModelInt](serialization_package_classes.md#class-datamodelint), or when `dm` is a [DataModelInt](serialization_package_classes.md#class-datamodelint) but its value is out of the safe integer range of Float32.
 
 #### func serialize()
 
@@ -299,7 +299,7 @@ Return value:
 
 - Float64 - The deserialized Float64.Exceptions:
 
-- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - Thrown when the type of `dm` is neither [DataModelFloat](serialization_package_classes.md#class-datamodelfloat) nor [DataModelInt](serialization_package_classes.md#class-datamodelint), or when `dm` is a [DataModelInt](serialization_package_classes.md#class-datamodelint) but its value is out of the safe integer range of Float64 (-9007199254740991 ~ 9007199254740991).
+- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - Thrown when the type of `dm` is neither [DataModelFloat](serialization_package_classes.md#class-datamodelfloat) nor [DataModelInt](serialization_package_classes.md#class-datamodelint), or when `dm` is a [DataModelInt](serialization_package_classes.md#class-datamodelint) but its value is out of the safe integer range of Float64.
 
 #### func serialize()
 

@@ -162,7 +162,7 @@ public static func deserialize(dm: DataModel): Float16
 
 异常：
 
-- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelFloat](serialization_package_classes.md#class-datamodelfloat) 或者 [DataModelInt](serialization_package_classes.md#class-datamodelint)，或当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 Float16 的安全整数范围（-2047 ~ 2047）时，抛出异常。
+- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelFloat](serialization_package_classes.md#class-datamodelfloat) 或者 [DataModelInt](serialization_package_classes.md#class-datamodelint)，或当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 Float16 的安全整数范围时，抛出异常。
 
 示例：
 
@@ -243,7 +243,7 @@ public static func deserialize(dm: DataModel): Float32
 
 异常：
 
-- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelFloat](serialization_package_classes.md#class-datamodelfloat) 或者 [DataModelInt](serialization_package_classes.md#class-datamodelint)，或当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 Float32 的安全整数范围（-16777215 ~ 16777215）时，抛出异常。
+- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelFloat](serialization_package_classes.md#class-datamodelfloat) 或者 [DataModelInt](serialization_package_classes.md#class-datamodelint)，或当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 Float32 的安全整数范围时，抛出异常。
 
 示例：
 
@@ -324,7 +324,7 @@ public static func deserialize(dm: DataModel): Float64
 
 异常：
 
-- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelFloat](serialization_package_classes.md#class-datamodelfloat) 或者 [DataModelInt](serialization_package_classes.md#class-datamodelint)，或当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 Float64 的安全整数范围（-9007199254740991 ~ 9007199254740991）时，抛出异常。
+- [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelFloat](serialization_package_classes.md#class-datamodelfloat) 或者 [DataModelInt](serialization_package_classes.md#class-datamodelint)，或当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 Float64 的安全整数范围时，抛出异常。
 
 示例：
 
