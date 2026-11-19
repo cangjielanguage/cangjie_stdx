@@ -312,14 +312,14 @@ class HeaderValue <: Collection<String> {
         if (!_extra.isEmpty()) {
             // remove from extra
             let lastValues = _extra[_extra.size - 1]
-            match (lastValues.indexOf(b',')) {
+            match (lastValues.lastIndexOf(b',')) {
                 case Some(idx) => _extra[_extra.size - 1] = lastValues[..idx]
                 case None => _extra.remove(at: _extra.size - 1) // remove the last values
             }
             return
         }
         // clear the single value
-        match (_single.indexOf(b',')) {
+        match (_single.lastIndexOf(b',')) {
             case Some(idx) => _single = _single[..idx]
             case None => _single = "" // remove the last values
         }
