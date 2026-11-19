@@ -18,7 +18,7 @@ public class Client
 public prop autoRedirect: Bool
 ```
 
-功能：客户端是否会自动进行重定向，304 状态码默认不重定向。
+功能：客户端是否会自动进行重定向，304 状态码默认不重定向。自动重定向最多跟随 11 次；若第 11 次重定向后的响应仍要求重定向，则终止并抛出 [HttpException](http_package_exceptions.md#class-httpexception)，异常信息含 "Redirect loop exceeded 10 times"。
 
 类型：Bool
 
@@ -95,7 +95,7 @@ main(): Unit {
 public prop cookieJar: ?CookieJar
 ```
 
-功能：用于存储客户端所有 [Cookie](http_package_classes.md#class-cookie)，如果配置为 None，则不会启用 [Cookie](http_package_classes.md#class-cookie)。
+功能：用于存储客户端所有 [Cookie](http_package_classes.md#class-cookie)。未设置时使用内置默认 [CookieJar](http_package_interfaces.md#interface-cookiejar)（自动存储并回发 [Cookie](http_package_classes.md#class-cookie)，容量与淘汰规则见 [CookieJar.storeCookies](http_package_interfaces.md#func-storecookiesurl-arraylistcookie) 说明）；设置为 None 则完全不存储 [Cookie](http_package_classes.md#class-cookie)。
 
 类型：?[CookieJar](http_package_interfaces.md#interface-cookiejar)
 
@@ -1682,7 +1682,7 @@ main(): Unit {
 public func autoRedirect(auto: Bool): ClientBuilder
 ```
 
-功能：配置客户端是否会自动进行重定向。重定向会请求 Location 头的资源，协议规定，Location 只能包含一个 URI 引用 Location = URI-reference，详见 [RFC 9110 10.2.2.](https://httpwg.org/specs/rfc9110.html#rfc.section.10.2.2)。304 状态码默认不重定向。
+功能：配置客户端是否会自动进行重定向。重定向会请求 Location 头的资源，协议规定，Location 只能包含一个 URI 引用 Location = URI-reference，详见 [RFC 9110 10.2.2.](https://httpwg.org/specs/rfc9110.html#rfc.section.10.2.2)。304 状态码默认不重定向。自动重定向最多跟随 11 次；若第 11 次重定向后的响应仍要求重定向，则终止并抛出 [HttpException](http_package_exceptions.md#class-httpexception)，异常信息含 "Redirect loop exceeded 10 times"。
 
 参数：
 
@@ -1757,7 +1757,7 @@ public func cookieJar(cookieJar: ?CookieJar): ClientBuilder
 
 参数：
 
-- cookieJar: ?[CookieJar](http_package_interfaces.md#interface-cookiejar) - 默认使用一个空的 [CookieJar](http_package_interfaces.md#interface-cookiejar)，如果配置为 None 则不会启用 [Cookie](http_package_classes.md#class-cookie)。
+- cookieJar: ?[CookieJar](http_package_interfaces.md#interface-cookiejar) - 默认使用内置的 [CookieJar](http_package_interfaces.md#interface-cookiejar)（初始为空，会随请求自动存储并回发 [Cookie](http_package_classes.md#class-cookie)）；如果配置为 None 则完全不存储 [Cookie](http_package_classes.md#class-cookie)。
 
 返回值：
 
@@ -9258,7 +9258,7 @@ public class WebSocket
 - 调用 `read()` 读取一个 [WebSocketFrame](http_package_classes.md#class-websocketframe)，用户可通过 [WebSocketFrame](http_package_classes.md#class-websocketframe).frameType 来知晓帧的类型，通过 [WebSocketFrame](http_package_classes.md#class-websocketframe).fin 来知晓是否是分段帧。
 - 调用 `write(frameType: WebSocketFrameType, byteArray: Array<UInt8>)`，传入消息类型和消息内容（字节数组）来发送 [WebSocket](http_package_classes.md#class-websocket) 数据。控制帧不会被分段发送，数据帧（Text、Binary）则会按底层 buffer 大小分段（分成多个 fragment）发送。
 
-详细说明见下文接口说明，接口行为以 RFC 6455 为准。
+详细说明见下文接口说明，接口行为以 RFC 6455 为准。WebSocket 升级握手与帧掩码依赖已注册的全局 crypto kit：全局套件未注册时，建立 WebSocket 连接将抛出 [CryptoException](../../../crypto/common/crypto_common_package_api/crypto_common_package_exceptions.md#class-cryptoexception)。使用默认 crypto kit 时需导入 stdx.crypto.kit 包；自定义实现可通过 [setGlobalCryptoKit](../../../crypto/common/crypto_common_package_api/crypto_common_package_funcs.md#func-setglobalcryptokitcryptokit) 注册。
 
 ### prop logger
 
@@ -9319,6 +9319,7 @@ public static func upgradeFromClient(client: Client, url: URL, version!: Protoco
 - SocketException - 底层连接错误时抛出异常。
 - [HttpException](http_package_exceptions.md#class-httpexception) - 握手时 HTTP 请求过程中出现错误时抛出异常。
 - [WebSocketException](http_package_exceptions.md#class-websocketexception) - 升级失败，升级响应验证不通过时抛出异常。
+- [CryptoException](../../../crypto/common/crypto_common_package_api/crypto_common_package_exceptions.md#class-cryptoexception) - 全局 crypto kit 未注册时抛出（WebSocket 升级握手与帧掩码依赖全局 crypto kit）。使用默认 crypto kit 时需导入 stdx.crypto.kit 包；自定义实现可通过 [setGlobalCryptoKit](../../../crypto/common/crypto_common_package_api/crypto_common_package_funcs.md#func-setglobalcryptokitcryptokit) 注册。
 
 示例：
 

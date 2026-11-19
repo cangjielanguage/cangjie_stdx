@@ -23,7 +23,7 @@ public interface CookieJar {
 - [toCookieString](#static-func-tocookiestringarraylistcookie) 用于将 ArrayList\<[Cookie](http_package_classes.md#class-cookie)> 转成字符串以便设置请求的 [Cookie](http_package_classes.md#class-cookie) header。
 - [parseSetCookieHeader](#static-func-parsesetcookieheaderhttpresponse) 用于解析收到 response 中的 `Set-Cookie` header。
 
-如果 [Client](http_package_classes.md#class-client) 配置了 [CookieJar](http_package_interfaces.md#interface-cookiejar)，那么 [Cookie](http_package_classes.md#class-cookie) 的解析收发都是自动的。
+[Client](http_package_classes.md#class-client) 默认启用内置 [CookieJar](http_package_interfaces.md#interface-cookiejar)，自动存储并回发 [Cookie](http_package_classes.md#class-cookie)；可通过 [ClientBuilder.cookieJar](http_package_classes.md#func-cookiejarcookiejar) 配置为 None 禁用，或配置自定义实现。
 
 > **说明**
 >
@@ -168,7 +168,7 @@ func storeCookies(url: URL, cookies: ArrayList<Cookie>): Unit
 
 功能：将 ArrayList\<[Cookie](http_package_classes.md#class-cookie)> 存进 [CookieJar](http_package_interfaces.md#interface-cookiejar)。
 
-如果往 [CookieJar](http_package_interfaces.md#interface-cookiejar) 中存 [Cookie](http_package_classes.md#class-cookie) 时超过了上限（3000 条），那么至少清除 [CookieJar](http_package_interfaces.md#interface-cookiejar) 中 1000 条 [Cookie](http_package_classes.md#class-cookie) 再往里存储。清除 [CookieJar](http_package_interfaces.md#interface-cookiejar) 中 [Cookie](http_package_classes.md#class-cookie) 的优先级见 [RFC 6265 5.3.12.](https://httpwg.org/specs/rfc6265.html#storage-model)。
+如果往 [CookieJar](http_package_interfaces.md#interface-cookiejar) 中存 [Cookie](http_package_classes.md#class-cookie) 时超过了上限（3000 条），那么至少清除 [CookieJar](http_package_interfaces.md#interface-cookiejar) 中 1000 条 [Cookie](http_package_classes.md#class-cookie) 再往里存储。清除 [CookieJar](http_package_interfaces.md#interface-cookiejar) 中 [Cookie](http_package_classes.md#class-cookie) 的优先级见 [RFC 6265 5.3.12.](https://httpwg.org/specs/rfc6265.html#storage-model)。该规则同样适用于 [Client](http_package_classes.md#class-client) 默认启用的内置 [CookieJar](http_package_interfaces.md#interface-cookiejar)（见 [ClientBuilder.cookieJar](http_package_classes.md#func-cookiejarcookiejar) 说明）。
 
 [Cookie](http_package_classes.md#class-cookie)按如下顺序清除：
 

@@ -18,7 +18,7 @@ Functionality: Sends HTTP requests, allows immediate closure, etc. Users can sen
 public prop autoRedirect: Bool
 ```
 
-Functionality: Determines whether the client will automatically follow redirects. Status code 304 does not trigger redirection by default.
+Functionality: Determines whether the client will automatically follow redirects. Status code 304 does not trigger redirection by default. At most 11 automatic redirects can be followed; if the response after the 11th redirect still requires a redirect, the process terminates and an [HttpException](http_package_exceptions.md#class-httpexception) is thrown, with the message containing "Redirect loop exceeded 10 times".
 
 Type: Bool
 
@@ -38,7 +38,7 @@ Type: (SocketAddress) -> StreamingSocket
 public prop cookieJar: ?CookieJar
 ```
 
-Functionality: Used to store all client [Cookie](http_package_classes.md#class-cookie) instances. If set to None, [Cookie](http_package_classes.md#class-cookie) functionality will be disabled.
+Functionality: Used to store all client [Cookie](http_package_classes.md#class-cookie) instances. When unset, a built-in default [CookieJar](http_package_interfaces.md#interface-cookiejar) is used (which automatically stores and sends back [Cookie](http_package_classes.md#class-cookie)s; for capacity and eviction rules, see the [CookieJar.storeCookies](http_package_interfaces.md#func-storecookiesurl-arraylistcookie) description). If set to None, no [Cookie](http_package_classes.md#class-cookie) will be stored at all.
 
 Type: ?[CookieJar](http_package_interfaces.md#interface-cookiejar)
 
@@ -533,7 +533,7 @@ Function: Creates a new [ClientBuilder](http_package_classes.md#class-clientbuil
 public func autoRedirect(auto: Bool): ClientBuilder
 ```
 
-Function: Configures whether the client automatically follows redirects. Redirects will request the resource specified in the Location header. The protocol specifies that Location can only contain one URI reference (Location = URI-reference), as detailed in [RFC 9110 10.2.2.](https://httpwg.org/specs/rfc9110.html#rfc.section.10.2.2). Status code 304 does not redirect by default.
+Function: Configures whether the client automatically follows redirects. Redirects will request the resource specified in the Location header. The protocol specifies that Location can only contain one URI reference (Location = URI-reference), as detailed in [RFC 9110 10.2.2.](https://httpwg.org/specs/rfc9110.html#rfc.section.10.2.2). Status code 304 does not redirect by default. At most 11 automatic redirects can be followed; if the response after the 11th redirect still requires a redirect, the process terminates and an [HttpException](http_package_exceptions.md#class-httpexception) is thrown, with the message containing "Redirect loop exceeded 10 times".
 
 Parameters:
 
@@ -587,7 +587,7 @@ Function: Used to store all client [Cookie](http_package_classes.md#class-cookie
 
 Parameters:
 
-- cookieJar: ?[CookieJar](http_package_interfaces.md#interface-cookiejar) - Defaults to an empty [CookieJar](http_package_interfaces.md#interface-cookiejar). If set to None, [Cookie](http_package_classes.md#class-cookie) functionality will be disabled.
+- cookieJar: ?[CookieJar](http_package_interfaces.md#interface-cookiejar) - Defaults to the built-in [CookieJar](http_package_interfaces.md#interface-cookiejar) (initially empty; it automatically stores and sends back [Cookie](http_package_classes.md#class-cookie)s as requests proceed). If set to None, no [Cookie](http_package_classes.md#class-cookie) will be stored at all.
 
 Return Value:
 
@@ -3478,7 +3478,7 @@ Function: Provides a class for [WebSocket](http_package_classes.md#class-websock
 - Call `read()` to read a [WebSocketFrame](http_package_classes.md#class-websocketframe). Users can determine the frame type via [WebSocketFrame](http_package_classes.md#class-websocketframe).frameType and whether it is a fragmented frame via [WebSocketFrame](http_package_classes.md#class-websocketframe).fin.
 - Call `write(frameType: WebSocketFrameType, byteArray: Array<UInt8>)` to send [WebSocket](http_package_classes.md#class-websocket) messages by specifying the message type and message bytes. Control frames are sent without fragmentation, while data frames (Text, Binary) are fragmented according to the underlying buffer size (split into multiple fragments).
 
-Detailed descriptions are provided in the interface documentation below. Interface behavior follows RFC 6455.
+Detailed descriptions are provided in the interface documentation below. Interface behavior follows RFC 6455. The WebSocket upgrade handshake and frame masking rely on a registered global crypto kit: if no global crypto kit is registered, establishing a WebSocket connection throws a [CryptoException](../../../crypto/common/crypto_common_package_api/crypto_common_package_exceptions.md#class-cryptoexception). Import the stdx.crypto.kit package when using the default crypto kit; a custom implementation can be registered via [setGlobalCryptoKit](../../../crypto/common/crypto_common_package_api/crypto_common_package_funcs.md#func-setglobalcryptokitcryptokit).
 
 ### prop logger
 
@@ -3532,6 +3532,7 @@ Exceptions:
 - SocketException - Thrown for underlying connection errors.
 - [HttpException](http_package_exceptions.md#class-httpexception) - Thrown for HTTP request errors during the handshake.
 - [WebSocketException](http_package_exceptions.md#class-websocketexception) - Thrown if the upgrade fails due to invalid response verification.
+- [CryptoException](../../../crypto/common/crypto_common_package_api/crypto_common_package_exceptions.md#class-cryptoexception) - Thrown when no global crypto kit is registered (WebSocket upgrade handshake and frame masking rely on the global crypto kit). Import the stdx.crypto.kit package when using the default crypto kit; a custom implementation can be registered via [setGlobalCryptoKit](../../../crypto/common/crypto_common_package_api/crypto_common_package_funcs.md#func-setglobalcryptokitcryptokit).
 
 ### static func upgradeFromServer(HttpContext, ArrayList\<String>, ArrayList\<String>, (HttpRequest) -> HttpHeaders)
 
