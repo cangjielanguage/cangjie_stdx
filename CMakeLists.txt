@@ -47,6 +47,10 @@ option(CANGJIE_BUILD_WITHOUT_SYNTAX "Build a version without syntax" OFF)
 option(CANGJIE_BUILD_WITHOUT_CHIR "Build a version without chir, which also skips plugin and aspect_cj" OFF)
 option(CANGJIE_BUILD_WITHOUT_PLUGIN "Build a version without plugin" OFF)
 option(CANGJIE_BUILD_WITHOUT_ASPECT_CJ "Build a version without aspect_cj" OFF)
+# The stdx build includes experimental local-mode APIs by default.
+# Requires a standard library built with its local APIs enabled as well.
+option(CANGJIE_ENABLE_LOCAL_MODE_API "Compile the experimental local-mode APIs of stdx" ON)
+message(STATUS "Cangjie stdx local API: ${CANGJIE_ENABLE_LOCAL_MODE_API}")
 
 # Static stdx artifacts keep the legacy auto resolver by default.
 set(CANGJIE_OPENSSL_FFI_OBJECTS_TARGET "cangjie-dynamicLoader-opensslFFI-auto-objs")

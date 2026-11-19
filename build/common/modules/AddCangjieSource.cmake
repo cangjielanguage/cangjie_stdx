@@ -239,6 +239,18 @@ function(add_cangjie_library target_name
     endif()
 
     list(APPEND cangjie_compile_flags "--experimental" "--enable-local-mode")
+    # Whether local-mode APIs themselves are compiled is decided by the user-defined condition
+    # `local_mode_api`. It is always passed explicitly: cjc rejects @When that references an
+    # undefined condition, and rejects a repeated key (e.g. another `--cfg local_mode_api=...`
+    # from CANGJIE_BUILD_ARGS), so it cannot be bypassed silently.
+    # Note: once any key-value `--cfg` is given, cjc no longer reads a package's cfg.toml.
+    # That is intended for src/stdx/encoding/json/cfg.toml, which only provides the default
+    # for cjpm builds; a package that relies on its own cfg.toml must not be built with this.
+    if(CANGJIE_ENABLE_LOCAL_MODE_API)
+        list(APPEND cangjie_compile_flags "--cfg" "local_mode_api=on")
+    else()
+        list(APPEND cangjie_compile_flags "--cfg" "local_mode_api=off")
+    endif()
 
     if(NOT ("${CANGJIELIB_MODULE_NAME}" STREQUAL ""))
         set(output_full_name "${output_dir}/${CANGJIELIB_MODULE_NAME}.${CANGJIELIB_PACKAGE_NAME}")

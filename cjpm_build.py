@@ -39,6 +39,8 @@ DEVECO_OH_NATIVE_HOME = None
 HAS_DEBUG_FLAG = False
 BUILD_TYPE_CJPM = "release"
 IS_MOCK = False
+# Match the default in the JSON package's cfg.toml if cjpm does not request OFF.
+ENABLE_LOCAL_MODE_API = True
 
 def get_platform():
     if sys.platform.startswith("linux"):
@@ -192,6 +194,40 @@ def check_debug_flag(args):
     return False
 
 
+def extract_build_args_value(args):
+    """Return the value(s) of cjpm's `--build-args` option.
+
+    Only the explicit `--build-args` channel is inspected. Arguments after a bare `--`
+    belong to the program being run, never to the build, so they are skipped. This keeps
+    `cjpm run -- --no_local_mode_api` from being mistaken for a build-time switch.
+    """
+    values = []
+    for i, arg in enumerate(args):
+        if arg == "--":
+            break
+        if arg == "--build-args":
+            if i + 1 < len(args):
+                values.append(args[i + 1])
+        elif arg.startswith("--build-args="):
+            values.append(arg.split("=", 1)[1])
+    return values
+
+
+def check_local_mode_api_flag(args):
+    # cjpm expands --no_local_mode_api to --cfg local_mode_api=off. Accept the
+    # same whole token in --build-args and ignore program arguments after --.
+    for arg in args:
+        if arg == "--":
+            break
+        if arg == "--no_local_mode_api":
+            return False
+    for value in extract_build_args_value(args):
+        for arg in value.split():
+            if arg == "--no_local_mode_api":
+                return False
+    return True
+
+
 def get_cwd_linux(pid):
     try:
         return os.readlink("/proc/{}/cwd".format(pid))
@@ -313,9 +349,11 @@ def find_ancestor_and_cwd(target_name="cjpm"):
             global HAS_DEBUG_FLAG
             global BUILD_TYPE_CJPM
             global IS_MOCK
+            global ENABLE_LOCAL_MODE_API
             HAS_DEBUG_FLAG = check_debug_flag(cmdline)
             if "--mock" in cmdline:
                 IS_MOCK = True
+            ENABLE_LOCAL_MODE_API = check_local_mode_api_flag(cmdline)
             if(HAS_DEBUG_FLAG):
                 BUILD_TYPE_CJPM = "debug"
             else:
@@ -513,7 +551,8 @@ def generate_cmake_defs(args):
         "-DCANGJIE_TARGET_SYSROOT=" + (args.target_sysroot if args.target_sysroot else ""),
         "-DCANGJIE_BUILD_WITHOUT_EFFECT_HANDLERS=" + bool_to_opt(args.without_effect_handlers),
         "-DCANGJIE_BUILD_STDLIB_WITH_COVERAGE=" + bool_to_opt(args.stdlib_coverage),
-        "-DCANGJIE_BUILD_ARGS=" + (";".join(args.build_args) if args.build_args else "")]
+        "-DCANGJIE_BUILD_ARGS=" + (";".join(args.build_args) if args.build_args else ""),
+        "-DCANGJIE_ENABLE_LOCAL_MODE_API=" + bool_to_opt(ENABLE_LOCAL_MODE_API)]
     if args.target and "aarch64-linux-android" in args.target:
         android_api_level = re.match(r'aarch64-linux-android(\d{2})?', args.target).group(1)
         result.append("-DCMAKE_ANDROID_NDK=" + os.path.join(args.target_toolchain, "../../../../.."))

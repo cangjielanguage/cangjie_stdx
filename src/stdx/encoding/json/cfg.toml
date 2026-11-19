@@ -1,0 +1,20 @@
+# Copyright (c) Huawei Technologies Co., Ltd. 2025. All rights reserved.
+#
+# This source file is part of the Cangjie project, licensed under Apache-2.0
+# with Runtime Library Exception.
+#
+# See https://cangjie-lang.cn/pages/LICENSE for license information.
+
+# Default value of the user-defined condition `local_mode_api` for this package when it is
+# built by cjpm without any key-value `--cfg`. cjc reads this file only when no key-value
+# `--cfg` is given, so as soon as another key-value `--cfg` appears
+# this default is skipped and `local_mode_api` would be undefined.
+#
+# cjc rejects an @When that references an undefined condition, so that combination would fail
+# the whole package. Every build entry that can pass an extra key-value `--cfg` must therefore
+# supply `local_mode_api` explicitly:
+#   - cjpm: combine other key-value `--cfg` settings with `--local_mode_api`
+#     to select `on`, or `--no_local_mode_api` to select `off`.
+#   - CMake: AddCangjieSource.cmake always appends the value, so extra `--cfg` from
+#     CANGJIE_BUILD_ARGS keeps working and `local_mode_api` appears exactly once.
+local_mode_api = "on"
