@@ -406,7 +406,7 @@ public static func deserialize(dm: DataModel): Int16
 异常：
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 时，则抛出异常。
-- Exception - 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 Int16 可表示范围时，抛出异常，不做截断。
+- OverflowException 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 Int16 可表示范围时，抛出异常，不做截断。
 
 示例：
 
@@ -488,7 +488,7 @@ public static func deserialize(dm: DataModel): Int32
 异常：
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 时，抛出异常
-- Exception - 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 Int32 可表示范围时，抛出异常，不做截断。
+- OverflowException 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 Int32 可表示范围时，抛出异常，不做截断。
 
 示例：
 
@@ -651,7 +651,7 @@ public static func deserialize(dm: DataModel): Int8
 异常：
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 时，抛出异常。
-- Exception - 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 Int8 可表示范围时，抛出异常，不做截断。
+- OverflowException 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 Int8 可表示范围时，抛出异常，不做截断。
 
 示例：
 
@@ -896,7 +896,7 @@ public static func deserialize(dm: DataModel): UInt16
 异常：
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 时，则抛出异常。
-- Exception - 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 UInt16 可表示范围时，抛出异常，不做截断。
+- OverflowException 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 UInt16 可表示范围时，抛出异常，不做截断。
 
 示例：
 
@@ -978,7 +978,7 @@ public static func deserialize(dm: DataModel): UInt32
 异常：
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 时，则抛出异常。
-- Exception - 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 UInt32 可表示范围时，抛出异常，不做截断。
+- OverflowException 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 UInt32 可表示范围时，抛出异常，不做截断。
 
 示例：
 
@@ -1060,7 +1060,7 @@ public static func deserialize(dm: DataModel): UInt64
 异常：
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 时，则抛出异常。
-- Exception - 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值为负时，抛出异常，不做截断（受 [DataModelInt](serialization_package_classes.md#class-datamodelint) 的 Int64 载体限制，仅负值可越界）。
+- OverflowException 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值为负时，抛出异常，不做截断（受 [DataModelInt](serialization_package_classes.md#class-datamodelint) 的 Int64 载体限制，仅负值可越界）。
 
 示例：
 
@@ -1142,7 +1142,7 @@ public static func deserialize(dm: DataModel): UInt8
 异常：
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - 当 `dm` 的类型不是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 时，则抛出异常。
-- Exception - 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 UInt8 可表示范围时，抛出异常，不做截断。
+- OverflowException 当 `dm` 是 [DataModelInt](serialization_package_classes.md#class-datamodelint) 但其值超出 UInt8 可表示范围时，抛出异常，不做截断。
 
 示例：
 
