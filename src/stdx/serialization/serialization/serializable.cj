@@ -325,14 +325,14 @@ extend Float64 <: Serializable<Float64> {
      *
      * @since 0.17.4
      *
-     * @throws DataModelException if data is not DataModelFloat
+     * @throws DataModelException if data is neither DataModelFloat nor DataModelInt, or if the DataModelInt value exceeds the safe integer range
      */
     public static func deserialize(dm: DataModel): Float64 {
         return match (dm) {
             case dmf: DataModelFloat => dmf.getValue()
             case dmi: DataModelInt => 
                 let value = dmi.getValue()
-                const maxSafeInt: Int64 = 9007199254740991 // The largest integer that can be precisely represented by Float64.
+                const maxSafeInt: Int64 = 9007199254740991 // The largest safe integer (2^53 - 1) for Float64.
                 if (value > maxSafeInt || value < -maxSafeInt) {
                     throw DataModelException("Integer value '${value}' exceeds Float64 safe integer range [-${maxSafeInt}, ${maxSafeInt}].")
                 }
@@ -365,14 +365,14 @@ extend Float32 <: Serializable<Float32> {
      *
      * @since 0.17.4
      *
-     * @throws DataModelException if data is not DataModelFloat
+     * @throws DataModelException if data is neither DataModelFloat nor DataModelInt, or if the DataModelInt value exceeds the safe integer range
      */
     public static func deserialize(dm: DataModel): Float32 {
         return match (dm) {
             case dmf: DataModelFloat => Float32(dmf.getValue())
             case dmi: DataModelInt =>
                 let value = dmi.getValue()
-                const maxSafeInt: Int64 = 16777215 // The largest integer that can be precisely represented by Float32.
+                const maxSafeInt: Int64 = 16777215 // The largest safe integer (2^24 - 1) for Float32.
                 if (value > maxSafeInt || value < -maxSafeInt) {
                     throw DataModelException("Integer value '${value}' exceeds Float32 safe integer range [-${maxSafeInt}, ${maxSafeInt}].")
                 }
@@ -405,14 +405,14 @@ extend Float16 <: Serializable<Float16> {
      *
      * @since 0.17.4
      *
-     * @throws DataModelException if data is not DataModelFloat
+     * @throws DataModelException if data is neither DataModelFloat nor DataModelInt, or if the DataModelInt value exceeds the safe integer range
      */
     public static func deserialize(dm: DataModel): Float16 {
         return match (dm) {
             case dmf: DataModelFloat => Float16(dmf.getValue())
             case dmi: DataModelInt =>
                 let value = dmi.getValue()
-                const maxSafeInt: Int64 = 2047 // The largest integer that can be precisely represented by Float16.
+                const maxSafeInt: Int64 = 2047 // The largest safe integer (2^11 - 1) for Float16.
                 if (value > maxSafeInt || value < -maxSafeInt) {
                     throw DataModelException("Integer value '${value}' exceeds Float16 safe integer range [-${maxSafeInt}, ${maxSafeInt}].")
                 }

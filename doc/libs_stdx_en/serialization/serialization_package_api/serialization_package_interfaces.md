@@ -437,7 +437,7 @@ Return Value:
 Exceptions:
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - Thrown when `dm` is not of type [DataModelInt](serialization_package_classes.md#class-datamodelint).
-- Exception - Thrown when `dm` is a [DataModelInt](serialization_package_classes.md#class-datamodelint) but its value is out of the representable range of Int16 (-32768 ~ 32767), without truncation.
+- Exception - Thrown when `dm` is a [DataModelInt](serialization_package_classes.md#class-datamodelint) but its value is out of the representable range of Int16, without truncation.
 
 #### func serialize()
 
@@ -482,7 +482,7 @@ Return Value:
 Exceptions:
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - Thrown when `dm` is not of type [DataModelInt](serialization_package_classes.md#class-datamodelint).
-- Exception - Thrown when `dm` is a [DataModelInt](serialization_package_classes.md#class-datamodelint) but its value is out of the representable range of Int32 (-2147483648 ~ 2147483647), without truncation.
+- Exception - Thrown when `dm` is a [DataModelInt](serialization_package_classes.md#class-datamodelint) but its value is out of the representable range of Int32, without truncation.
 
 #### func serialize()
 
@@ -571,7 +571,7 @@ Return Value:
 Exceptions:
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - Thrown when `dm` is not of type [DataModelInt](serialization_package_classes.md#class-datamodelint).
-- Exception - Thrown when `dm` is a [DataModelInt](serialization_package_classes.md#class-datamodelint) but its value is out of the representable range of Int8 (-128 ~ 127), without truncation.
+- Exception - Thrown when `dm` is a [DataModelInt](serialization_package_classes.md#class-datamodelint) but its value is out of the representable range of Int8, without truncation.
 
 #### func serialize()
 
@@ -749,7 +749,7 @@ Return Value:
 Exceptions:
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - Thrown when `dm` is not of type [DataModelInt](serialization_package_classes.md#class-datamodelint).
-- Exception - Thrown when `dm` is a [DataModelInt](serialization_package_classes.md#class-datamodelint) but its value is out of the representable range of UInt16 (0 ~ 65535), without truncation.
+- Exception - Thrown when `dm` is a [DataModelInt](serialization_package_classes.md#class-datamodelint) but its value is out of the representable range of UInt16, without truncation.
 
 #### func serialize()
 
@@ -794,7 +794,7 @@ Return Value:
 Exceptions:
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - Thrown when `dm` is not of type [DataModelInt](serialization_package_classes.md#class-datamodelint).
-- Exception - Thrown when `dm` is a [DataModelInt](serialization_package_classes.md#class-datamodelint) but its value is out of the representable range of UInt32 (0 ~ 4294967295), without truncation.
+- Exception - Thrown when `dm` is a [DataModelInt](serialization_package_classes.md#class-datamodelint) but its value is out of the representable range of UInt32, without truncation.
 
 #### func serialize()
 
@@ -839,7 +839,7 @@ Return Value:
 Exceptions:
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - Thrown when `dm` is not of type [DataModelInt](serialization_package_classes.md#class-datamodelint).
-- Exception - Thrown when `dm` is a [DataModelInt](serialization_package_classes.md#class-datamodelint) but its value is out of the representable range of UInt64 (0 ~ 18446744073709551615), without truncation.
+- Exception - Thrown when `dm` is a [DataModelInt](serialization_package_classes.md#class-datamodelint) but its value is negative, without truncation (limited by the Int64 carrier of [DataModelInt](serialization_package_classes.md#class-datamodelint)).
 
 #### func serialize()
 
@@ -884,7 +884,7 @@ Return Value:
 Exceptions:
 
 - [DataModelException](serialization_package_exceptions.md#class-datamodelexception) - Thrown when `dm` is not of type [DataModelInt](serialization_package_classes.md#class-datamodelint).
-- Exception - Thrown when `dm` is a [DataModelInt](serialization_package_classes.md#class-datamodelint) but its value is out of the representable range of UInt8 (0 ~ 255), without truncation.
+- Exception - Thrown when `dm` is a [DataModelInt](serialization_package_classes.md#class-datamodelint) but its value is out of the representable range of UInt8, without truncation.
 
 #### func serialize()
 
