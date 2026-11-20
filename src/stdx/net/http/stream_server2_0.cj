@@ -395,7 +395,9 @@ class Stream {
             cleanDataQueue()
             // headers haven't been sent, send response with status code STATUS_INTERNAL_SERVER_ERROR
             if (!ctx.responseFlushedByUser && !ctx.upgraded) {
-                ctx.responseBuilder.status(HttpStatusCode.STATUS_INTERNAL_SERVER_ERROR).body(e.message)
+                // Do not send the exception message to the client, it may contain sensitive information.
+                // Keep consistent with the HTTP/1.1 server, which returns a generic error message.
+                ctx.responseBuilder.status(HttpStatusCode.STATUS_INTERNAL_SERVER_ERROR).body("Internal Server Error")
                 engine.writeResponse(ctx) // throw HttpException, if responseQueue is closed, log and return
                 return
             }
