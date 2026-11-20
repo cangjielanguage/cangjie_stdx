@@ -49,6 +49,7 @@ set(HTTP_SRCS
         websocket_conn.cj
         websocket_frame.cj
         websocket_status_code.cj
+        websocket_utf8.cj
         websocket.cj
         CACHE INTERNAL ""
 )
