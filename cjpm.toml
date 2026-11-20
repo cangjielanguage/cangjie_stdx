@@ -23,8 +23,8 @@
   exclude = ["build_temp", "third_party/zlib"]
 
 [profile.customized-option]
-  # The JSON package enables local-mode APIs by default. Select the condition
-  # explicitly when using other --cfg values or building against a plain std.
+  # The JSON package omits local-mode APIs by default. Select the condition
+  # explicitly to enable them or when using other --cfg values.
   local_mode_api = "--cfg local_mode_api=on"
   no_local_mode_api = "--cfg local_mode_api=off"
 

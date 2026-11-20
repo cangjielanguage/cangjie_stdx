@@ -435,13 +435,13 @@ def main():
     local_mode_api = parser_build.add_mutually_exclusive_group()
     local_mode_api.add_argument(
         "--local_mode_api", dest="local_mode_api", action="store_true",
-        help="compile the experimental local-mode APIs of stdx (default; requires them in std)"
+        help="compile the experimental local-mode APIs of stdx (requires them in std)"
     )
     local_mode_api.add_argument(
         "--no_local_mode_api", dest="local_mode_api", action="store_false",
-        help="omit the experimental local-mode APIs of stdx"
+        help="omit the experimental local-mode APIs of stdx (default)"
     )
-    parser_build.set_defaults(func=build, local_mode_api=True)
+    parser_build.set_defaults(func=build, local_mode_api=False)
 
     parser_install = subparsers.add_parser("install", help="install targets")
 

@@ -39,8 +39,8 @@ DEVECO_OH_NATIVE_HOME = None
 HAS_DEBUG_FLAG = False
 BUILD_TYPE_CJPM = "release"
 IS_MOCK = False
-# Match the default in the JSON package's cfg.toml if cjpm does not request OFF.
-ENABLE_LOCAL_MODE_API = True
+# Match the default in the JSON package's cfg.toml when cjpm does not opt in.
+ENABLE_LOCAL_MODE_API = False
 
 def get_platform():
     if sys.platform.startswith("linux"):
@@ -214,18 +214,14 @@ def extract_build_args_value(args):
 
 
 def check_local_mode_api_flag(args):
-    # cjpm expands --no_local_mode_api to --cfg local_mode_api=off. Accept the
-    # same whole token in --build-args and ignore program arguments after --.
+    flags = set()
     for arg in args:
         if arg == "--":
             break
-        if arg == "--no_local_mode_api":
-            return False
+        flags.add(arg)
     for value in extract_build_args_value(args):
-        for arg in value.split():
-            if arg == "--no_local_mode_api":
-                return False
-    return True
+        flags.update(value.split())
+    return "--local_mode_api" in flags and "--no_local_mode_api" not in flags
 
 
 def get_cwd_linux(pid):
