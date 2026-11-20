@@ -17,4 +17,4 @@
 #     to select `on`, or `--no_local_mode_api` to select `off`.
 #   - CMake: AddCangjieSource.cmake always appends the value, so extra `--cfg` from
 #     CANGJIE_BUILD_ARGS keeps working and `local_mode_api` appears exactly once.
-local_mode_api = "on"
+local_mode_api = "off"

@@ -151,7 +151,7 @@ git clone https://gitcode.com/Cangjie/cangjie_stdx.git
 
 #### Build Command
 
-The stdx build includes the experimental JSON local-mode APIs by default and requires a standard library built with those APIs enabled. To omit them, pass `--no_local_mode_api` to `build.py build` or `cjpm build`, or set `-DCANGJIE_ENABLE_LOCAL_MODE_API=OFF` when configuring with CMake.
+The stdx build omits the experimental JSON local-mode APIs by default. To include them, pass `--local_mode_api` to `build.py build` or `cjpm build`, or set `-DCANGJIE_ENABLE_LOCAL_MODE_API=ON` when configuring with CMake. Use a standard library built with these APIs enabled. If you supply another key-value `--cfg` to a cjpm build, also pass `--local_mode_api` or `--no_local_mode_api`; otherwise the JSON package's default is not loaded.
 
 ##### Method 1
 

@@ -148,7 +148,7 @@ git clone https://gitcode.com/Cangjie/cangjie_stdx.git
 
 #### 构建命令
 
-stdx 默认编译实验性的 JSON local-mode API，需要配套标准库也开启 local-mode API。若要关闭，可为 `build.py build` 或 `cjpm build` 传入 `--no_local_mode_api`，或在 CMake 配置时设置 `-DCANGJIE_ENABLE_LOCAL_MODE_API=OFF`。
+stdx 默认不编译实验性的 JSON local-mode API。若要编译这些 API，可为 `build.py build` 或 `cjpm build` 传入 `--local_mode_api`，或在 CMake 配置时设置 `-DCANGJIE_ENABLE_LOCAL_MODE_API=ON`，并使用开启这些 API 的标准库。如果为 cjpm 构建传入了其他键值形式的 `--cfg`，还需显式传入 `--local_mode_api` 或 `--no_local_mode_api`，否则 JSON 包的默认值不会被读取。
 
 ##### 方式一
 
