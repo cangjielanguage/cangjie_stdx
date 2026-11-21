@@ -168,6 +168,12 @@ func storeCookies(url: URL, cookies: ArrayList<Cookie>): Unit
 
 功能：将 ArrayList\<[Cookie](http_package_classes.md#class-cookie)> 存进 [CookieJar](http_package_interfaces.md#interface-cookiejar)。
 
+[Cookie](http_package_classes.md#class-cookie) 的存储遵循 [RFC 6265 5.3](https://httpwg.org/specs/rfc6265.html#storage-model)：max-age-av 值小于等于 0 或过期时间已过的 [Cookie](http_package_classes.md#class-cookie) 不会生效于新增存储，而是用于删除 [CookieJar](http_package_interfaces.md#interface-cookiejar) 中同名、同 domain、同 path 的已存 [Cookie](http_package_classes.md#class-cookie)（如服务端通过 `Set-Cookie: name=; Max-Age=0` 下发的删除指令）。
+
+> **说明：**
+>
+> - 若待存 [Cookie](http_package_classes.md#class-cookie) 的 url scheme 非 https/wss，且 [CookieJar](http_package_interfaces.md#interface-cookiejar) 中存在名称相同、domain 与其构成 domain-match、path 与其构成 path-match 的 secure [Cookie](http_package_classes.md#class-cookie)，则该存储（含删除指令）会被忽略，已存 secure [Cookie](http_package_classes.md#class-cookie) 保持不变（[RFC 6265bis 5.4 步骤 14](https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-rfc6265bis#section-5.4) leave secure cookies alone）；scheme 为 https/wss 的来源不受该限制；
+
 如果往 [CookieJar](http_package_interfaces.md#interface-cookiejar) 中存 [Cookie](http_package_classes.md#class-cookie) 时超过了上限（3000 条），那么至少清除 [CookieJar](http_package_interfaces.md#interface-cookiejar) 中 1000 条 [Cookie](http_package_classes.md#class-cookie) 再往里存储。清除 [CookieJar](http_package_interfaces.md#interface-cookiejar) 中 [Cookie](http_package_classes.md#class-cookie) 的优先级见 [RFC 6265 5.3.12.](https://httpwg.org/specs/rfc6265.html#storage-model)。该规则同样适用于 [Client](http_package_classes.md#class-client) 默认启用的内置 [CookieJar](http_package_interfaces.md#interface-cookiejar)（见 [ClientBuilder.cookieJar](http_package_classes.md#func-cookiejarcookiejar) 说明）。
 
 [Cookie](http_package_classes.md#class-cookie)按如下顺序清除：

@@ -196,13 +196,23 @@ class CookieJarImpl <: CookieJar {
         let defaultPath = computeDefaultPath(url)
         let isSecureScheme = (url.scheme == "https" || url.scheme == "wss")
         synchronized(cookieEntriesLock) {
+            let touchedDomains = HashSet<String>()
             for (cookie in cookies) {
-                doStoreCookie(cookie, cononicalizeHost, defaultPath, isSecureScheme)
+                if (let Some(domain) <- doStoreCookie(cookie, cononicalizeHost, defaultPath, isSecureScheme)) {
+                    touchedDomains.add(domain)
+                }
+            }
+            // RFC 6265 5.3: evict expired cookies once per touched domain after the
+            // whole Set-Cookie batch, instead of sweeping after every single store
+            if (!touchedDomains.isEmpty()) {
+                for (domain in touchedDomains) {
+                    removeExpiredCookies(domain, DateTime.nowUTC())
+                }
             }
         }
     }
 
-    private func doStoreCookie(cookie: Cookie, cononicalizeHost: String, defaultPath: String, isSecureScheme: Bool): Unit {
+    private func doStoreCookie(cookie: Cookie, cononicalizeHost: String, defaultPath: String, isSecureScheme: Bool): ?String {
         // cookie name and cookie value
         let name = cookie.cookieName
         let value = cookie.cookieValue
@@ -210,10 +220,7 @@ class CookieJarImpl <: CookieJar {
         let creationTime = DateTime.nowUTC()
         let lastAccessTime = creationTime
         // expiryTime
-        // a cookie is "expired" if the cookie has an expiry date in the past
-        // The user agent must evict all expired cookies from the cookie store
-        // if, at any time, an expired cookie exists in the cookie store
-        let (persistentFlag, expiryTime) = parseExpire(cookie, creationTime) ?? return ()
+        let (persistentFlag, expiryTime) = resolveExpiryTime(cookie, creationTime)
         // domain
         // if the cookie.domain is not set, the domain is an empty string
         var domain = cookie.domain.toLower().removePrefix(".")
@@ -224,13 +231,13 @@ class CookieJarImpl <: CookieJar {
             // if domain-attribute is identical to the canonicalized request-host
             // let the domain-attribute be the empty string, otherwise, ignore the cookie
             if (cononicalizeHost != domain) {
-                return
+                return None
             }
             domain = ""
         }
         if (!domain.isEmpty()) {
             if (!domainMatch(cononicalizeHost, domain)) {
-                return
+                return None
             }
             hostOnlyFlag = false
         } else {
@@ -242,38 +249,77 @@ class CookieJarImpl <: CookieJar {
         // cookie's http-only-flag is set,
         // abort these steps and ignore the cookie entirely
         if (cookie.httpOnly && !isHttp) {
-            return
+            return None
         }
         // if the cookie's secure-only-flag is true and the scheme is not secure,
         // abort these steps and ignore the cookie entirely
         // RFC 6265bis Section 5.4
         if (cookie.secure && !isSecureScheme) {
-            return
+            return None
         }
 
-        // create a cookieEntry and store it in cookieJar
-        let cookieEntry = CookieEntry(name, value, expiryTime, domain, path, creationTime, lastAccessTime,
-            persistentFlag, hostOnlyFlag, cookie.secure, cookie.httpOnly)
+        // if the cookie's secure-only-flag is false and the scheme is not secure,
+        // abort these steps and ignore the cookie entirely if the cookie store
+        // contains one or more cookies that meet all of the following criteria:
+        // its name matches the name of the newly-created cookie, and its domain
+        // domain-matches the domain of the newly-created cookie, and its path
+        // path-matches the path of the newly-created cookie, and its
+        // secure-only-flag is true
+        // ("leave secure cookies alone", RFC 6265bis Section 5.4 step 14)
+        if (!cookie.secure && !isSecureScheme) {
+            if (hasSecureCookieGuard(domain, path, name, creationTime)) {
+                return None
+            }
+        }
 
+        storeCookieEntry(
+            CookieEntry(name, value, expiryTime, domain, path, creationTime, lastAccessTime, persistentFlag,
+                hostOnlyFlag, cookie.secure, cookie.httpOnly), domain, creationTime)
+        return Some(domain)
+    }
+
+    // store the validated cookieEntry in the cookie store under its domain key;
+    // RFC 6265 5.3 step 11-12: preserve the creation-time of the old same-name
+    // cookie, then insert the new entry
+    private func storeCookieEntry(cookieEntry: CookieEntry, domain: String, now: DateTime): Unit {
         // check cookie counts, cookieJar will remove at least 1000
-        // cookies if the number reaches the boundary
-        if (cookieCount >= MAXCOOKIECOUNT) {
-            removeExcessCookies()
+        // cookies if the number reaches the boundary; an expired entry is a
+        // deletion marker that is evicted at the end of the batch, so it must
+        // not trigger capacity eviction of valid cookies
+        if (cookieEntry.expiryTime > now && cookieCount >= MAXCOOKIECOUNT) {
+            removeExcessCookies(now)
         }
 
         // domain:<path:<name:entry>>
         let nameCookieMap = cookieEntries
             .getIfAbsent(domain, HashMap<String, HashMap<String, CookieEntry>>())
-            .getIfAbsent(path, HashMap<String, CookieEntry>())
+            .getIfAbsent(cookieEntry.path, HashMap<String, CookieEntry>())
         // old entry
-        if (let Some(oldCookie) <- nameCookieMap.get(name)) {
+        if (let Some(oldCookie) <- nameCookieMap.get(cookieEntry.name)) {
             cookieEntry.creationTime = oldCookie.creationTime
-            nameCookieMap.remove(name)
+            nameCookieMap.remove(cookieEntry.name)
             cookieCount--
         }
 
-        nameCookieMap.add(name, cookieEntry)
+        nameCookieMap.add(cookieEntry.name, cookieEntry)
         cookieCount++
+    }
+
+    // RFC 6265 5.3 step 10 (expiry-time): a cookie is "expired" if the cookie has
+    // an expiry date in the past. The user agent must evict all expired cookies
+    // from the cookie store if, at any time, an expired cookie exists in the
+    // cookie store. RFC 6265 5.3: a cookie with an expiry-time in the past
+    // (e.g. Max-Age=0) must still be stored, so that it removes the previously
+    // stored cookie with the same name, domain and path; the expired entry is
+    // then evicted at the end of the storeCookies batch (removeExpiredCookies).
+    // Returns (persistentFlag, expiryTime); an expired cookie yields
+    // (true, 0001-01-01), a date in the past; any past date has the same
+    // expiry semantics, so this is a convenient sentinel.
+    private func resolveExpiryTime(cookie: Cookie, creationTime: DateTime): (Bool, DateTime) {
+        match (parseExpire(cookie, creationTime)) {
+            case Some(pair) => pair
+            case None => (true, DateTime.ofEpoch(second: -62135596800, nanosecond: 0))
+        }
     }
 
     /**
@@ -292,7 +338,9 @@ class CookieJarImpl <: CookieJar {
         return path
     }
 
-    // return value is (persistentFlag, expiryTime), return None if expired
+    // return value is (persistentFlag, expiryTime), return None if the cookie is expired
+    // (e.g. Max-Age <= 0 or an expiry date in the past); the caller stores it with
+    // a date in the past so that it evicts the matching stored cookie
     private func parseExpire(cookie: Cookie, creationTime: DateTime): ?(Bool, DateTime) {
         match ((cookie.maxAge, cookie.expires)) {
             case (Some(deltaSeconds), _) =>
@@ -301,6 +349,12 @@ class CookieJarImpl <: CookieJar {
                 // a cookie is "expired" if the cookie has an expiry date in the past
                 if (deltaSeconds <= 0) {
                     return None
+                }
+                // clamp absurd values to "never expires"; DateTime arithmetic
+                // would otherwise overflow for a maliciously large Max-Age
+                let maxAgeSeconds = 100 * 365 * 24 * 60 * 60
+                if (deltaSeconds > maxAgeSeconds) {
+                    return (true, END_TIME)
                 }
                 (true, creationTime + Duration.second * deltaSeconds)
             case (None, Some(expired)) =>
@@ -470,7 +524,7 @@ class CookieJarImpl <: CookieJar {
      * evict the cookie with the earliest last-access date first
      * RFC 6265 5.3.
      */
-    private func removeExcessCookies(): Unit {
+    private func removeExcessCookies(now: DateTime): Unit {
         let cookieEntryList = ArrayList<CookieEntry>()
 
         // domain:<path:<name:entry>>
@@ -481,7 +535,7 @@ class CookieJarImpl <: CookieJar {
             let pathCookieMapIterator = pathCookieMap.iterator()
             while (let Some((_, nameCookieMap)) <- pathCookieMapIterator.next()) {
                 // name:entry
-                removeExcessCookies(nameCookieMap, domainCookieEntryList)
+                removeExcessCookies(nameCookieMap, domainCookieEntryList, now)
                 pathCookieMapIterator.removeIf(nameCookieMap.isEmpty)
             }
 
@@ -520,18 +574,74 @@ class CookieJarImpl <: CookieJar {
 
     private func removeExcessCookies(
         nameCookieMap: HashMap<String, CookieEntry>,
-        domainCookieEntryList: ArrayList<CookieEntry>
+        domainCookieEntryList: ArrayList<CookieEntry>,
+        now: DateTime
     ): Unit {
         let nameCookieMapIterator = nameCookieMap.iterator()
         while (let Some((_, entry)) <- nameCookieMapIterator.next()) {
             // 1. expired cookies
-            if (entry.expiryTime <= DateTime.nowUTC()) {
+            if (entry.expiryTime <= now) {
                 nameCookieMapIterator.remove()
                 cookieCount--
             } else {
                 domainCookieEntryList.add(entry)
             }
         }
+    }
+
+    // RFC 6265bis Section 5.4 step 14 ("leave secure cookies alone"): returns true
+    // if the cookie store already contains a secure-only cookie with the same name,
+    // whose domain domain-matches the domain of the new cookie in either direction,
+    // and whose path path-matches. Expired entries must not guard anything.
+    private func hasSecureCookieGuard(domain: String, path: String, name: String, now: DateTime): Bool {
+        for ((domainEntry, pathCookieMap) in cookieEntries) {
+            if (!domainMatch(domain, domainEntry) && !domainMatch(domainEntry, domain)) {
+                continue
+            }
+            for ((pathEntry, nameCookieMap) in pathCookieMap) {
+                if (pathMatch(path, pathEntry) != Some(true)) {
+                    continue
+                }
+                if (let Some(entry) <- nameCookieMap.get(name)) {
+                    if (entry.secureOnlyFlag && entry.expiryTime > now) {
+                        return true
+                    }
+                }
+            }
+        }
+        return false
+    }
+
+    // evict all expired cookies under one domain key
+    // RFC 6265 5.3: the user agent must evict all expired cookies from the
+    // cookie store if, at any time, an expired cookie exists in the cookie store
+    private func removeExpiredCookies(domain: String, now: DateTime): Unit {
+        if (let Some(pathCookieMap) <- cookieEntries.get(domain)) {
+            removeExpiredCookiesInner(domain, pathCookieMap, now)
+        }
+    }
+
+    private func removeExpiredCookiesInner(domain: String, pathCookieMap: HashMap<String, HashMap<String, CookieEntry>>,
+        now: DateTime): Unit {
+        // collect the expired (path -> name) pairs first, then remove them after
+        // iteration, so no iterator outlives the scope of its own map
+        let expiredPaths = ArrayList<(String, String)>()
+        for ((path, nameCookieMap) in pathCookieMap) {
+            for ((name, entry) in nameCookieMap) {
+                if (entry.expiryTime <= now) {
+                    expiredPaths.add((path, name))
+                }
+            }
+        }
+        for ((path, name) in expiredPaths) {
+            if (let Some(nameCookieMap) <- pathCookieMap.get(path)) {
+                if (nameCookieMap.remove(name).isSome()) {
+                    cookieCount--
+                }
+                pathCookieMap.removeKeyIf(path, nameCookieMap.isEmpty)
+            }
+        }
+        cookieEntries.removeKeyIf(domain, pathCookieMap.isEmpty)
     }
 }
 
