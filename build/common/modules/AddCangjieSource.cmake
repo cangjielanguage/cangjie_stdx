@@ -157,6 +157,8 @@ function(add_cangjie_macro_library_in_local target_name)
     set(_macro_compile_env
         "CANGJIE_PATH=${CMAKE_BINARY_DIR}/modules/${output_cj_lib_dir}"
         "LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib"
+        "CANGJIE_STDX_CONTRACT_PKG_NAME=${full_package_name}"
+        "CANGJIE_STDX_CONTRACT_META_DIR=${CMAKE_BINARY_DIR}/${CANGJIE_LIB_DIR}/${output_cj_lib_dir}"
         "${_host_library_env}")
     add_custom_command(
         OUTPUT ${output_full_name} ${output_cjo_full_name}
@@ -185,7 +187,7 @@ function(add_cangjie_library target_name
         PACKAGE_NAME
         MODULE_NAME
         SOURCE_DIR)
-    set(multi_value_args SOURCES DEPENDS FFI LINK_MACRO_LIBS)
+    set(multi_value_args SOURCES DEPENDS FFI LINK_MACRO_LIBS EXTRA_COMPILE_FLAGS)
     cmake_parse_arguments(
         CANGJIELIB
         "${options}"
@@ -250,6 +252,12 @@ function(add_cangjie_library target_name
         list(APPEND cangjie_compile_flags "--cfg" "local_mode_api=on")
     else()
         list(APPEND cangjie_compile_flags "--cfg" "local_mode_api=off")
+    endif()
+
+    # Per-target extra cjc options (e.g. conditional-compilation variables for a specific
+    # package). Applied to both the object build and the LTO bitcode rebuild.
+    if(CANGJIELIB_EXTRA_COMPILE_FLAGS)
+        list(APPEND cangjie_compile_flags ${CANGJIELIB_EXTRA_COMPILE_FLAGS})
     endif()
 
     if(NOT ("${CANGJIELIB_MODULE_NAME}" STREQUAL ""))
@@ -370,9 +378,23 @@ function(add_cangjie_library target_name
 
     cj_resolve_depends(resolved_depends ${CANGJIELIB_DEPENDS})
 
+    # Expose the package identity to contract macro plugins: `CANGJIE_STDX_CONTRACT_PKG_NAME`
+    # turns `.cmeta` records and clause origins into package-qualified names, and the shared
+    # `CANGJIE_STDX_CONTRACT_META_DIR` lets sibling packages of one build discover each
+    # other's records.
+    # These are injected into every Cangjie library build environment; only contract macro
+    # plugins consume them, other packages ignore them harmlessly.
+    set(_contract_pkg_name "${CANGJIELIB_PACKAGE_NAME}")
+    if(NOT ("${CANGJIELIB_MODULE_NAME}" STREQUAL ""))
+        set(_contract_pkg_name "${CANGJIELIB_MODULE_NAME}.${CANGJIELIB_PACKAGE_NAME}")
+    endif()
+    set(_contract_meta_dir "${CMAKE_BINARY_DIR}/${CANGJIE_LIB_DIR}/${output_cj_lib_dir}")
+
     set(_cj_lib_compile_env
         "CANGJIE_PATH=${CMAKE_BINARY_DIR}/modules/${output_cj_lib_dir}"
         "LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib"
+        "CANGJIE_STDX_CONTRACT_PKG_NAME=${_contract_pkg_name}"
+        "CANGJIE_STDX_CONTRACT_META_DIR=${_contract_meta_dir}"
         "${_host_library_env}")
 
     if(NOT CMAKE_BUILD_STAGE STREQUAL "postBuild")
@@ -405,6 +427,8 @@ function(add_cangjie_library target_name
     set(_cj_bc_compile_env
         "CANGJIE_PATH=${bc_cangjie_path}"
         "LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib"
+        "CANGJIE_STDX_CONTRACT_PKG_NAME=${_contract_pkg_name}"
+        "CANGJIE_STDX_CONTRACT_META_DIR=${_contract_meta_dir}"
         "${_host_library_env}")
     if(CANGJIE_CODEGEN_CJNATIVE_BACKEND
        AND NOT WIN32
@@ -486,7 +510,7 @@ function(add_cangjie_library target_name
     endif()
     if(CMAKE_BUILD_STAGE STREQUAL "postBuild")
         if(CMAKE_CROSSCOMPILING)
-            if(${CANGJIELIB_PACKAGE_NAME} STREQUAL "actors.macros")
+            if(CANGJIELIB_PACKAGE_NAME MATCHES "^(actors|contract)\\.macros$")
                 set(install_files "${CANGJIE_CJPM_DIR}/${target_dir}/${lowercase_build_type}/stdx/${file_name}.cjo")
             else()
                 set(install_files "${CANGJIE_CJPM_DIR}/${target_dir}/${TRIPLE}/${lowercase_build_type}/stdx/${file_name}.cjo")

@@ -42,27 +42,29 @@ The APIs provided by the extension library support running on the following oper
 | import stdx.actors.* | stdx.actors |
 | import stdx.actors.macros.* | stdx.actors.macros |
 | import stdx.aspect_cj.* | stdx.aspect_cj |
+| import stdx.contract.macros.* | stdx.contract.macros, stdx.contract.runtime |
+| import stdx.contract.runtime.* | stdx.contract.runtime |
 | import stdx.compress.zlib.* | stdx.compress.zlib |
-| import stdx.crypto.common.* | stdx.crypto.common、stdx.encoding.base64 |
-| import stdx.crypto.crypto.* | stdx.crypto.crypto、stdx.crypto.digest |
+| import stdx.crypto.common.* | stdx.crypto.common, stdx.encoding.base64 |
+| import stdx.crypto.crypto.* | stdx.crypto.crypto, stdx.crypto.digest |
 | import stdx.crypto.digest.* | stdx.crypto.digest |
-| import stdx.crypto.keys.* | stdx.crypto.keys、stdx.crypto.x509、stdx.encoding.hex、stdx.encoding.base64、stdx.crypto.crypto、stdx.crypto.digest |
-| import stdx.crypto.kit.*  | stdx.crypto.keys、stdx.crypto.x509、stdx.encoding.hex、stdx.crypto.crypto、stdx.crypto.digest、stdx.crypto.common、stdx.encoding.base64 |
-| import stdx.crypto.x509.* | stdx.crypto.x509、stdx.encoding.hex、stdx.encoding.base64、stdx.crypto.crypto、stdx.crypto.digest |
+| import stdx.crypto.keys.* | stdx.crypto.keys, stdx.crypto.x509, stdx.encoding.hex, stdx.encoding.base64, stdx.crypto.crypto, stdx.crypto.digest |
+| import stdx.crypto.kit.*  | stdx.crypto.keys, stdx.crypto.x509, stdx.encoding.hex, stdx.crypto.crypto, stdx.crypto.digest, stdx.crypto.common, stdx.encoding.base64 |
+| import stdx.crypto.x509.* | stdx.crypto.x509, stdx.encoding.hex, stdx.encoding.base64, stdx.crypto.crypto, stdx.crypto.digest |
 | import stdx.effect.*   | stdx.effect |
 | import stdx.encoding.hex.* | stdx.encoding.hex |
 | import stdx.encoding.base64.* | stdx.encoding.base64 |
-| import stdx.encoding.json.* | stdx.encoding.json、stdx.serialization.serialization |
+| import stdx.encoding.json.* | stdx.encoding.json, stdx.serialization.serialization |
 | import stdx.encoding.json.stream.* | stdx.encoding.json.stream|
 | import stdx.encoding.url.* | stdx.encoding.url |
 | import stdx.log.* | stdx.log |
 | import stdx.logger.* | stdx.logger |
 | import stdx.serialization.serialization.* | stdx.serialization.serialization |
 | import stdx.fuzz.* | stdx.fuzz |
-| import stdx.net.http .* | stdx.net.http、stdx.net.tls、stdx.logger、stdx.log、stdx.encoding.url、stdx.encoding.json.stream、stdx.crypto.x509 、stdx.encoding.hex、stdx.encoding.base64、stdx.crypto.crypto、stdx.crypto.digest |
-| import stdx.net.tls.* | stdx.net.tls、stdx.crypto.x509、stdx.encoding.hex、stdx.encoding.base64、stdx.crypto.crypto、stdx.crypto.digest |
-| import stdx.net.tls.common.* | stdx.net.tls.common、stdx.crypto.x509、stdx.encoding.hex、stdx.crypto.crypto、stdx.crypto.digest、stdx.crypto.common、stdx.encoding.base64 |
-| import stdx.unittest.data.* | stdx.encoding.json、stdx.serialization.serialization |
+| import stdx.net.http .* | stdx.net.http, stdx.net.tls, stdx.logger, stdx.log, stdx.encoding.url, stdx.encoding.json.stream, stdx.crypto.x509 , stdx.encoding.hex, stdx.encoding.base64, stdx.crypto.crypto, stdx.crypto.digest |
+| import stdx.net.tls.* | stdx.net.tls, stdx.crypto.x509, stdx.encoding.hex, stdx.encoding.base64, stdx.crypto.crypto, stdx.crypto.digest |
+| import stdx.net.tls.common.* | stdx.net.tls.common, stdx.crypto.x509, stdx.encoding.hex, stdx.crypto.crypto, stdx.crypto.digest, stdx.crypto.common, stdx.encoding.base64 |
+| import stdx.unittest.data.* | stdx.encoding.json, stdx.serialization.serialization |
 
 When importing the above packages in code and compiling with the `cjc` command, the linking order must strictly follow the package dependencies listed above. If using `cjpm`, this is not necessary.
 
@@ -76,6 +78,7 @@ For an introduction to `cjc` and compilation, refer to the Cangjie User Manual.
 import stdx.actors.*
 import stdx.actors.macros.*
 import stdx.aspect_cj.*
+import stdx.contract.macros.*
 import stdx.compress.zlib.*
 import stdx.crypto.crypto.*
 import stdx.crypto.digest.*
@@ -99,13 +102,13 @@ main() {
 Compilation commands for Linux and macOS:
 
 ```shell
-cjc main.cj -L $CANGJIE_STDX_PATH -lstdx.actors -lstdx.aspect_cj -lstdx.encoding.json -lstdx.serialization.serialization -lstdx.net.http -lstdx.net.tls -lstdx.logger -lstdx.log -lstdx.encoding.url -lstdx.encoding.json.stream -lstdx.crypto.keys -lstdx.crypto.x509 -lstdx.encoding.hex -lstdx.encoding.base64 -lstdx.crypto.crypto -lstdx.crypto.digest -lstdx.compress.zlib -lstdx.compress -ldl --import-path $CANGJIE_STDX_PATH -o main.out
+cjc main.cj -L $CANGJIE_STDX_PATH -lstdx.actors -lstdx.aspect_cj -lstdx.contract.runtime -lstdx.encoding.json -lstdx.serialization.serialization -lstdx.net.http -lstdx.net.tls -lstdx.logger -lstdx.log -lstdx.encoding.url -lstdx.encoding.json.stream -lstdx.crypto.keys -lstdx.crypto.x509 -lstdx.encoding.hex -lstdx.encoding.base64 -lstdx.crypto.crypto -lstdx.crypto.digest -lstdx.compress.zlib -lstdx.compress -ldl --import-path $CANGJIE_STDX_PATH -o main.out
 ```
 
 Windows compilation command:
 
 ```shell
-cjc main.cj -L $CANGJIE_STDX_PATH -lstdx.actors -lstdx.aspect_cj -lstdx.encoding.json -lstdx.serialization.serialization -lstdx.net.http -lstdx.net.tls -lstdx.logger -lstdx.log -lstdx.encoding.url -lstdx.encoding.json.stream -lstdx.crypto.keys -lstdx.crypto.x509 -lstdx.encoding.hex -lstdx.encoding.base64 -lstdx.crypto.crypto -lstdx.crypto.digest -lstdx.compress.zlib -lstdx.compress -lcrypt32 --import-path $CANGJIE_STDX_PATH -o main.out
+cjc main.cj -L $CANGJIE_STDX_PATH -lstdx.actors -lstdx.aspect_cj -lstdx.contract.runtime -lstdx.encoding.json -lstdx.serialization.serialization -lstdx.net.http -lstdx.net.tls -lstdx.logger -lstdx.log -lstdx.encoding.url -lstdx.encoding.json.stream -lstdx.crypto.keys -lstdx.crypto.x509 -lstdx.encoding.hex -lstdx.encoding.base64 -lstdx.crypto.crypto -lstdx.crypto.digest -lstdx.compress.zlib -lstdx.compress -lcrypt32 --import-path $CANGJIE_STDX_PATH -o main.out
 ```
 
 `CANGJIE_STDX_PATH` is the path to the stdx library.
@@ -150,6 +153,8 @@ stdx includes several packages that offer rich extension functionalities:
 | [actors](./actors/actors_package_overview.md)    | The `actors` package provides the foundational capabilities for the actor programming model. |
 | [actors.macros](./actors/macros/macros_package_overview.md) | The `actors.macros` package provides the ability to transform a class into an active object. |
 | [aspect_cj](./aspect_cj/aspect_cj_package_overview.md) | The aspect_cj package provides Aspect-Oriented Programming (AOP) capabilities in Cangjie. |
+| [contract](./contract/contract_package_overview.md) | The contract package provides Design by Contract capabilities, supporting runtime contract checks declared on functions, properties, types, and loops. |
+| [contract.runtime](./contract/runtime/contract_runtime_package_overview.md) | The contract.runtime package provides the contract checking switch, contract exception types, and runtime helper functions. |
 | [compress.zlib](./compress/zlib/zlib_package_overview.md)                        | The compress package provides compression and decompression functionalities. |
 | [crypto.common](./crypto/common/crypto_common_package_overview.md)             | The common package provides interfaces related to encryption and decryption.  |
 | [crypto.crypto](./crypto/crypto/crypto_package_overview.md)                        | The crypto package provides secure encryption capabilities. |

@@ -103,6 +103,42 @@ set(ACTORS_DEPENDENCIES)
 
 set(ACTORS_MACROS_DEPENDENCIES)
 
+set(CONTRACT_RUNTIME_DEPENDENCIES)
+
+set(CONTRACT_MACROS_TOKENS_DEPENDENCIES)
+
+set(CONTRACT_MACROS_SYNTAX_DEPENDENCIES)
+
+set(CONTRACT_MACROS_PARSE_DEPENDENCIES
+    cangjie${BACKEND_TYPE}ContractMacrosTokens_bc
+    cangjie${BACKEND_TYPE}ContractMacrosSyntax_bc)
+
+set(CONTRACT_MACROS_VALIDATION_DEPENDENCIES
+    cangjie${BACKEND_TYPE}ContractMacrosTokens_bc
+    cangjie${BACKEND_TYPE}ContractMacrosSyntax_bc)
+
+set(CONTRACT_MACROS_INHERITANCE_DEPENDENCIES
+    cangjie${BACKEND_TYPE}ContractMacrosTokens_bc
+    cangjie${BACKEND_TYPE}ContractMacrosSyntax_bc
+    cangjie${BACKEND_TYPE}ContractMacrosParse_bc)
+
+set(CONTRACT_MACROS_GENERATE_DEPENDENCIES
+    cangjie${BACKEND_TYPE}ContractRuntime_bc
+    cangjie${BACKEND_TYPE}ContractMacrosTokens_bc
+    cangjie${BACKEND_TYPE}ContractMacrosSyntax_bc
+    cangjie${BACKEND_TYPE}ContractMacrosParse_bc
+    cangjie${BACKEND_TYPE}ContractMacrosValidation_bc
+    cangjie${BACKEND_TYPE}ContractMacrosInheritance_bc)
+
+set(CONTRACT_MACROS_DEPENDENCIES
+    cangjie${BACKEND_TYPE}ContractRuntime_bc
+    cangjie${BACKEND_TYPE}ContractMacrosTokens_bc
+    cangjie${BACKEND_TYPE}ContractMacrosSyntax_bc
+    cangjie${BACKEND_TYPE}ContractMacrosParse_bc
+    cangjie${BACKEND_TYPE}ContractMacrosValidation_bc
+    cangjie${BACKEND_TYPE}ContractMacrosInheritance_bc
+    cangjie${BACKEND_TYPE}ContractMacrosGenerate_bc)
+
 set(SYNTAX_DEPENDENCIES
     FLATC_OUTPUTS
     cangjie${BACKEND_TYPE}Flatbuffers)

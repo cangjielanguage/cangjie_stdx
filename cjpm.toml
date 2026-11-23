@@ -34,6 +34,12 @@
 [package.package-configuration."stdx.compress.tar"]
   compile-option = "-lstdx.compress.tarFFI"
 
+# cjpm does not read the per-package cfg.toml, so the contract_check switch must be
+# passed explicitly here to match the CMake build
+# (build/libs/AddCJNATIVELibrary.cmake passes --cfg "contract_check=on").
+[package.package-configuration."stdx.contract.runtime"]
+  compile-option = "--cfg contract_check=on"
+
 [package.package-configuration."stdx"]
   compile-option = "-lcangjie-dynamicLoader-opensslFFI"
 
