@@ -14,6 +14,27 @@
 package stdx.serialization.serialization
 
 import std.collection.*
+
+// The largest safe integers (2^p - 1) that Float16/Float32/Float64 can represent exactly.
+const FLOAT16_MAX_SAFE_INT: Int64 = 2047
+const FLOAT32_MAX_SAFE_INT: Int64 = 16777215
+const FLOAT64_MAX_SAFE_INT: Int64 = 9007199254740991
+
+/**
+ * Checks whether the Int64 value is within the safe integer range of the target
+ * float type, and throws DataModelException if it is out of range (no truncation).
+ *
+ * @param value the Int64 value to be converted to a float type.
+ * @param maxSafeInt the largest safe integer of the target float type.
+ * @param typeName the name of the target float type, used in the error message.
+ * @throws DataModelException if the value exceeds the safe integer range.
+ */
+func checkSafeIntRange(value: Int64, maxSafeInt: Int64, typeName: String): Unit {
+    if (value > maxSafeInt || value < -maxSafeInt) {
+        throw DataModelException("Integer value '${value}' exceeds ${typeName} safe integer range [-${maxSafeInt}, ${maxSafeInt}].")
+    }
+}
+
 /**
  * This interface used for canonical serialization.
  */
@@ -95,6 +116,7 @@ extend Int32 <: Serializable<Int32> {
      * @since 0.17.4
      *
      * @throws DataModelException if dm is not DataModelInt
+     * @throws OverflowException if the value of dm exceeds the representable range of Int32
      */
     public static func deserialize(dm: DataModel): Int32 {
         return match (dm) {
@@ -128,6 +150,7 @@ extend Int16 <: Serializable<Int16> {
      * @since 0.17.4
      *
      * @throws DataModelException if dm is not DataModelInt
+     * @throws OverflowException if the value of dm exceeds the representable range of Int16
      */
     public static func deserialize(dm: DataModel): Int16 {
         return match (dm) {
@@ -161,6 +184,7 @@ extend Int8 <: Serializable<Int8> {
      * @since 0.17.4
      *
      * @throws DataModelException if dm is not DataModelInt
+     * @throws OverflowException if the value of dm exceeds the representable range of Int8
      */
     public static func deserialize(dm: DataModel): Int8 {
         return match (dm) {
@@ -179,6 +203,8 @@ extend UInt64 <: Serializable<UInt64> {
      *
      * @return serialized DataModelInt.
      *
+     * @throws OverflowException if the value exceeds Int64.Max (the carrier of DataModelInt).
+     *
      * @since 0.17.4
      */
     public func serialize(): DataModel {
@@ -194,6 +220,7 @@ extend UInt64 <: Serializable<UInt64> {
      * @since 0.17.4
      *
      * @throws DataModelException if dm is not DataModelInt
+     * @throws OverflowException if the value of dm exceeds the representable range of UInt64
      */
     public static func deserialize(dm: DataModel): UInt64 {
         return match (dm) {
@@ -227,6 +254,7 @@ extend UInt32 <: Serializable<UInt32> {
      * @since 0.17.4
      *
      * @throws DataModelException if dm is not DataModelInt
+     * @throws OverflowException if the value of dm exceeds the representable range of UInt32
      */
     public static func deserialize(dm: DataModel): UInt32 {
         return match (dm) {
@@ -260,6 +288,7 @@ extend UInt16 <: Serializable<UInt16> {
      * @since 0.17.4
      *
      * @throws DataModelException if dm is not DataModelInt
+     * @throws OverflowException if the value of dm exceeds the representable range of UInt16
      */
     public static func deserialize(dm: DataModel): UInt16 {
         return match (dm) {
@@ -293,6 +322,7 @@ extend UInt8 <: Serializable<UInt8> {
      * @since 0.17.4
      *
      * @throws DataModelException if dm is not DataModelInt
+     * @throws OverflowException if the value of dm exceeds the representable range of UInt8
      */
     public static func deserialize(dm: DataModel): UInt8 {
         return match (dm) {
@@ -325,19 +355,16 @@ extend Float64 <: Serializable<Float64> {
      *
      * @since 0.17.4
      *
-     * @throws DataModelException if data is not DataModelFloat
+     * @throws DataModelException if data is neither DataModelFloat nor DataModelInt, or if the DataModelInt value exceeds the safe integer range
      */
     public static func deserialize(dm: DataModel): Float64 {
         return match (dm) {
             case dmf: DataModelFloat => dmf.getValue()
-            case dmi: DataModelInt => 
+            case dmi: DataModelInt =>
                 let value = dmi.getValue()
-                const maxSafeInt: Int64 = 9007199254740991 // The largest integer that can be precisely represented by Float64.
-                if (value > maxSafeInt || value < -maxSafeInt) {
-                    throw DataModelException("Integer value '${value}' exceeds Float64 safe integer range [-${maxSafeInt}, ${maxSafeInt}].")
-                }
+                checkSafeIntRange(value, FLOAT64_MAX_SAFE_INT, "Float64")
                 Float64(value)
-            case _ => throw DataModelException("Expected DataModelFloat.")
+            case _ => throw DataModelException("Expected DataModelFloat or DataModelInt.")
         }
     }
 }
@@ -365,12 +392,16 @@ extend Float32 <: Serializable<Float32> {
      *
      * @since 0.17.4
      *
-     * @throws DataModelException if data is not DataModelFloat
+     * @throws DataModelException if data is neither DataModelFloat nor DataModelInt, or if the DataModelInt value exceeds the safe integer range
      */
     public static func deserialize(dm: DataModel): Float32 {
         return match (dm) {
             case dmf: DataModelFloat => Float32(dmf.getValue())
-            case _ => throw DataModelException("Expected DataModelFloat.")
+            case dmi: DataModelInt =>
+                let value = dmi.getValue()
+                checkSafeIntRange(value, FLOAT32_MAX_SAFE_INT, "Float32")
+                Float32(value)
+            case _ => throw DataModelException("Expected DataModelFloat or DataModelInt.")
         }
     }
 }
@@ -398,12 +429,16 @@ extend Float16 <: Serializable<Float16> {
      *
      * @since 0.17.4
      *
-     * @throws DataModelException if data is not DataModelFloat
+     * @throws DataModelException if data is neither DataModelFloat nor DataModelInt, or if the DataModelInt value exceeds the safe integer range
      */
     public static func deserialize(dm: DataModel): Float16 {
         return match (dm) {
             case dmf: DataModelFloat => Float16(dmf.getValue())
-            case _ => throw DataModelException("Expected DataModelFloat.")
+            case dmi: DataModelInt =>
+                let value = dmi.getValue()
+                checkSafeIntRange(value, FLOAT16_MAX_SAFE_INT, "Float16")
+                Float16(value)
+            case _ => throw DataModelException("Expected DataModelFloat or DataModelInt.")
         }
     }
 }
@@ -498,7 +533,7 @@ extend Rune <: Serializable<Rune> {
      * @since 0.17.4
      *
      * @throws DataModelException if data is not DataModelString
-     * @throws Exception if data is not Rune
+     * @throws Exception if data is a DataModelString whose content is not a single character
      */
     public static func deserialize(dm: DataModel): Rune {
         let charStr: String = match (dm) {
@@ -681,7 +716,7 @@ extend<K, V> HashMap<K, V> <: Serializable<HashMap<K, V>> where K <: Serializabl
         for ((k, v) in this) {
             match (k) {
                 case k: String => dms.add(field<V>(k, v))
-                case _ => throw DataModelException("Expected String.")
+                case _ => throw DataModelException("HashMap serialization requires the key type to be String.")
             }
         }
         return dms
@@ -706,7 +741,7 @@ extend<K, V> HashMap<K, V> <: Serializable<HashMap<K, V>> where K <: Serializabl
         for (i in data.getFields()) {
             match (i.getName()) {
                 case k: K => arr.add(k, V.deserialize(i.getData()))
-                case _ => throw DataModelException("Expected String.")
+                case _ => throw DataModelException("HashMap deserialization requires the key type to be String.")
             }
         }
         return arr
