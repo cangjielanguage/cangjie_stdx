@@ -168,6 +168,12 @@ func storeCookies(url: URL, cookies: ArrayList<Cookie>): Unit
 
 Functionality: Stores ArrayList\<[Cookie](http_package_classes.md#class-cookie)> in the [CookieJar](http_package_interfaces.md#interface-cookiejar).
 
+[Cookie](http_package_classes.md#class-cookie) storage follows [RFC 6265 5.3](https://httpwg.org/specs/rfc6265.html#storage-model): a [Cookie](http_package_classes.md#class-cookie) whose max-age-av value is less than or equal to 0, or whose expiry time has passed, does not add a new entry but instead deletes the stored [Cookie](http_package_classes.md#class-cookie) with the same name, domain and path (for example, a deletion instruction sent by the server via `Set-Cookie: name=; Max-Age=0`).
+
+> **Note:**
+>
+> - If the [Cookie](http_package_classes.md#class-cookie) to be stored has a url scheme other than https/wss and the [CookieJar](http_package_interfaces.md#interface-cookiejar) contains a secure [Cookie](http_package_classes.md#class-cookie) with the same name, whose domain domain-matches and whose path path-matches, the storage (including the deletion instruction) is ignored and the stored secure [Cookie](http_package_classes.md#class-cookie) remains unchanged ([RFC 6265bis 5.4 step 14](https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-rfc6265bis#section-5.4), leave secure cookies alone); sources with an https/wss scheme are not subject to this restriction.
+
 If storing [Cookie](http_package_classes.md#class-cookie) exceeds the limit (3000 entries), at least 1000 [Cookie](http_package_classes.md#class-cookie) will be cleared from the [CookieJar](http_package_interfaces.md#interface-cookiejar) before storage. The priority for clearing [Cookie](http_package_classes.md#class-cookie) follows [RFC 6265 5.3.12.](https://httpwg.org/specs/rfc6265.html#storage-model). This rule also applies to the built-in [CookieJar](http_package_interfaces.md#interface-cookiejar) enabled by default in [Client](http_package_classes.md#class-client) (see the [ClientBuilder.cookieJar](http_package_classes.md#func-cookiejarcookiejar) description).
 
 [Cookie](http_package_classes.md#class-cookie) are cleared in the following order:
