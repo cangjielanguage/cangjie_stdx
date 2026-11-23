@@ -523,6 +523,11 @@ public class Client { // cjlint-ignore !G.ENU.01
         var reqsCnt = 0
         // do redirect if autoRedirect on
         while (autoRedirect && needRedirect(response.status)) {
+            // RFC 9110 10.11: the Location field is optional; a 3xx response
+            // without it has no target to follow, so return it to the caller as-is
+            if (response.headers.getInternal("location").isNone()) {
+                break
+            }
             httpLogDebug(logger, "[Client#doRequest] request auto redirect")
             httpLogTrace(logger, "[Client#doRequest] redirect response: \n${response}")
             // read in case response have body, ensure conn can be used next time

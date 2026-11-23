@@ -1682,7 +1682,7 @@ main(): Unit {
 public func autoRedirect(auto: Bool): ClientBuilder
 ```
 
-功能：配置客户端是否会自动进行重定向。重定向会请求 Location 头的资源，协议规定，Location 只能包含一个 URI 引用 Location = URI-reference，详见 [RFC 9110 10.2.2.](https://httpwg.org/specs/rfc9110.html#rfc.section.10.2.2)。304 状态码默认不重定向。自动重定向最多跟随 11 次；若第 11 次重定向后的响应仍要求重定向，则终止并抛出 [HttpException](http_package_exceptions.md#class-httpexception)，异常信息含 "Redirect loop exceeded 10 times"。
+功能：配置客户端是否会自动进行重定向。重定向会请求 Location 头的资源，协议规定，Location 只能包含一个 URI 引用 Location = URI-reference，详见 [RFC 9110 10.2.2.](https://httpwg.org/specs/rfc9110.html#rfc.section.10.2.2)。304 状态码默认不重定向。若重定向响应缺少 Location 头，则不会进行重定向，该响应将原样返回给调用方（见 [RFC 9110 10.11](https://httpwg.org/specs/rfc9110.html#rfc.section.10.11)，Location 头是可选的）。自动重定向最多跟随 11 次；若第 11 次重定向后的响应仍要求重定向，则终止并抛出 [HttpException](http_package_exceptions.md#class-httpexception)，异常信息含 "Redirect loop exceeded 10 times"。
 
 参数：
 

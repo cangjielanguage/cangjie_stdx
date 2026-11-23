@@ -533,7 +533,7 @@ Function: Creates a new [ClientBuilder](http_package_classes.md#class-clientbuil
 public func autoRedirect(auto: Bool): ClientBuilder
 ```
 
-Function: Configures whether the client automatically follows redirects. Redirects will request the resource specified in the Location header. The protocol specifies that Location can only contain one URI reference (Location = URI-reference), as detailed in [RFC 9110 10.2.2.](https://httpwg.org/specs/rfc9110.html#rfc.section.10.2.2). Status code 304 does not redirect by default. At most 11 automatic redirects can be followed; if the response after the 11th redirect still requires a redirect, the process terminates and an [HttpException](http_package_exceptions.md#class-httpexception) is thrown, with the message containing "Redirect loop exceeded 10 times".
+Function: Configures whether the client automatically follows redirects. Redirects will request the resource specified in the Location header. The protocol specifies that Location can only contain one URI reference (Location = URI-reference), as detailed in [RFC 9110 10.2.2.](https://httpwg.org/specs/rfc9110.html#rfc.section.10.2.2). Status code 304 does not redirect by default. If a redirect response lacks the Location header, no redirect is performed and the response is returned to the caller as-is (see [RFC 9110 10.11](https://httpwg.org/specs/rfc9110.html#rfc.section.10.11); the Location header is optional). At most 11 automatic redirects can be followed; if the response after the 11th redirect still requires a redirect, the process terminates and an [HttpException](http_package_exceptions.md#class-httpexception) is thrown, with the message containing "Redirect loop exceeded 10 times".
 
 Parameters:
 
