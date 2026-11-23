@@ -62,7 +62,15 @@ const SEMICOLON: Byte = ';'
 const ASTERISK = "*"
 const SLASH = "/"
 let HopByHopHeaders = ["proxy-connection", "keep-alive", "te", "transfer-encoding", "upgrade"]
-let TrailerExcludeList = [Str("transfer-encoding"), Str("trailer"), Str("content-length")]
+// RFC 9110 6.5.1: fields that are necessary for message framing, routing,
+// request modifiers, authentication, or payload content encoding/type
+// MUST NOT be carried in a trailer section.
+let TRAILER_EXCLUDE_LIST: Array<Str> = [Str("transfer-encoding"), Str("trailer"), Str("content-length"), Str("host"),
+    Str("authorization"), Str("cookie"), Str("content-encoding"), Str("content-type"), Str("content-range"),
+    Str("expect"), Str("max-forwards"), Str("cache-control"), Str("set-cookie"), Str("www-authenticate"),
+    Str("proxy-authenticate"), Str("proxy-authorization"), Str("te"), Str("connection"), Str("keep-alive"),
+    Str("proxy-connection"), Str("upgrade"), Str("range"), Str("if-match"), Str("if-none-match"),
+    Str("if-modified-since"), Str("if-unmodified-since"), Str("if-range")]
 
 // operator ** is better than <<
 // min value of max frame size

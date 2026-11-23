@@ -1552,6 +1552,13 @@ public func addTrailers(trailers: HttpHeaders): HttpRequestBuilder
 
 Function: Adds key-value pairs from the [HttpHeaders](http_package_classes.md#class-httpheaders) parameter to the request trailers.
 
+> **Note:**
+>
+> - A request with trailers set: on HTTP/1.1 it is automatically sent with chunked transfer-coding (no manual Transfer-Encoding or Trailer header is required); on HTTP/2 it is sent as trailers HEADERS frames.
+> - Setting Content-Length explicitly together with trailers throws HttpException; the TRACE/CONNECT methods also reject trailers.
+> - Trailer field names must not use fields forbidden by HTTP semantics (e.g. content-length, transfer-encoding, trailer, host, authorization, cookie, content-encoding, content-type, content-range, expect, max-forwards), otherwise HttpException is thrown.
+> - Redirect trailer forwarding rules: forwarded when same-origin (scheme/host/port unchanged) and the method is preserved (e.g. 307/308 body replay); not forwarded when the target is cross-origin (including an https->http downgrade) or the method is switched to GET (301/302/303, body dropped). Trailers may carry integrity metadata that belongs to the original request.
+
 Parameters:
 
 - trailers: [HttpHeaders](http_package_classes.md#class-httpheaders) - The trailer object to be added.
@@ -2902,7 +2909,7 @@ h1 Request Validation and Processing:
 - For "trailer" header, values cannot include "transfer-encoding", "trailer", or "content-length";
 - For "expect" header, values containing anything other than "100-continue" will return 417 response;
 - HTTP/1.0 defaults to short-lived connections. To maintain persistent connections, include headers "connection: keep-alive" and "keep-alive: timeout = XX, max = XX" to automatically maintain connections for specified timeout duration. HTTP/1.1 defaults to persistent connections. Failed request parsing closes the connection;
-- Trailers are only allowed in chunked mode, and trailer entry names must be included in the "trailer" header, otherwise they will be automatically removed.
+- Trailers are only allowed in chunked mode; trailer entry names declared in the "trailer" request header are kept, undeclared entries are no longer automatically removed, but fields forbidden by HTTP semantics (content-length, transfer-encoding, trailer, host, authorization, cookie, content-encoding, content-type, content-range, expect, max-forwards, cache-control, set-cookie, www-authenticate, proxy-authenticate) are still ignored.
 
 h1 Response Validation and Processing:
 
@@ -2929,7 +2936,7 @@ h2 Request Validation and Processing:
 - If "trailer" header exists, its values cannot contain "transfer-encoding", "trailer", or "content-length", otherwise closes stream;
 - CONNECT method is only supported in [WebSocket](http_package_classes.md#class-websocket) upgrade scenarios, otherwise closes stream;
 - Pseudo-headers must include ":method", ":scheme", ":path". ":method" value must consist of token characters, ":scheme" must be "https", ":path" cannot be empty, otherwise closes stream;
-- Trailer entry names must be included in "trailer" header, otherwise automatically removed;
+- Trailer entry names declared in the "trailer" header are kept, undeclared entries are no longer automatically removed, but fields forbidden by HTTP semantics are still ignored;
 - Request headers size cannot exceed maxHeaderListSize, otherwise closes connection.
 
 h2 Response Validation and Processing:
@@ -2943,7 +2950,6 @@ h2 Response Validation and Processing:
     - If headers contain "content-length" but value is invalid (not parsable as Int64 or contains multiple unequal values), calling [HttpResponseWriter](http_package_classes.md#class-httpresponsewriter)'s write function throws [HttpException](http_package_exceptions.md#class-httpexception). If user handler has already completed, logs will be printed;
     - If headers contain "content-length" and response.body.length ≠ -1, but values don't match, same handling as 6.1;
     - If headers contain "content-length" and response.body.length = -1 or matches "content-length" value, retains "content-length" header;
-- Trailer entries must be included in "trailer" header, otherwise automatically removed;
 - If handler throws exception and user hasn't called write to send partial response, returns 500 response. If user has sent partial response, sends RST frame to close stream.
 
 After h2 server sends response, if stream state isn't CLOSED, sends RST frame with NO_ERROR code to close stream, preventing processed streams from consuming server resources.

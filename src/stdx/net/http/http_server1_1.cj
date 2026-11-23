@@ -808,7 +808,7 @@ class HttpEngineConn1 <: HttpEngineConn & BodyProviderConn {
     }
 
     /*
-     * @throws HttpException, if a field-name is not allowed in the trailers, that is field-name in TrailerExcludeList.
+     * @throws HttpException, if a field-name is not allowed in the trailers, that is field-name in TRAILER_EXCLUDE_LIST.
      */
     public func writeResponse(ctx: HttpContext): Unit {
         if (conn.isClosed()) {

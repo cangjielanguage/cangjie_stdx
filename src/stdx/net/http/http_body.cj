@@ -379,8 +379,10 @@ class HttpChunkedBodyProvider <: InputStream & Resource {
     }
 
     private func validTrailerName(name: String): Bool {
-        let trailersArray = header.getInternal("Trailer") ?? return false
-        return trailersArray |> splitValuesByComma |> name.toAsciiLower().caseInsensitiveMatchOne
+        // forbidden fields are rejected regardless of any "Trailer" declaration;
+        // the declaration is an optional hint (RFC 9110 6.5.1) and is not
+        // enforced: undeclared (non-forbidden) entries are kept
+        return !trailerNameForbidden(Str(name))
     }
 
     /// Throws:

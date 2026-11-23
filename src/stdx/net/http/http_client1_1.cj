@@ -45,7 +45,7 @@ class HttpClient1 <: HttpClient {
      * @throws HttpException, if content-length is not in form of int64, or content-length has different values,
      *  or the last value of transfer-encoding is not "chunked", or content-length and transfer-encoding are set together.
      * @throws HttpException, if there is a httpBody but neither content-length nor transfer-encoding be set.
-     * @throws HttpException, if a field-name is not allowed in the trailers, that is field-name in TrailerExcludeList.
+     * @throws HttpException, if a field-name is not allowed in the trailers, that is field-name in TRAILER_EXCLUDE_LIST.
      * @throws HttpException, if too many connections to the same server.
      * @throws HttpException, if too many 1xx responses.
      * @throws HttpException, if the Content-Length is wrong.
@@ -172,18 +172,24 @@ class HttpClient1 <: HttpClient {
  * @throws HttpException, if content-length is not in form of int64, or content-length has different values,
  * or the last value of transfer-encoding is not "chunked", or content-length and transfer-encoding are set together,
  * or content-length is wrong.
- * @throws HttpException, if a field-name is not allowed in the trailers, that is field-name in TrailerExcludeList.
+ * @throws HttpException, if a field-name is not allowed in the trailers, that is field-name in TRAILER_EXCLUDE_LIST.
  * @throws HttpException if there is a httpBody but neither content-length nor transfer-encoding be set.
+ * @throws HttpException if a trailer field name is forbidden, or if content-length is combined with trailers.
  */
 func checkRequest(request: HttpRequest) {
     checkUserAgent(request._version, request.headers)
     checkConnection(request.headers)
-    let chunked: Bool
+    var chunked: Bool
     (request.contentLength, chunked) = checkClAndTe(request.headers)
     if (request.method == "TRACE" || request.method == "CONNECT") {
         let length = request.contentLength ?? 0
         if (length != 0 || chunked) {
             throw HttpException("Request method '${request.method}' does not support content.")
+        }
+        if (let Some(tr) <- request._trailers) {
+            if (!tr.isEmpty()) {
+                throw HttpException("Request method '${request.method}' does not support trailers.")
+            }
         }
         request.contentLength = 0
         request.headers.set("content-length", "0")
@@ -191,7 +197,7 @@ func checkRequest(request: HttpRequest) {
     }
 
     checkTrailerInHeader(request.headers, false)
-    checkTrailer(request)
+    chunked = applyTrailersForSend(request, chunked)
 
     checkExpect(request)
 
@@ -210,6 +216,54 @@ func checkRequest(request: HttpRequest) {
             }
         case _ => ()
     }
+}
+
+// trailers send-side handling: validate user trailers (forbidden fields
+// throw), apply the receiver-side filter, and switch to chunked when
+// trailers survive validation, declaring their names for strict
+// receivers. Returns the adjusted chunked flag.
+//
+// @throws HttpException if a trailer field name is forbidden, or if
+//          content-length is combined with trailers
+func applyTrailersForSend(request: HttpRequest, chunked: Bool): Bool {
+    let tr = match (request._trailers) {
+        case Some(t) => t
+        case None => return chunked
+    }
+    if (tr.isEmpty()) {
+        return chunked
+    }
+    // sender-side validation: forbidden fields in user trailers fail fast
+    for ((n, _) in tr.map) {
+        if (trailerNameForbidden(n)) {
+            throw HttpException("Invalid trailer field: '${n}' is forbidden in trailers.")
+        }
+    }
+    checkTrailer(request)
+    if (chunked) {
+        return chunked
+    }
+    if (let Some(cl) <- request.contentLength) {
+        let _ = cl
+        throw HttpException("Request trailers cannot be sent with content-length, use transfer-encoding: chunked instead.")
+    }
+    request.headers.add("transfer-encoding", "chunked")
+    // declare the trailer field names for strict receivers
+    // (dedup case-insensitively)
+    let toDeclare = ArrayList<Str>()
+    for ((n, _) in tr.map) {
+        let declared = match (request.headers.getInternal("trailer")) {
+            case Some(hv) => trailerNameDeclared(hv, n)
+            case None => false
+        }
+        if (!declared) {
+            toDeclare.add(n)
+        }
+    }
+    for (n in toDeclare) {
+        request.headers.add("trailer", n.toString())
+    }
+    return true
 }
 
 /**
@@ -276,7 +330,8 @@ class HttpEngine1 {
             }
         } catch (e: SocketException | TlsException) {
             closeConnInUse(connNode)
-            if (isFromPool && isIdempotentMethod(request.method)) {
+            let idempotent = isIdempotentMethod(request.method)
+            if (isFromPool && idempotent) {
                 httpLogDebug(logger,
                     "[HttpEngine1#sendRequest] Client1_1 connection failed, reconnect and resend request")
                 return reconnectSendRequest(request, isToProxy, isToHttpsProxy)
