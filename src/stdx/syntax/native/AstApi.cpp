@@ -87,8 +87,7 @@ std::vector<Token> tokensFormatter(const uint8_t* tokensBytes)
     DiagnosticEngine diag;
     SourceManager sm;
     Lexer lex(tokenStr, diag, sm, false, false);
-    // no compile options here, keep local mode enabled as the parser does
-    lex.SetLocalModeEnabled(true);
+    StdxSyntax::SetDefaultLocalModeEnabled(lex);
     std::vector<Token> tokens{};
     Token token = lex.Next();
 

@@ -21,6 +21,22 @@ using namespace Cangjie;
 using namespace Cangjie::AST;
 
 namespace StdxSyntax {
+// Lexer takes no compile options here; follow the platform parser behavior:
+// local mode is always enabled except on OHOS where it is always disabled.
+// Keep in sync with ParserImpl::IsLocalModeEnabled
+// (cangjie_compiler/src/Parse/ParserImpl.h), which defines this rule for
+// the no-compile-options case.
+// __ohos__ is defined globally by build/common/ohos_*_clang_toolchain.cmake;
+// build paths that do not use those toolchain files must define it themselves.
+inline void SetDefaultLocalModeEnabled(Lexer& lexer)
+{
+#ifdef __ohos__
+    lexer.SetLocalModeEnabled(false);
+#else
+    lexer.SetLocalModeEnabled(true);
+#endif
+}
+
 class ParserSyntaxImpl final {
 public:
 
