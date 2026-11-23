@@ -23,6 +23,14 @@ protected class PartialOrder {
     private let predecessors: ArrayList<PredecessorPair> = ArrayList<PredecessorPair>()
     private let predecessorMap: HashMap<Int64, ArrayList<Int64>> = HashMap<Int64, ArrayList<Int64>>()
     private let allOps: ArrayList<Int64> = ArrayList<Int64>()
+    // The O(1) membership companion of `allOps`: the list keeps insertion
+    // order (the DFS explores available operations in a deterministic
+    // order), while the set answers the contains queries that used to
+    // scan the list linearly — addPredecessor ran two of them per edge,
+    // so building the per-actor program order was already quadratic in
+    // the operation count, and the vector-clock order's O(k²) edges made
+    // the construction cubic.
+    private let allOpsSeen: HashSet<Int64> = HashSet<Int64>()
     
     protected PartialOrder() {}
     
@@ -32,16 +40,19 @@ protected class PartialOrder {
             predecessorMap[opId] = ArrayList<Int64>()
         }
         predecessorMap[opId].add(predecessorId)
-        if (!allOps.contains(opId)) {
+        if (!allOpsSeen.contains(opId)) {
+            allOpsSeen.add(opId)
             allOps.add(opId)
         }
-        if (!allOps.contains(predecessorId)) {
+        if (!allOpsSeen.contains(predecessorId)) {
+            allOpsSeen.add(predecessorId)
             allOps.add(predecessorId)
         }
     }
-    
+
     func addOperation(opId: Int64): Unit {
-        if (!allOps.contains(opId)) {
+        if (!allOpsSeen.contains(opId)) {
+            allOpsSeen.add(opId)
             allOps.add(opId)
         }
     }
@@ -128,10 +139,10 @@ private func perActorOrder(history: ConcurrentHistory): PartialOrder {
     for (actorId in 0..history.actorCount) {
         let invocations = history.getActorInvocations(actorId) ?? continue   
         for (opIndex in 0..invocations.size) {
-            let opId = actorId * 1000 + opIndex
+            let opId = encodeOperationId(actorId, opIndex)
             po.addOperation(opId)
             for (prevOpIndex in 0..opIndex) {
-                po.addPredecessor(opId, actorId * 1000 + prevOpIndex)
+                po.addPredecessor(opId, encodeOperationId(actorId, prevOpIndex))
             }
         }
     }
@@ -154,10 +165,8 @@ private func perActorAndVCOrder(history: ConcurrentHistory): PartialOrder {
         for (j in 0..allOps.size) {
             let opA = allOps[i]
             let opB = allOps[j]
-            if (opA.actorId != opB.actorId) {
-                if (vcHappensBefore(opA, opB)) {
-                    po.addPredecessor(opB.operationId, opA.operationId)
-                }
+            if (opA.actorId != opB.actorId && vcHappensBefore(opA, opB)) {
+                po.addPredecessor(opB.operationId, opA.operationId)
             }
         }
     }
@@ -194,7 +203,7 @@ private func emptyOrder(history: ConcurrentHistory): PartialOrder {
     for (actorId in 0..history.actorCount) {
         if (let Some(invocations) <- history.getActorInvocations(actorId)) {
             for (opIndex in 0..invocations.size) {
-                po.addOperation(actorId * 1000 + opIndex)
+                po.addOperation(encodeOperationId(actorId, opIndex))
             }
         }
     }

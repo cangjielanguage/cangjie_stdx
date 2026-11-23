@@ -46,7 +46,7 @@ internal class PctTimerEntry {
  * determinism win.
  *
  * LOCK CONTRACT: not thread-safe on its own — every method runs under
- * the coordinator lock (like the scheduler's other state). No RNG draws
+ * the engine lock (like the scheduler's other state). No RNG draws
  * anywhere: the earliest-valid pick (deadline, ties by lowest slot) is
  * deterministic, so replays cannot desync.
  */
@@ -55,6 +55,9 @@ internal class PctClock {
     // makes the deterministic tie-break (earliest deadline, then lowest
     // slot) explicit.
     private let timers = ArrayList<PctTimerEntry>()
+    // The largest the armed list ever grew (a diagnostic counter, exposed
+    // through the schedule — see the purge rationale in arm()).
+    private var highWater: Int64 = 0 // cjlint-ignore !G.VAR.02 the variable threads state across loop/algorithm iterations (accumulator or framework context); narrowing its scope would change semantics
     // The logical now, in nanoseconds; only `advanceTo` moves it forward.
     private var now: Int64 = 0
 
@@ -62,11 +65,38 @@ internal class PctClock {
      * fixed NOW (at the wait's entry), saturating at Int64.Max; a
      * barging re-wait never re-arms, so the deadline cannot extend. */
     internal func arm(me: Int64, key: Object, nanos: Int64): Unit {
+        // An actor parks on one wait at a time, and a barging re-wait
+        // never re-arms, so any entry already present for `me` is stale
+        // by construction (its wait ended by a notify — a timer fire
+        // consumes its entry via `take` instead). Drop it here: the
+        // alternative purge (earliestValid) runs only on the
+        // quiescence/strand path, so a wait/notify hot loop that never
+        // strands would otherwise net one stale entry per cycle and grow
+        // the list without bound for the whole window. After the purge
+        // the list holds at most one entry per parked waiter.
+        var i: Int64 = Int64(timers.size) - 1
+        while (i >= 0) {
+            if (timers[i].actor == me) {
+                timers.remove(at: i)
+            }
+            i -= 1
+        }
         var deadline = Int64.Max // cjlint-ignore !G.VAR.02 the variable threads state across loop/algorithm iterations (accumulator or framework context); narrowing its scope would change semantics
         if (nanos < Int64.Max - now) {
             deadline = now + nanos
         }
         timers.add(PctTimerEntry(deadline: deadline, actor: me, key: key))
+        let size = Int64(timers.size)
+        if (size > highWater) {
+            highWater = size
+        }
+    }
+
+    /** The largest armed-list size seen in this window (a diagnostic:
+     *  bounded by the waiter count after arm()'s purge, unbounded
+     *  without it). */
+    internal func armedHighWater(): Int64 {
+        return highWater
     }
 
     /**

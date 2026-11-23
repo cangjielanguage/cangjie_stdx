@@ -546,6 +546,7 @@ def generate_cmake_defs(args):
         "-DCANGJIE_CJPM_BUILD_TYPE=True",
         "-DCANGJIE_TARGET_SYSROOT=" + (args.target_sysroot if args.target_sysroot else ""),
         "-DCANGJIE_BUILD_WITHOUT_EFFECT_HANDLERS=" + bool_to_opt(args.without_effect_handlers),
+        "-DCANGJIE_BUILD_WITHOUT_UNITTEST_CONCURRENT=" + bool_to_opt(args.without_unittest_concurrent),
         "-DCANGJIE_BUILD_STDLIB_WITH_COVERAGE=" + bool_to_opt(args.stdlib_coverage),
         "-DCANGJIE_BUILD_ARGS=" + (";".join(args.build_args) if args.build_args else ""),
         "-DCANGJIE_ENABLE_LOCAL_MODE_API=" + bool_to_opt(ENABLE_LOCAL_MODE_API)]
@@ -824,6 +825,12 @@ def main():
         dest="without_effect_handlers",
         action="store_true",
         help="build a version without effect handlers",
+    )
+    build_parser.add_argument(
+        "--without-unittest-concurrent",
+        dest="without_unittest_concurrent",
+        action="store_true",
+        help="build a version without stdx.unittest.concurrent (and stdx.unittest.sync, which imports it)",
     )
     build_parser.add_argument(
         "--host",

@@ -94,7 +94,7 @@ public class ScenarioBuilder<S> {
      */
     public func iterations(n: Int64): ScenarioBuilder<S> {
         if (n < 1) {
-            throw IllegalArgumentException("Iteration count must be at least 1")
+            throw IllegalArgumentException("Iteration count must be at least 1.")
         }
         if (_replaySchedule.isSome()) {
             throw IllegalArgumentException(
@@ -159,7 +159,7 @@ public class ScenarioBuilder<S> {
      */
     public func priorityChangePoints(k: Int64): ScenarioBuilder<S> {
         if (k < 0) {
-            throw IllegalArgumentException("Priority change point budget must be >= 0")
+            throw IllegalArgumentException("Priority change point budget must be >= 0.")
         }
         _pcpBudget = k
         this
@@ -175,8 +175,11 @@ public class ScenarioBuilder<S> {
      * @throws IllegalArgumentException if `p` is outside `[0.0, 1.0]`
      */
     internal func pcpFireProbability(p: Float64): ScenarioBuilder<S> {
-        if (p < 0.0 || p > 1.0) {
-            throw IllegalArgumentException("PCP fire probability must be within [0.0, 1.0]")
+        // NaN slips through plain range comparisons (every NaN comparison
+        // is false) and would make every PCP decision fire — reject it
+        // explicitly.
+        if (p.isNaN() || p < 0.0 || p > 1.0) {
+            throw IllegalArgumentException("PCP fire probability must be within [0.0, 1.0].")
         }
         _pcpFireProb = p
         this
@@ -199,7 +202,7 @@ public class ScenarioBuilder<S> {
      */
     public func starvationThreshold(n: UInt64): ScenarioBuilder<S> {
         if (n < 1u64) {
-            throw IllegalArgumentException("Starvation threshold must be >= 1")
+            throw IllegalArgumentException("Starvation threshold must be >= 1.")
         }
         _starvationThreshold = n
         this
@@ -237,7 +240,7 @@ public class ScenarioBuilder<S> {
      */
     public func switchBound(k: Int64): ScenarioBuilder<S> {
         if (k < -1) {
-            throw IllegalArgumentException("Switch bound must be >= 0 (or -1 for unbounded)")
+            throw IllegalArgumentException("Switch bound must be >= 0 (or -1 for unbounded).")
         }
         _switchBound = k
         this
@@ -531,7 +534,7 @@ public class ScenarioBuilder<S> {
      */
     public func actor<T>(repeat: Int64, body: (S) -> T): ScenarioBuilder<S> where T <: Equatable<T> {
         if (repeat < 1) {
-            throw IllegalArgumentException("Repeat count must be at least 1")
+            throw IllegalArgumentException("Repeat count must be at least 1.")
         }
         for (_ in 0..repeat) {
             this.actor(body)
@@ -692,7 +695,7 @@ public class ScenarioBuilder<S> {
      */
     public func build(): ConcurrentScenario<S> { // cjlint-ignore !G.FUN.01 single cohesive algorithm block; splitting it would scatter the invariant across helpers without simplifying any step
         if (_actors.size == 0) {
-            throw IllegalArgumentException("At least one actor is required")
+            throw IllegalArgumentException("At least one actor is required.")
         }
         if (_stateFactory.isNone()) {
             // The simple scenario(name) / scenario() factories pre-register a
@@ -895,7 +898,7 @@ extend ScenarioBuilder<Unit> {
      */
     public func actor<T>(repeat: Int64, body: () -> T): ScenarioBuilder<Unit> where T <: Equatable<T> {
         if (repeat < 1) {
-            throw IllegalArgumentException("Repeat count must be at least 1")
+            throw IllegalArgumentException("Repeat count must be at least 1.")
         }
         for (_ in 0..repeat) {
             this.actor(body)

@@ -132,13 +132,16 @@ protected class ScenarioRunner<S> {
         // Per-iteration backoff. Iteration 0 already used the shared
         // backoffGenerator (and calibrated sigma). Each parallel iteration
         // gets its own BackoffGenerator with the calibrated sigma and a fresh
-        // RNG seeded from the shared one (drawn sequentially here on the
-        // caller thread, so the shared RNG is never touched concurrently by
-        // workers).
+        // RNG seeded from the shared one — drawn lazily, one seed per
+        // dispatch, still sequentially on this same drain thread (so the
+        // shared RNG is never touched concurrently by workers and the seed
+        // sequence is identical to an upfront preallocation) — so a large
+        // `iterations` count no longer allocates the entire seed array
+        // before the first iteration even runs (a count near Int64.Max
+        // would otherwise attempt an unbounded one-shot allocation).
         // cjlint-ignore -start !G.VAR.02 the variables below thread state across loop/algorithm iterations (accumulators or framework context); narrowing their scopes would change semantics
         let calibratedSigma = backoffGenerator.sigma
         let sharedRandom = backoffGenerator.random
-        let seeds = Array<UInt64>(totalParallel, { _ => sharedRandom.nextUInt64() })
 
         var nextSeedIdx: Int64 = 0
         var dispatched: Int64 = 0
@@ -151,21 +154,11 @@ protected class ScenarioRunner<S> {
                 dispatched - completed < poolSize)
             {
                 let iterNum = nextSeedIdx + 1 // cjlint-ignore !G.VAR.02 the variable threads state across loop/algorithm iterations (accumulator or framework context); narrowing its scope would change semantics
-                let seed = seeds[nextSeedIdx]
+                let seed = sharedRandom.nextUInt64()
                 let iterBackoff = BackoffGenerator(random: Random(seed), sigma: calibratedSigma) // cjlint-ignore !G.VAR.02 the variable threads state across loop/algorithm iterations (accumulator or framework context); narrowing its scope would change semantics
                 spawn {
-                    // Every dispatched iteration must enqueue exactly one
-                    // result: the drain below counts one per dispatch, so a
-                    // spawn that dies without enqueueing (an exception
-                    // before runIteration produced its result) would block
-                    // the drain forever. runIteration converts its own
-                    // failures into failed iteration results; this bracket
-                    // is the last-resort guard for anything escaping that.
-                    let r = try {
-                        runIteration(iterNum, iterBackoff)
-                    } catch (e: Exception) {
-                        failedIterationResult(iterNum, e)
-                    }
+                    // Exceptions/Errors are handled inside runIteration
+                    let r = runIteration(iterNum, iterBackoff)
                     resultQueue.add(r)
                 }
                 dispatched++
@@ -202,6 +195,13 @@ protected class ScenarioRunner<S> {
             // surfaces in the report instead of unwinding run() or, under
             // parallel dispatch, hanging the result drain.
             failedIterationResult(iteration, e)
+        } catch (e: Error) {
+            // The Error family (StackOverflowError, InternalError, OOM —
+            // a separate type hierarchy from Exception in Cangjie) gets
+            // the same synthesis on this sequential path as the parallel
+            // dispatch bracket gives it: without the clause an Error from
+            // the reset block or state factory would unwind run() itself.
+            failedIterationResult(iteration, Exception("iteration aborted by an Error: ${e}."))
         }
     }
 
@@ -244,15 +244,17 @@ protected class ScenarioRunner<S> {
         startSignal.wait(0)
 
         // Futures are drained in spawn order (= actor order), so the
-        // collected executions index by actor.
+        // collected executions index by actor. Every actor's invocations
+        // are recorded — including an actor without operations, whose
+        // empty slot keeps the history's actor set dense
+        // (ConcurrentHistory.actorCount is the key count; a dropped middle
+        // actor would silently shrink the loop bound in the partial-order
+        // builders and drop every later actor out of the order).
         let actorRuns = ArrayList<ActorExecution>()
-        for (future in futures) {
-            let run = future.get() // cjlint-ignore !G.VAR.02 the variable threads state across loop/algorithm iterations (accumulator or framework context); narrowing its scope would change semantics
+        for (i in 0..futures.size) {
+            let run = futures[i].get() // cjlint-ignore !G.VAR.02 the variable threads state across loop/algorithm iterations (accumulator or framework context); narrowing its scope would change semantics
             actorRuns.add(run)
-            if (run.invocations.size > 0) {
-                let actorId = run.invocations[0].actorId
-                history.recordActorInvocations(actorId, run.invocations)
-            }
+            history.recordActorInvocations(i, run.invocations)
         }
 
         var verifyFailed = false
@@ -286,7 +288,13 @@ protected class ScenarioRunner<S> {
         let actorResults = ArrayList<ActorResult>()
         for (i in 0..scenario.threadCount) {
             let run = actorRuns[i]
-            actorResults.add(actorResultOf(i, run.startedAt, run.endedAt))
+            // The actor's first user exception, like the PCT/DPOR paths:
+            // a scenario whose operations throw must not pass silently in
+            // the default mode — the recorded exception makes the actor
+            // row a failure (allSucceeded) and renders in the report, so
+            // all three modes share one finding semantics.
+            actorResults.add(actorResultOf(i, run.startedAt, run.endedAt,
+                exception: firstUserExceptionOf(run.invocations)))
         }
 
         ScenarioIterationResult(
@@ -335,6 +343,14 @@ protected class ScenarioRunner<S> {
     }
 
     protected func updateBackoffSigma(avgDurationNanos: Int64): Unit {
+        // A non-positive average means the wall clock rolled back between
+        // the actor start/end measurements (an NTP step, a container
+        // suspend/resume): the measurement is garbage, not evidence of an
+        // instant iteration, and calibrating from it would poison the
+        // backoff sigma with a negative scale. Keep the previous sigma.
+        if (avgDurationNanos <= 0) {
+            return
+        }
         // Float division: the calibration keeps the sub-millisecond
         // remainder of the observed average instead of truncating to whole
         // tens of nanoseconds.
@@ -373,55 +389,23 @@ protected class ScenarioRunner<S> {
         startSignal.waitSpin(1)
 
         // The actor's real execution window: opened when the start signal
-        // fires (the actor actually begins) and closed at op-loop
-        // completion. The measured duration is what the iteration's backoff
-        // sigma is calibrated from.
+        // fires (the actor actually begins) — the measured duration
+        // includes the backoff and is what the iteration's backoff sigma
+        // is calibrated from. The recorder is constructed after the
+        // backoff so its vector-clock start snapshot sees live counters
+        // (the shared recording core of all three modes — see
+        // ActorRecorder); its lazy window-open at the first operation
+        // marks the PCT/DPOR actor entry instead, so the stress window
+        // boundary is passed to ActorExecution directly.
         let startedAt = DateTime.now()
         performBackoff(backoff)
 
-        let invocations = ArrayList<OperationInvocation>()
-        var localCounter: Int64 = 0
-        var previousResponseVC: ?Array<Int64> = None
-
-        if (let Some(sharedCounters) <- counters) {
-            localCounter++
-            sharedCounters[actor.id] = localCounter
-            let startVC = Array<Int64>(actorCount, { j => sharedCounters[j] })
-            previousResponseVC = Some(startVC)
-        }
-
+        let recorder = ActorRecorder<S>(actor, state, counters, actorCount)
         for (i in 0..actor.operations.size) {
-            if (let Some(sharedCounters) <- counters) {
-                let invocationVC = previousResponseVC
-
-                let result = actor.operations[i](state)
-
-                localCounter++
-                sharedCounters[actor.id] = localCounter
-                let responseVC = Array<Int64>(actorCount, { j => sharedCounters[j] })
-                previousResponseVC = Some(responseVC)
-
-                invocations.add(OperationInvocation(
-                    actorId: actor.id,
-                    operationIndex: i,
-                    operationName: actor.operationNames[i],
-                    result: result,
-                    invocationVC: invocationVC,
-                    responseVC: Some(responseVC)
-                ))
-            } else {
-                let result = actor.operations[i](state)
-
-                invocations.add(OperationInvocation(
-                    actorId: actor.id,
-                    operationIndex: i,
-                    operationName: actor.operationNames[i],
-                    result: result
-                ))
-            }
+            recorder.invokeOp(i)
         }
 
-        ActorExecution(invocations: invocations, startedAt: startedAt, endedAt: DateTime.now())
+        ActorExecution(invocations: recorder.invocations, startedAt: startedAt, endedAt: recorder.endedAt)
     }
 
     private func performBackoff(iterations: Int64): Unit {
@@ -444,7 +428,7 @@ protected class ScenarioRunner<S> {
     // deadlock verdicts, schedule recording) live in this
     // package and are driven through `runPctWindow`; this
     // runner only composes the per-actor operation closures (with the
-    // history recording inside — see PctOpRecorder) and runs the same
+    // history recording inside — see ActorRecorder) and runs the same
     // verify/consistency tail as the stress path on the window's report.
     //
     // Instrumentation is compile-time only: code built with --cj-pct
@@ -456,8 +440,24 @@ protected class ScenarioRunner<S> {
     // -----------------------------------------------------------------------
 
     protected func runIterationPCT(iteration: Int64): ScenarioIterationResult { // cjlint-ignore !G.FUN.01 single cohesive algorithm block; splitting it would scatter the invariant across helpers without simplifying any step
-        executeReset()
-        let state: S = scenario.stateFactory.getOrThrow()() // cjlint-ignore !G.ERR.03 invariant-guarded extraction: a preceding isNone()/contains() gate (or the ScenarioBuilder contract, see comment) guarantees Some here; None would be a framework bug where throwing is the intended behavior
+        // The pre-window user code (the reset block and the state factory)
+        // gets the stress path's failure semantics: a throw becomes this
+        // iteration's failed result — visible in the report, with every
+        // completed iteration before it retained — instead of unwinding
+        // run() and discarding them. The Error family is bracketed too
+        // (same rationale as the parallel dispatch bracket). The window
+        // machinery itself deliberately stays fail-fast: an activation
+        // failure (an uninstrumented binary) or a recorded protocol
+        // failure throws out of run() by design — pinned by
+        // pct_uninstrumented_test.
+        let state: S = try {
+            executeReset()
+            scenario.stateFactory.getOrThrow()() // cjlint-ignore !G.ERR.03 invariant-guarded extraction: a preceding isNone()/contains() gate (or the ScenarioBuilder contract, see comment) guarantees Some here; None would be a framework bug where throwing is the intended behavior
+        } catch (e: Exception) {
+            return failedIterationResult(iteration, e)
+        } catch (e: Error) {
+            return failedIterationResult(iteration, Exception("iteration aborted by an Error: ${e}."))
+        }
 
         let history = ConcurrentHistory()
         let counters: ?Array<Int64> = if (let Linearizability <- scenario.consistencyModel) { // cjlint-ignore !G.VAR.02 the variable threads state across loop/algorithm iterations (accumulator or framework context); narrowing its scope would change semantics
@@ -476,16 +476,16 @@ protected class ScenarioRunner<S> {
 
         // Initial actors: op sequences as plain closures, with the
         // per-actor recording (vector clocks + invocation log) composed
-        // inside each op (PctOpRecorder below). The window owns the rest:
+        // inside each op (ActorRecorder below). The window owns the rest:
         // actors registered in array order (initial
         // actor i takes slot i, deterministic Spawn order), a scheduling
         // decision before every operation, the actor-future drain with
         // deadlock classification and schedule recording.
         let actorCount = scenario.threadCount
         let actorOpsList = ArrayList<Array<() -> Unit>>() // cjlint-ignore !G.VAR.02 the variable threads state across loop/algorithm iterations (accumulator or framework context); narrowing its scope would change semantics
-        let recorders = ArrayList<PctOpRecorder<S>>()
+        let recorders = ArrayList<ActorRecorder<S>>()
         for (actor in scenario.actors) {
-            let recorder = PctOpRecorder<S>(actor, state, counters, actorCount)
+            let recorder = ActorRecorder<S>(actor, state, counters, actorCount)
             actorOpsList.add(Array<() -> Unit>(actor.operations.size, { i => { => recorder.invokeOp(i) } }))
             recorders.add(recorder)
         }
@@ -518,31 +518,41 @@ protected class ScenarioRunner<S> {
             }
         }
 
-        // History recording mirrors the future-drain semantics: an actor's
-        // invocations are recorded only when its future resolved normally —
-        // an aborted or exceptionally unwound actor's partial history is
-        // discarded.
-        for (i in 0..actorCount) {
-            let report = windowReport.actorReports[i]
-            if (report.aborted || report.exception.isSome()) {
-                continue
-            }
-            let invocations = recorders[i].invocations
-            if (invocations.size > 0) {
-                let actorId = invocations[0].actorId
-                history.recordActorInvocations(actorId, invocations)
+        // An actor-level exception (an engine-control failure that unwound
+        // an actor at an operation boundary, or an Error-family failure
+        // the drain's Error bracket converted) fails the whole iteration —
+        // the stress path's semantics: a failed result riding the report
+        // (with every completed iteration before it retained) instead of
+        // unwinding run(). In-operation user exceptions never land here
+        // (the op wrappers capture them into recorded results); this
+        // carries only actor-boundary failures, and the window's deadlock
+        // verdict stays authoritative when both apply.
+        if (!deadlockAbort) {
+            if (let Some(e) <- windowReport.firstException) {
+                printPctSeedHint(schedule, iteration)
+                return failedIterationResult(iteration, e)
             }
         }
 
-        // Actor-body exceptions are collected and re-thrown after cleanup.
-        // (The op wrappers capture exceptions into recorded op results, so
-        // this path is merely a bonus diagnostic — the window's deadlock
-        // verdict is the authoritative one.)
+        // History recording follows the stress path's semantics: every
+        // actor's invocations are recorded — a partially unwound actor's
+        // completed operations are real observed behavior, and an actor
+        // without completed operations still occupies its slot so the
+        // history's actor set stays dense (ConcurrentHistory.actorCount is
+        // the key count; a dropped middle actor would silently shrink the
+        // loop bound in the partial-order builders and drop every later
+        // actor out of the order). A deadlocked window skips validation,
+        // so its history is never consumed; an actor-level failure
+        // already returned above.
+        for (i in 0..actorCount) {
+            history.recordActorInvocations(i, recorders[i].invocations)
+        }
+
+        // The deadlock abort keeps its own verdict path: the failed
+        // iteration carries the recorded schedule (the reproduction
+        // artifact), not a synthesized setup row.
         if (deadlockAbort) {
             printPctSeedHint(schedule, iteration)
-        } else if (let Some(e) <- windowReport.firstException) {
-            printPctSeedHint(schedule, iteration)
-            throw e
         }
 
         var verifyFailed = deadlockAbort
@@ -657,7 +667,7 @@ protected class ScenarioRunner<S> {
                 ctx.state.getOrThrow() // the state factory ran first // cjlint-ignore !G.ERR.03 invariant-guarded extraction: a preceding isNone()/contains() gate (or the ScenarioBuilder contract, see comment) guarantees Some here; None would be a framework bug where throwing is the intended behavior
                 let ops = ArrayList<Array<() -> Unit>>()
                 for (actor in scenario.actors) {
-                    let recorder = PctOpRecorder<S>(
+                    let recorder = ActorRecorder<S>(
                         actor, ctx.state.getOrThrow(), ctx.counters, actorCount) // cjlint-ignore !G.ERR.03 invariant-guarded extraction: a preceding isNone()/contains() gate (or the ScenarioBuilder contract, see comment) guarantees Some here; None would be a framework bug where throwing is the intended behavior
                     ops.add(Array<() -> Unit>(actor.operations.size, { i => { => recorder.invokeOp(i) } }))
                     ctx.recorders.add(recorder)
@@ -674,23 +684,28 @@ protected class ScenarioRunner<S> {
                     }
                 }
 
-                // History from this schedule's recorders (an aborted or
-                // exceptionally unwound actor's partial history is
-                // discarded, mirroring the PCT future-drain semantics).
+                // History from this schedule's recorders, following the
+                // stress path's semantics: every actor's invocations —
+                // including a partially unwound actor's completed
+                // operations (real observed behavior, validated instead of
+                // silently discarded) and an actor without completed
+                // operations (its empty slot keeps the history's actor set
+                // dense; ConcurrentHistory.actorCount is the key count, so
+                // a dropped middle actor would silently drop every later
+                // actor out of the partial order).
                 let history = ConcurrentHistory()
                 for (i in 0..actorCount) {
-                    let actorReport = wr.actorReports[i]
-                    if (actorReport.aborted || actorReport.exception.isSome()) {
-                        continue
-                    }
-                    let invocations = ctx.recorders[i].invocations
-                    if (invocations.size > 0) {
-                        let actorId = invocations[0].actorId
-                        history.recordActorInvocations(actorId, invocations)
-                    }
+                    history.recordActorInvocations(i, ctx.recorders[i].invocations)
                 }
 
-                var failed = wr.deadlocked
+                // wr.firstException: an actor-level exception (an
+                // engine-control failure that unwound an actor at an
+                // operation boundary, or an Error-family failure the
+                // drain's Error bracket converted). It fails the schedule —
+                // the exception then fails the whole iteration through
+                // pendingException below — instead of the schedule
+                // passing silently and the exploration continuing.
+                var failed = wr.deadlocked || wr.firstException.isSome()
                 var cons: ?ConsistencyValidationResult = None
                 if (!wr.deadlocked) {
                     try {
@@ -742,10 +757,12 @@ protected class ScenarioRunner<S> {
             }
         )
 
-        // An actor-body exception is a finding: surface it after the
+        // An actor-level exception is a finding: it fails the whole
+        // iteration — the stress path's semantics (a failed result riding
+        // the report instead of unwinding run()) — surfaced after the
         // driver has unwound cleanly.
         if (let Some(e) <- tracker.pendingException) {
-            throw e
+            return failedIterationResult(iteration, e)
         }
 
         let actorResults = ArrayList<ActorResult>()
@@ -760,10 +777,7 @@ protected class ScenarioRunner<S> {
             }
         }
 
-        let schedule = match (tracker.failingSchedule) {
-            case Some(s) => s
-            case None => dporReport.lastSchedule
-        }
+        let schedule = tracker.failingSchedule ?? dporReport.lastSchedule
 
         ScenarioIterationResult(
             iteration: iteration,
@@ -816,7 +830,7 @@ private func firstUserExceptionOf(invocations: ArrayList<OperationInvocation>): 
 private class DporScheduleCtx<S> {
     var state: ?S = None
     var counters: ?Array<Int64> = None
-    let recorders: ArrayList<PctOpRecorder<S>> = ArrayList<PctOpRecorder<S>>()
+    let recorders: ArrayList<ActorRecorder<S>> = ArrayList<ActorRecorder<S>>()
 
     func beginSchedule(counters: ?Array<Int64>): Unit {
         recorders.clear()
@@ -834,18 +848,19 @@ private class DporOutcomeTracker {
     var pendingException: ?Exception = None
 }
 
-// Per-actor operation recording for the PCT path: holds the mutable
-// per-actor state the operation closures share (the invocation log and
-// the vector-clock counter), so each operation composes
-// snapshot-invoke-snapshot-record inside a single closure that
-// `runPctWindow` schedules between its operation-boundary decision
-// points. (Cangjie lambdas cannot capture mutable locals for deferred
-// calls, so the state lives in this heap object captured by every op
-// closure of the actor.) The recording itself is identical to the stress
-// path's executeActorWithHistory, minus the barrier/backoff start
-// synchronization: in PCT mode the actor's registration park is the
-// start gate.
-private class PctOpRecorder<S> {
+// Per-actor operation recording, shared by all three execution modes
+// (stress, PCT, DPOR): holds the mutable per-actor state the recording
+// shares (the invocation log and the vector-clock counter), so each
+// operation composes snapshot-invoke-snapshot-record inside a single
+// step. (Cangjie lambdas cannot capture mutable locals for deferred
+// calls, so the state lives in this heap object; the PCT/DPOR op
+// closures capture it — in those modes the actor's registration park is
+// the start gate, so the recorder is constructed before the window and
+// composed into the op closures the window scheduler drives between its
+// operation-boundary decision points. The stress path constructs it in
+// the actor body after the backoff and drives the plain op loop — see
+// executeActorWithHistory.)
+private class ActorRecorder<S> {
     private let actor: Actor<S>
     private let state: S
     private let sharedCounters: ?Array<Int64>
@@ -854,11 +869,13 @@ private class PctOpRecorder<S> {
     private var localCounter: Int64 = 0
     private var previousResponseVC: ?Array<Int64> = None
     // The actor's real execution window: opened at the first operation
-    // (the actor-body entry point the runner controls inside the window)
-    // and closed after each operation, so the last close marks op-loop
-    // completion. Both default to the recorder's construction, so an
-    // actor without operations still yields a well-formed (zero-length)
-    // window.
+    // (the actor-body entry point the runner controls inside the
+    // PCT/DPOR window) and closed after each operation, so the last
+    // close marks op-loop completion. Both default to the recorder's
+    // construction, so an actor without operations still yields a
+    // well-formed (zero-length) window. The stress path measures its own
+    // window instead — opened at the start signal with the backoff
+    // included — and consumes only endedAt (see executeActorWithHistory).
     var startedAt: DateTime = DateTime.now()
     var endedAt: DateTime = DateTime.now()
 

@@ -245,6 +245,13 @@ public class PCTSchedule {
         /** Dynamically spawned actors that registered during the iteration. */
         internal let spawnedActors!: UInt64 = 0, // cjlint-ignore !G.FUN.01 config-carrier signature: the named parameters are the structured configuration/context of this framework step; bundling them into a struct would only move the count
         /**
+         * The high-water mark of the virtual clock's armed-timer list in
+         * this iteration (a diagnostic): bounded by the waiter count —
+         * each armed wait purges the arming actor's stale entry — and
+         * unbounded only if that purge regressed.
+         */
+        protected let timersHighWater!: Int64 = 0, // cjlint-ignore !G.FUN.01 config-carrier signature: the named parameters are the structured configuration/context of this framework step; bundling them into a struct would only move the count
+        /**
          * The actor path of the wait-for cycle that aborted the
          * iteration (e.g. `[1, 0, 1]` — actor 1 waits on a key held by
          * actor 0, which waits on the future/key of actor 1). `None` when
@@ -340,7 +347,7 @@ public class PCTSchedule {
             }
         }
         if (slots <= 0) {
-            return Array<PctWaitStat>(0, { _ => PctWaitStat(actorId: 0) })
+            return []
         }
         // cjlint-ignore -start !G.VAR.02 the variables below thread state across loop/algorithm iterations (accumulators or framework context); narrowing their scopes would change semantics
         let waits = Array<Int64>(slots, { _ => 0 })

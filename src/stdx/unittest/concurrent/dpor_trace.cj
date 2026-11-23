@@ -22,7 +22,7 @@ import std.collection.HashMap
  * the race reporter correlates segment accesses by.
  *
  * `collectSegment` runs at every decision point, on the deciding actor's
- * thread, under the coordinator lock and inside a suppressed region: the
+ * thread, under the engine lock and inside a suppressed region: the
  * global GC stream is folded into the translation map first (a move chain
  * a -> b -> c collapses to the single entry c -> a at write time, so the
  * lookup is one hop per chain), then the thread's own events drain and
@@ -57,7 +57,7 @@ internal class DporTraceCollector {
      */
     internal func collectSegment(): Array<MtraceEvent> {
         if (!isInitialized()) {
-            return Array<MtraceEvent>()
+            return []
         }
         // Fold GC moves first: MOVE carries to = pc, from = addr.
         while (true) {
@@ -75,7 +75,7 @@ internal class DporTraceCollector {
         // carry identities, not heap addresses — no translation).
         let evs = drainOwn()
         if (evs.size == 0) {
-            return Array<MtraceEvent>()
+            return []
         }
         let out = ArrayList<MtraceEvent>()
         for (e in evs) {

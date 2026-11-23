@@ -37,7 +37,7 @@ internal class PctScheduleLog {
     // cursor (advanced on each consumed match), and the divergence flag.
     private var diverged: Bool = false
     private var replayMode: Bool = false
-    private var replayEvents: Array<PctEvent> = Array<PctEvent>(0, { _ => PctEvent(kind: Switch) })
+    private var replayEvents: Array<PctEvent> = []
     private var replayCursor: Int64 = 0
 
     /** Has a replay decision mismatched the loaded schedule? */
@@ -74,7 +74,7 @@ internal class PctScheduleLog {
      * [0, expectedActorCount) (a foreign or hand-crafted event stream
      * must never reach the coordinator's slot indexing — a promoted
      * out-of-range victim would index the actor table out of bounds
-     * under the coordinator lock and strand every later dispatch).
+     * under the engine lock and strand every later dispatch).
      * Call before spawning any thread.
      */
     internal func loadForReplay(schedule: PCTSchedule, expectedActorCount: Int64): Int32 {
@@ -171,11 +171,7 @@ internal class PctScheduleLog {
      */
     internal func tryConsume(kind: PctEventKind, altKind!: ?PctEventKind = None,
         from!: ?Int64 = None, step!: ?UInt64 = None): ?PctEvent {
-        let evOpt = peek()
-        if (evOpt.isNone()) {
-            return None
-        }
-        let ev = evOpt.getOrThrow() // cjlint-ignore !G.ERR.03 invariant-guarded extraction: a preceding isNone()/contains() gate (or the ScenarioBuilder contract, see comment) guarantees Some here; None would be a framework bug where throwing is the intended behavior
+        let ev = peek() ?? return None
         if (ev.kind != kind) {
             var altOk = false
             if (let Some(alt) <- altKind) {

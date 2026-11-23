@@ -128,9 +128,9 @@ internal class DporPopTask {
     /** The exploration root: node ⟨⟩ — an all-fresh default run. */
     internal static func root(): DporPopTask {
         return DporPopTask(
-            guide: Array<DporGuideEntry>(0, { _ => Keep }),
-            marks: Array<Bool>(0, { _ => false }),
-            heads: Array<Bool>(0, { _ => false }))
+            guide: [],
+            marks: [],
+            heads: [])
     }
 }
 
@@ -220,11 +220,8 @@ internal class DporPopHb {
             if (notableArr[j]) {
                 nextNotableArr[j] = j
                 lastSeen.add(segs[j].actor, j)
-            } else {
-                match (lastSeen.get(segs[j].actor)) {
-                    case Some(p) => nextNotableArr[j] = p
-                    case None => ()
-                }
+            } else if (let Some(p) <- lastSeen.get(segs[j].actor)) {
+                nextNotableArr[j] = p
             }
             j -= 1
         }
@@ -639,6 +636,21 @@ internal class DporPopDriver {
         return pruned
     }
 
+    /** Windows dropped as diverged (determinism-contract violations and
+     *  structural failures — the diverged sites of recordWindow): a
+     *  non-zero count means the exploration is incomplete, so it gates
+     *  the report's `exhausted`. */
+    internal func divergedCount(): Int64 {
+        return diverged
+    }
+
+    /** Child reversals skipped by the line-7 sleep check (each would
+     *  have completed a sleeping schedule — sound skipping, reported for
+     *  exploration diagnostics). */
+    internal func sleepSkippedCount(): Int64 {
+        return sleepSkipped
+    }
+
     /** A short human-readable state line for reports. */
     internal func statsLine(): String {
         return "schedules=${windows} races=${racesSeen} parsimonious=${parsimonious} " +
@@ -921,7 +933,7 @@ internal class DporPopDriver {
         // recorded data and the hb relation, so they are built once
         // here and threaded into every push (never rebuilt per push).
         // `None`/empty when the characterization is off (then unused).
-        var histFps: Array<UInt64> = Array<UInt64>()
+        var histFps: Array<UInt64> = []
         var ssCtx: ?DporSsCtx = None
         if (sleepChar) {
             histFps = dporSsHistFps(data)
@@ -943,9 +955,8 @@ internal class DporPopDriver {
                     blockPos = i
                     break
                 }
-                match (need.get(i + 1)) {
-                    case Some(_) => snaps.add(i + 1, dporSsCloneState(state))
-                    case None => ()
+                if (need.contains(i + 1)) {
+                    snaps.add(i + 1, dporSsCloneState(state))
                 }
                 i += 1
             }
@@ -1340,11 +1351,7 @@ internal class DporPopDriver {
                 tried = true
             }
             if (inheritExclusions) {
-                for (x in task.excluded) {
-                    if (x == a) {
-                        tried = true
-                    }
-                }
+                tried ||= task.excluded.contains(a)
             }
             if (a >= 0 && !tried) {
                 cand = a

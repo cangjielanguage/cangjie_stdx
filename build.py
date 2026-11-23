@@ -127,6 +127,7 @@ def generate_cmake_defs(args):
         "-DCANGJIE_INCLUDE=" + (";".join(args.include) if args.include else ""),
         "-DCANGJIE_TARGET_SYSROOT=" + (args.target_sysroot if args.target_sysroot else ""),
         "-DCANGJIE_BUILD_WITHOUT_EFFECT_HANDLERS=" + bool_to_opt(args.without_effect_handlers),
+        "-DCANGJIE_BUILD_WITHOUT_UNITTEST_CONCURRENT=" + bool_to_opt(args.without_unittest_concurrent),
         "-DCANGJIE_BUILD_WITHOUT_SYNTAX=" + bool_to_opt(args.without_syntax),
         "-DCANGJIE_BUILD_WITHOUT_CHIR=" + bool_to_opt(args.without_chir),
         "-DCANGJIE_BUILD_WITHOUT_PLUGIN=" + bool_to_opt(args.without_plugin),
@@ -415,6 +416,9 @@ def main():
     )
     parser_build.add_argument(
         "--without-effect-handlers", dest="without_effect_handlers", action="store_true", help="build a version without effect handlers"
+    )
+    parser_build.add_argument(
+        "--without-unittest-concurrent", dest="without_unittest_concurrent", action="store_true", help="build a version without stdx.unittest.concurrent (and stdx.unittest.sync, which imports it)"
     )
     parser_build.add_argument(
         "--skip-syntax", dest="without_syntax", action="store_true", help="build a version without syntax"

@@ -560,50 +560,40 @@ internal func dporSsUpdP(e: DporSsEventView, psi: DporSsExpr, ctx: DporSsCtx): D
  * forwarded.
  */
 internal func dporSsUpdSE(e: DporSsEventView, psi: DporSsExpr, ctx: DporSsCtx): DporSsRes {
-    match (psi.inner) { // cjlint-ignore !G.FUN.01 nesting mirrors the linear match>for>if structure of the validation/exploration algorithm; each level performs one distinct step with an early exit, so flattening would obscure the flow
-        case None =>
-            return dporSsUpdP(e, psi, ctx)
-        case Some(innerExpr) =>
-            let r = dporSsUpdP(e, psi, ctx) // cjlint-ignore !G.VAR.02 the variable threads state across loop/algorithm iterations (accumulator or framework context); narrowing its scope would change semantics
-            if (r != DporSsRes.Indep) {
-                return r
-            }
-            // Indep: the outer P untouched — the inherited cases.
-            if (e.pureReadsKey(psi.varKey)) {
-                if (ctx.anyDHbBeforeDiffVar(psi.dset, psi.varKey, e)) {
-                    // Line 17-20: an inherited-schedule head (case (C)1).
-                    if (!ctx.anyHbBefore(psi.reads, e)) {
-                        if (ctx.headsHbBefore(psi, -1, e)) {
-                            psi.reads.add(e.toRef())
-                            return DporSsRes.Sleep
-                        }
-                    }
-                    psi.reads.add(e.toRef())
-                    return DporSsRes.Updated
-                }
-            }
-            let ri = dporSsUpdSE(e, innerExpr, ctx)
-            if (ri == DporSsRes.Sleep) {
-                if (dporSsKeyMatch(psi.varKey, innerExpr.varKey)) {
-                    // Line 22-25: the case (C)2 inherited head on the
-                    // same variable — joins D and R, and may block.
-                    if (!ctx.anyHbBefore(psi.reads, e)) {
-                        if (ctx.headsHbBefore(psi, -1, e)) {
-                            psi.dset.add(e.toRef())
-                            psi.reads.add(e.toRef())
-                            return DporSsRes.Sleep
-                        }
-                    }
-                    psi.dset.add(e.toRef())
-                    psi.reads.add(e.toRef())
-                    return DporSsRes.Updated
-                }
-                // Line 26: a different variable — joins D only.
-                psi.dset.add(e.toRef())
-                return DporSsRes.Updated
-            }
-            return ri
+    let r = dporSsUpdP(e, psi, ctx)
+    let innerExpr = psi.inner ?? return r
+    if (r != DporSsRes.Indep) {
+        return r
     }
+    // Indep: the outer P untouched — the inherited cases.
+    if (e.pureReadsKey(psi.varKey) && ctx.anyDHbBeforeDiffVar(psi.dset, psi.varKey, e)) {
+        // Line 17-20: an inherited-schedule head (case (C)1).
+        if (!ctx.anyHbBefore(psi.reads, e) && ctx.headsHbBefore(psi, -1, e)) {
+            psi.reads.add(e.toRef())
+            return DporSsRes.Sleep
+        }
+        psi.reads.add(e.toRef())
+        return DporSsRes.Updated
+    }
+    let ri = dporSsUpdSE(e, innerExpr, ctx)
+    if (ri == DporSsRes.Sleep) {
+        if (dporSsKeyMatch(psi.varKey, innerExpr.varKey)) {
+            // Line 22-25: the case (C)2 inherited head on the
+            // same variable — joins D and R, and may block.
+            if (!ctx.anyHbBefore(psi.reads, e) && ctx.headsHbBefore(psi, -1, e)) {
+                psi.dset.add(e.toRef())
+                psi.reads.add(e.toRef())
+                return DporSsRes.Sleep
+            }
+            psi.dset.add(e.toRef())
+            psi.reads.add(e.toRef())
+            return DporSsRes.Updated
+        }
+        // Line 26: a different variable — joins D only.
+        psi.dset.add(e.toRef())
+        return DporSsRes.Updated
+    }
+    return ri
 }
 
 /**
@@ -780,7 +770,13 @@ internal func dporSsMkSchedChar(data: DporRunData, task: DporPopTask, // cjlint-
             var f: Int64 = 0
             while (f < Int64(task.schedExprs.size)) {
                 let entry = task.schedExprs[f]
-                if (entry.headActor == headSeg.actor && entry.headOrdinal == headSeg.ordinal) {
+                // The full (actor, ordinal, histFp) head identity, like
+                // dporSsInject: a shifted trajectory can realize the same
+                // (actor, ordinal) as a different structural event, and a
+                // binary match would attach the wrong φ to the nested
+                // characterization — silently skipping exploration.
+                if (entry.headActor == headSeg.actor && entry.headOrdinal == headSeg.ordinal &&
+                    entry.headHistFp == histFps[headPos]) {
                     for (phi in entry.exprs) {
                         let nested = DporSsExpr(varKey: dporWeakenNote(hn))
                         var fi: Int64 = 0

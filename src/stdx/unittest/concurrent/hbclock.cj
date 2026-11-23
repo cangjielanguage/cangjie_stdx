@@ -32,7 +32,7 @@ class HBClockCounter {
 
         while (counter.load() < id) {
             if (DateTime.now() - startTime > timeout) {
-                throw TimeoutException("Timeout while waiting for ${id} to be reached. Current value: ${counter.load()}")
+                throw TimeoutException("Timeout while waiting for ${id} to be reached. Current value: ${counter.load()}.")
             }
             sleep(Duration.millisecond * 10) // Sleep briefly to avoid busy waiting
         }

@@ -133,19 +133,24 @@ protected class ConsistencyValidator {
         let available = po.getAvailableOperations(placed)
 
         if (available.size == 0) {
-            if (prefixOps.size > 0) {
-                ctx.foundPermutation = copyPermutation(prefixOps)
-                return true
-            }
-            return false
+            // Terminal: in the operation DAG, `available` is empty exactly
+            // when every operation is already placed (the prefix is a
+            // complete linearization) — including the empty-history case,
+            // where zero operations exist at all. An empty history is
+            // vacuously consistent (no operation can mismatch), so the
+            // possibly-empty prefix is returned as the found permutation;
+            // the old `prefixOps.size > 0` guard instead reported a false
+            // inconsistency with zero operations checked.
+            ctx.foundPermutation = copyPermutation(prefixOps)
+            return true
         }
         var currentState: ?Any = state // cjlint-ignore !G.VAR.02 the variable threads state across loop/algorithm iterations (accumulator or framework context); narrowing its scope would change semantics
         let localMismatches = ArrayList<MismatchInfo>()
         for (opId in available) {
             let child = node.ensureChild(opId)
 
-            let actorId = opId / 1000
-            let opIndex = opId % 1000
+            let actorId = operationActorOf(opId)
+            let opIndex = operationIndexOf(opId)
             let inv = hist.getInvocation(actorId, opIndex) ?? return false
 
             var recurseState: ?Any = None
@@ -166,7 +171,7 @@ protected class ConsistencyValidator {
                 let builtState = currentState.getOrDefault {
                     let s = createFreshInstance()
                     for (prefixOpId in prefixOps) {
-                        let prefixInv = hist.getInvocation(prefixOpId / 1000, prefixOpId % 1000) ?? return false
+                        let prefixInv = hist.getInvocation(operationActorOf(prefixOpId), operationIndexOf(prefixOpId)) ?? return false
                         reExecuteOperation(s, prefixInv)
                     }
                     s

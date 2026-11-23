@@ -72,14 +72,24 @@ private class PctGate {
     private let monitor = Monitor()
     private var opened = false
 
-    /** Park the calling actor until a grant consumes the flag. */
+    /** Park the calling actor until a grant consumes the flag. The whole
+     * gate protocol runs in a drain section (pct_engine_lock.cj): the
+     * blocking wait must never hold the engine lock — the grantee's next
+     * region would deadlock on a lock the parked actor still holds — and
+     * the drain is owned HERE, not at each call site, so the invariant is
+     * structural. The gate monitor is a leaf (nothing acquires the engine
+     * lock while holding it), so the non-blocking parts are safe under
+     * the engine lock on either side of the section. Must be called from
+     * inside a region (every park site is). */
     public func park(): Unit {
-        monitor.lock()
-        while (!opened) {
-            monitor.wait()
+        pctWithTemporarilyUnlocked { =>
+            monitor.lock()
+            while (!opened) {
+                monitor.wait()
+            }
+            opened = false
+            monitor.unlock()
         }
-        opened = false
-        monitor.unlock()
     }
 
     /** Grant one park: wake a parked actor or arm the next one. */
@@ -99,7 +109,7 @@ internal class PctActorTable {
     // order), so plain array reads are safe. Growable: every actor
     // appends its slot at registration (all actors are dynamically
     // registered children); the arrays are rebuilt double-size under the
-    // coordinator `lock`, and readers
+    // engine lock (pct_engine_lock.cj), and readers
     // snapshot the array reference before scanning (element identity —
     // gate objects, tids — is preserved across the copy).
     private var actorTids: Array<Int64>
@@ -140,7 +150,7 @@ internal class PctActorTable {
     // everything else (external owner, already-exited owner, timed
     // wait) keeps the runtime-park fallback.
     private var myFuture: Array<?Object>
-    // The virtual-timer fired marker: set (under the coordinator lock)
+    // The virtual-timer fired marker: set (under the engine lock)
     // when a PctClock timer fires this actor — flipping it out of its
     // timed Waiting park and granting it the token — and consumed by the
     // actor's own wake path (the timed wrapper/mediated loop reads it to
@@ -156,16 +166,16 @@ internal class PctActorTable {
     private var slots: Int64
 
     internal init() {
-        gates = Array<PctGate>(0, { _ => PctGate() })
-        actorTids = Array<Int64>(0, { _ => 0 })
-        state = Array<PctActorState>(0, { _ => Unused })
-        priority = Array<Int64>(0, { _ => 0 })
-        pollCount = Array<UInt64>(0, { _ => 0u64 })
-        waitKey = Array<?Object>(0, { _ => None })
-        waitEdge = Array<PctWaitEdgeKind>(0, { _ => NoEdge })
-        myFuture = Array<?Object>(0, { _ => None })
-        timerFired = Array<Bool>(0, { _ => false })
-        gateSeq = Array<UInt64>(0, { _ => 0u64 })
+        gates = []
+        actorTids = []
+        state = []
+        priority = []
+        pollCount = []
+        waitKey = []
+        waitEdge = []
+        myFuture = []
+        timerFired = []
+        gateSeq = []
         slots = 0
     }
 
@@ -442,11 +452,9 @@ internal class PctActorTable {
         var i: Int64 = 0
         while (i < slots && flipped < max) {
             if (state[i] == Waiting) {
-                if (let Some(k) <- waitKey[i]) {
-                    if (refEq(k, key)) {
-                        markGated(i)
-                        flipped += 1
-                    }
+                if (let Some(k) <- waitKey[i] && refEq(k, key)) {
+                    markGated(i)
+                    flipped += 1
                 }
             }
             i++
@@ -479,10 +487,8 @@ internal class PctActorTable {
         var i: Int64 = 0
         while (i < slots) {
             if (state[i] != Finished) {
-                if (let Some(mf) <- myFuture[i]) {
-                    if (refEq(mf, f)) {
-                        return Some(i)
-                    }
+                if (let Some(mf) <- myFuture[i] && refEq(mf, f)) {
+                    return Some(i)
                 }
             }
             i++
@@ -492,7 +498,7 @@ internal class PctActorTable {
 
     // ------------------------------------------------------------------
     // The virtual-timer fired marker (see the field comment; both sides
-    // run under the coordinator lock).
+    // run under the engine lock).
     // ------------------------------------------------------------------
     internal func setTimerFired(slot: Int64, on: Bool): Unit {
         timerFired[slot] = on
