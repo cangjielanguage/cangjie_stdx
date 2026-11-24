@@ -481,7 +481,9 @@ class HttpEngineConn1 <: HttpEngineConn & BodyProviderConn {
      * ignore at least one empty line (CRLF) received prior to the request-line.
      */
     func readLine(): Str {
-        let line = conn.readLine()
+        // the request direction requires CRLF terminators: bare LF would
+        // allow header-line smuggling, RFC 9112 2.2, RFC 9110 5.1
+        let line = conn.readLine(strictCrlf: true)
         checkLine(line)
         return line
     }
