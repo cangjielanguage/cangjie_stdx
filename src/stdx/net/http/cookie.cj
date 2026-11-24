@@ -66,7 +66,7 @@ public class Cookie {
      * @param httpOnly  httponly-av
      * @return a cookie instance.
      *
-     * @throws IllegalArgumentException if name, value, expires, maxAge, domain or path is invalid
+     * @throws IllegalArgumentException if name, value, expires, domain or path is invalid
      */
     public init(name: String, value: String, expires!: ?DateTime = None, maxAge!: ?Int64 = None, domain!: String = "",
         path!: String = "", secure!: Bool = false, httpOnly!: Bool = false) {
@@ -88,16 +88,12 @@ public class Cookie {
         }
         _expires = expires
         // max-age-av
-        // Max-Age        = non-zero-digit *DIGIT
-        // non-zero-digit = %x31-39
-        //                ; digits 1 through 9
-        // DIGIT          = %x30-39
-        //                ; digits 0 through 9
-        if (let Some(maxAgeValue) <- maxAge) {
-            if (maxAgeValue <= 0) {
-                throw IllegalArgumentException("Invalid cookie maxAge: ${maxAgeValue}, but must be positive.")
-            }
-        }
+        // RFC 6265 4.1.1 defines the set-cookie-string generation syntax
+        // (Max-Age = non-zero-digit *DIGIT) for servers; the receiving rules
+        // in RFC 6265 5.2.2 additionally accept "0" and negative values, in
+        // which case the cookie is expired immediately, so the constructor
+        // accepts any Int64 delta-seconds here to keep in line with the
+        // parser (parseSetCookieHeader) and the cookie store (RFC 6265 5.3)
         _maxAge = maxAge
         // <domain> ::= <subdomain> | " "
         if (!isCookieDomainValid(domain)) {

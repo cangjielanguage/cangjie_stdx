@@ -934,7 +934,7 @@ public init(name: String, value: String, expires!: ?DateTime = None, maxAge!: ?I
 
 Function: [Cookie](http_package_classes.md#class-cookie) constructor.
 
-This constructor checks whether the input attributes comply with protocol requirements. If not, it throws an IllegalArgumentException. Specific requirements are detailed in [RFC 6265 4.1.1.](https://httpwg.org/specs/rfc6265.html#sane-set-cookie-syntax).
+This constructor checks whether the input attributes comply with protocol requirements. If not, it throws an IllegalArgumentException. Specific requirements are detailed in [RFC 6265 4.1.1.](https://httpwg.org/specs/rfc6265.html#sane-set-cookie-syntax). Note the exception for maxAge: the `max-age-av` syntax in RFC 6265 4.1.1 only constrains the server side when sending; according to the receiving rules in [RFC 6265 5.2.2](https://httpwg.org/specs/rfc6265.html#cookie-av), zero and negative values are valid inputs indicating that the [Cookie](http_package_classes.md#class-cookie) expires immediately, so the constructor also accepts a maxAge less than or equal to 0.
 
 > **Note:**
 >
@@ -963,7 +963,7 @@ Parameters:
     ```
 
 - expires!: ?DateTime - Sets the expiration time of the [Cookie](http_package_classes.md#class-cookie). Default is None. The time must be after 1601.
-- maxAge!: ?Int64 - The maximum lifecycle of the [Cookie](http_package_classes.md#class-cookie). Default is None. If the [Cookie](http_package_classes.md#class-cookie) has both expires and maxAge attributes, it will only persist until the session ends (until the [Client](http_package_classes.md#class-client) closes; after closure, expired [Cookie](http_package_classes.md#class-cookie) will no longer be maintained).
+- maxAge!: ?Int64 - The maximum lifecycle of the [Cookie](http_package_classes.md#class-cookie). Default is None. If the [Cookie](http_package_classes.md#class-cookie) has both expires and maxAge attributes, it will only persist until the session ends (until the [Client](http_package_classes.md#class-client) closes; after closure, expired [Cookie](http_package_classes.md#class-cookie) will no longer be maintained). maxAge supports zero and negative values: when maxAge is less than or equal to 0, the [Cookie](http_package_classes.md#class-cookie) expires immediately after being stored in the [CookieJar](http_package_interfaces.md#interface-cookiejar), which is used to delete a stored [Cookie](http_package_classes.md#class-cookie) with the same name, domain, and path, see RFC 6265 5.2.2. Note that if the [Cookie](http_package_classes.md#class-cookie) is to be delivered via `Set-Cookie`, RFC 6265 4.1.1 requires the server to send a positive Max-Age value.
 
     ```cangjie
     max-age-av     = "Max-Age=" non-zero-digit *DIGIT
