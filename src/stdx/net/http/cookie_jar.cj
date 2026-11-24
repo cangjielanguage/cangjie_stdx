@@ -236,6 +236,20 @@ class CookieJarImpl <: CookieJar {
             domain = ""
         }
         if (!domain.isEmpty()) {
+            // ignore cookies received from an IP-address host (IPv4 or IPv6)
+            // and carrying a Domain attribute entirely: only host-only cookies
+            // are acceptable from an IP host, since keeping an identical
+            // domain-match would let a domain-attribute cookie extend the
+            // scope of the IP host. the RFC leaves the identical branch open
+            // (RFC 6265bis Section 5.7 step 3.10 restricts only the suffix
+            // branch via Section 5.1.3), so this follows the behavior of
+            // mainstream browsers (Chromium/Firefox) as a scope-hardening
+            // measure. note: isIPAddress is a heuristic and does not
+            // recognize non-dotted-decimal IPv4 forms (e.g. "127.1",
+            // "2130706433"), which stdx URL treats as reg-names anyway
+            if (isIPAddress(cononicalizeHost)) {
+                return None
+            }
             if (!domainMatch(cononicalizeHost, domain)) {
                 return None
             }
