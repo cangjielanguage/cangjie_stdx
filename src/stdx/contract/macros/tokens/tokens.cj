@@ -357,6 +357,46 @@ func matchingParenIndex(tokens: Tokens, open: Int64, end: Int64): Int64 {
     -1
 }
 
+/// The span of the destructuring group after the declaration keyword at `keyword`, or
+/// `(-1, -1)` when the declaration does not start with a parenthesized pattern.
+func declarationDestructuringSpan(tokens: Tokens, keyword: Int64, end: Int64): (Int64, Int64) {
+    let open = skipSeparators(tokens, keyword + 1)
+    if (open < end && tokens[open].kind == LPAREN) {
+        let close = matchingParenIndex(tokens, open, end)
+        if (close >= 0) {
+            return (open, close)
+        }
+    }
+    (-1, -1)
+}
+
+/// The span of the `(a, b) = ...` target opened by the `(` at `open`, or `(-1, -1)` when
+/// the group is not followed by an assignment.
+func assignmentDestructuringSpan(tokens: Tokens, open: Int64, end: Int64): (Int64, Int64) {
+    if (!isStatementStart(tokens, open)) {
+        return (-1, -1)
+    }
+    let close = matchingParenIndex(tokens, open, end)
+    if (close < 0) {
+        return (-1, -1)
+    }
+    let after = skipSeparators(tokens, close + 1)
+    if (after < end && tokens[after].kind == ASSIGN) {
+        return (open, close)
+    }
+    (-1, -1)
+}
+
+/// The span of the destructuring group starting at `index`, or `(-1, -1)` when no group
+/// starts there.
+func destructuringSpanAt(tokens: Tokens, index: Int64, end: Int64): (Int64, Int64) {
+    match (tokens[index].kind) {
+        case LET | VAR | CONST => declarationDestructuringSpan(tokens, index, end)
+        case LPAREN => assignmentDestructuringSpan(tokens, index, end)
+        case _ => (-1, -1)
+    }
+}
+
 /**
  * @brief Collects the inclusive token-index spans of the parenthesized destructuring
  * groups in `tokens[start..end]`.
@@ -380,29 +420,9 @@ public func destructuringGroupSpans(tokens: Tokens, start: Int64, end: Int64): A
     let spans = ArrayList<(Int64, Int64)>()
     var index = start
     while (index < end) {
-        let kind = tokens[index].kind
-        if (kind == LET || kind == VAR || kind == CONST) {
-            var cursor = index + 1
-            while (cursor < end && isSeparator(tokens[cursor])) {
-                cursor += 1
-            }
-            if (cursor < end && tokens[cursor].kind == LPAREN) {
-                let close = matchingParenIndex(tokens, cursor, end)
-                if (close >= 0) {
-                    spans.add((cursor, close))
-                }
-            }
-        } else if (kind == LPAREN && isStatementStart(tokens, index)) {
-            let close = matchingParenIndex(tokens, index, end)
-            if (close >= 0) {
-                var after = close + 1
-                while (after < end && isSeparator(tokens[after])) {
-                    after += 1
-                }
-                if (after < end && tokens[after].kind == ASSIGN) {
-                    spans.add((index, close))
-                }
-            }
+        let span = destructuringSpanAt(tokens, index, end)
+        if (span[0] >= 0) {
+            spans.add(span)
         }
         index += 1
     }
@@ -496,9 +516,10 @@ func collectCatchBindings(tokens: Tokens, catchPos: Int64, end: Int64, found: Ar
     while (cursor < end && (tokens[cursor].kind == NL || tokens[cursor].kind == SEMI)) {
         cursor += 1
     }
-    if (cursor < end && tokens[cursor].kind == IDENTIFIER &&
-        nextSignificantKind(tokens, cursor, end) == COLON) {
-        found.add((cursor, tokens[cursor]))
+    if (cursor < end && tokens[cursor].kind == IDENTIFIER) {
+        if (nextSignificantKind(tokens, cursor, end) == COLON) {
+            found.add((cursor, tokens[cursor]))
+        }
     }
 }
 
@@ -542,55 +563,115 @@ func collectLambdaParameters(tokens: Tokens, open: Int64, end: Int64, found: Arr
 func scanLambdaParameterToken(tokens: Tokens, cursor: Int64, state: LambdaParameterScan,
     candidates: ArrayList<(Int64, Token)>): Int64 {
     let current = tokens[cursor]
-    let kind = current.kind
-    if (state.depth == 0 && state.angleDepth == 0 && kind == DOUBLE_ARROW) {
+    match (current.kind) {
+        case DOUBLE_ARROW => scanLambdaArrowToken(state)
+        case LPAREN | LSQUARE | RPAREN | RSQUARE | LT | GT | RSHIFT =>
+            scanLambdaBracketToken(current.kind, state)
+        case _ => scanLambdaParameterValue(current, cursor, state, candidates)
+    }
+}
+
+/// The `=>` terminates a parameter list only when no bracket or generic argument is
+/// open; a nested arrow is ordinary type text.
+func scanLambdaArrowToken(state: LambdaParameterScan): Int64 {
+    if (state.depth == 0 && state.angleDepth == 0) {
         return 1
     }
-    if (kind == LPAREN || kind == LSQUARE) {
-        state.depth += 1
-    } else if (kind == RPAREN || kind == RSQUARE) {
-        if (state.depth == 0) {
-            return -1
-        }
-        state.depth -= 1
-    } else if (kind == TokenKind.LT) {
-        state.angleDepth += 1
-    } else if (kind == TokenKind.GT) {
-        if (state.angleDepth > 0) {
-            state.angleDepth -= 1
-        }
-    } else if (kind == RSHIFT) {
-        if (state.angleDepth >= 2) {
-            state.angleDepth -= 2
-        } else {
-            state.angleDepth = 0
-        }
-    } else if (state.depth > 0 || state.angleDepth > 0) {
-        // Type text between brackets; the arrow can only terminate at depth 0.
-    } else if (kind == COMMA) {
-        state.inType = false
-        state.afterComma = true
-    } else if (kind == NL) {
-        // A wrapped parameter list continues only directly after a `,`.
-        if (!state.afterComma) {
-            return -1
-        }
-        state.afterComma = false
-    } else if (kind == COLON) {
-        state.inType = true
-    } else if (kind == IDENTIFIER) {
-        if (!state.inType) {
-            candidates.add((cursor, current))
-        }
-    } else if (kind == MUT) {
-        state.inType = false
-    } else if (kind == DOT || kind == QUEST || kind == LSHIFT || kind == ARROW || kind == BITAND ||
-        isBuiltinTypeKind(kind)) {
-        // Type-level tokens; position inside the list is unchanged.
-    } else {
-        return -1
+    0
+}
+
+/// Track one bracket or generic argument token of a parameter list.
+func scanLambdaBracketToken(kind: TokenKind, state: LambdaParameterScan): Int64 {
+    match (kind) {
+        case LPAREN | LSQUARE =>
+            state.depth += 1
+        case RPAREN | RSQUARE =>
+            if (state.depth == 0) {
+                return -1
+            }
+            state.depth -= 1
+        case LT =>
+            state.angleDepth += 1
+        case GT =>
+            if (state.angleDepth > 0) {
+                state.angleDepth -= 1
+            }
+        case _ =>
+            // `>>` is a single token closing two generic levels.
+            if (state.angleDepth >= 2) {
+                state.angleDepth -= 2
+            } else {
+                state.angleDepth = 0
+            }
     }
     0
+}
+
+/// Track a token that is neither a bracket nor the `=>` of a parameter list.
+func scanLambdaParameterValue(current: Token, cursor: Int64, state: LambdaParameterScan,
+    candidates: ArrayList<(Int64, Token)>): Int64 {
+    // Type text between brackets; the arrow can only terminate at depth 0.
+    if (state.depth > 0 || state.angleDepth > 0) {
+        return 0
+    }
+    match (current.kind) {
+        case COMMA => scanLambdaCommaToken(state)
+        case NL => scanLambdaNewlineToken(state)
+        case COLON => scanLambdaColonToken(state)
+        case IDENTIFIER => scanLambdaIdentifierToken(current, cursor, state, candidates)
+        case MUT => scanLambdaMutToken(state)
+        case _ => scanLambdaOtherToken(current.kind)
+    }
+}
+
+/// Reset the type state at the `,` between parameters and remember the wrap position.
+func scanLambdaCommaToken(state: LambdaParameterScan): Int64 {
+    state.inType = false
+    state.afterComma = true
+    0
+}
+
+/// A wrapped parameter list continues only directly after a `,`.
+func scanLambdaNewlineToken(state: LambdaParameterScan): Int64 {
+    if (!state.afterComma) {
+        return -1
+    }
+    state.afterComma = false
+    0
+}
+
+/// Enter type position at the `:` of a parameter annotation.
+func scanLambdaColonToken(state: LambdaParameterScan): Int64 {
+    state.inType = true
+    0
+}
+
+/// Collect a parameter name; identifiers in type position do not bind.
+func scanLambdaIdentifierToken(current: Token, cursor: Int64, state: LambdaParameterScan,
+    candidates: ArrayList<(Int64, Token)>): Int64 {
+    if (!state.inType) {
+        candidates.add((cursor, current))
+    }
+    0
+}
+
+/// Leave type position at `mut`, whose following name is the parameter binding.
+func scanLambdaMutToken(state: LambdaParameterScan): Int64 {
+    state.inType = false
+    0
+}
+
+/// Type-level tokens; position inside the list is unchanged. Anything else ends the scan.
+func scanLambdaOtherToken(kind: TokenKind): Int64 {
+    match (kind) {
+        case DOT | QUEST | LSHIFT | ARROW | BITAND => 0
+        case _ =>
+            if (isBuiltinTypeKind(kind)) {
+                0
+            } else {
+                -1
+            }
+    }
 }
 
 /// Scan one `match` case pattern from the `case` at `casePos` up to its `=>`, emitting

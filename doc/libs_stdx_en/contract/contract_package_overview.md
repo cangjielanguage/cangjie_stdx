@@ -18,18 +18,20 @@ The contract package consists of two subpackages:
 | Exception contract | functions, properties | `throws` | Declares the exception types that must be thrown when the specified conditions hold. |
 | Type invariant | class, struct, interface | `invariant` | A condition that an instance of the type must maintain before and after calls to its public interface. |
 | Abstract state | class, struct, interface, function contracts | `variable` | Declares abstract state that can be referenced by contracts, especially useful for interfaces; a function contract can also declare a function-level auxiliary variable referenced by other clauses. |
-| Contract inheritance | class, struct, interface | `inherits from` / `inherits <kind> <parent type>.<name>` | By default, parent contracts are not inherited; `inherits from` reuses all contracts declared on the parent type and can be augmented with `[conforming]` to force implementations to conform to the contracts; `inherits requires/ensures/throws/variable/invariant` selectively inherits a single named contract (with renaming allowed). Class-level `variable` is always inherited automatically. Parent types within the same package (compilation unit) can be referenced directly; cross-package contract inheritance requires environment variable conventions (see "Cross-Package Contract Inheritance" below). |
+| Contract inheritance | class, struct, interface | `inherits from` / `inherits <kind> <parent type>.<name>` | By default, parent contracts are not inherited; `inherits from` reuses all contracts declared on the parent type, `inherits requires/ensures/throws/variable/invariant` selectively inherits a single named contract (with renaming allowed); class-level `variable` is always inherited automatically. See "Cross-Package Contract Inheritance" below for cross-package scenarios. |
 | Function-body assertion | function body | `@contractAssert` | An assertion checked at arbitrary points inside a function body. |
-| Loop invariant | function body | `@loopInvariant` | A condition that must hold at the loop's check points: checked at the start of each iteration and after loop exit for `while`, at the start of each iteration for `for-in`, and after each loop-body execution before the condition is evaluated for `do-while`. |
+| Loop invariant | function body | `@loopInvariant` | A condition that must hold at the loop's check points. |
 | Ghost code | function body | `@ghost` | Auxiliary code used only to maintain abstract state and not participating in business logic. |
 
-> @Contract on an extend only carries member-level contracts: member functions/properties inside the extend can be annotated with @Contract to declare member-level clauses such as `requires`/`ensures`/`throws` (and members may use `inherits` to selectively inherit member contracts); the extend itself supports no type-level clauses (`variable`, `invariant`, `inherits`), and its `@Contract` clause list must be empty, otherwise the macro expansion reports a compile error.
+@Contract on an extend only carries member-level contracts: member functions/properties inside the extend can be annotated with @Contract to declare member-level clauses such as `requires`/`ensures`/`throws` (and members may use `inherits` to selectively inherit member contracts); the extend itself supports no type-level clauses (`variable`, `invariant`, `inherits`), and its `@Contract` clause list must be empty, otherwise the macro expansion reports a compile error.
 
-> When `@Contract` is annotated directly on a type member (the enclosing type has no type-level `@Contract`), the macro expansion sees only that member and cannot know the enclosing type's member list: if a function-level `variable` shares its name with an enclosing type member, bare-name reads in the implementation body evaluate to the function-level auxiliary variable (the type-level path reports a compile ERROR for the same situation). Avoid such name clashes, or declare the contract on the enclosing type's `@Contract` instead.
+When `@Contract` is annotated directly on a type member (the enclosing type has no type-level `@Contract`), the macro expansion sees only that member and cannot know the enclosing type's member list: if a function-level `variable` shares its name with an enclosing type member, bare-name reads in the implementation body evaluate to the function-level auxiliary variable (the type-level path reports a compile ERROR for the same situation). Avoid such name clashes, or declare the contract on the enclosing type's `@Contract` instead.
 
-> The macro analyzes `match` case patterns at the token level to identify the bindings a contract rewrite may touch: a no-payload enum constructor in a bare `case Red =>` pattern is indistinguishable from a binding and stays collected (over-reporting is the safe direction). A contract auxiliary variable sharing its name with such a constructor therefore also rewrites the constructor name. Avoid the name clash, or qualify the constructor path (e.g. `Color.Red`).
+The macro analyzes `match` case patterns at the token level to identify the bindings a contract rewrite may touch: a no-payload enum constructor in a bare `case Red =>` pattern is indistinguishable from a binding and stays collected (over-reporting is the safe direction). A contract auxiliary variable sharing its name with such a constructor therefore also rewrites the constructor name. Avoid the name clash, or qualify the constructor path (e.g. `Color.Red`).
 
-> For the full grammar of the clauses above (such as `[name]` labels, `ensures r:` return-value binding, `$pre(...)` entry snapshot references, and contracts on primary constructors), see the `@Contract` macro description in [stdx.contract.macros](./contract_package_api/contract_package_macros.md).
+For the full grammar of the clauses above (such as `[name]` labels, `ensures r:` return-value binding, `$pre(...)` entry snapshot references, and contracts on primary constructors), see the `@Contract` macro description in [stdx.contract.macros](./contract_package_api/contract_package_macros.md).
+
+`@ghost`, `@contractAssert`, and `@loopInvariant` do not require the host function to be annotated with `@Contract`: the macros still expand when unannotated, and execution is gated only by the `contract_check` switch (they execute when checking is enabled).
 
 ### Enabling and Disabling
 
@@ -37,9 +39,9 @@ The contract checking switch has two layers: compile time and run time.
 
 **Compile time**: controlled by the conditional compilation variable `contract_check`, enabled by default. The value of the switch is fixed **when the `stdx.contract.runtime` package is compiled**. Where `cfg.toml` is read depends on the compilation mode: in **package mode** (`cjc -p <package directory>` or a cjpm build), cjc reads `cfg.toml` from the **package source directory** (the `stdx.contract.runtime` package ships a `cfg.toml` whose declared default is `contract_check = "on"`) and does not read `cfg.toml` from the process working directory; only **single-file mode** (compiling a single `.cj` file directly) reads `cfg.toml` from the process working directory. A `--cfg` command-line option has the highest priority and overrides `cfg.toml`. When this library is built with CMake, the build script passes `--cfg "contract_check=on"` explicitly; that option overrides the package's `cfg.toml`, so editing that file does not change the switch of CMake-built artifacts. If the package source directory contains no `cfg.toml` and the option is not supplied explicitly (on the command line or via `compile-option` in `cjpm.toml`), any code that uses the `contract_check` conditional compilation variable fails to compile. Applications consuming prebuilt stdx artifacts need no action. To build a runtime artifact that contains no contract checking at all, run `cjc -p <runtime source directory> --cfg "contract_check=off" --output-type=dylib` from outside the runtime source directory (appending this option when compiling the application side does not change the switch already fixed in the prebuilt runtime); in an off artifact the overhead of every check point is a compile-time constant test and contract clauses are never evaluated.
 
-**Run time**: an artifact compiled with checking on supports a one-shot demotion — after [disableContractChecks](./runtime/contract_runtime_package_api/contract_runtime_package_funcs.md#func-disablecontractchecks) is called anywhere in the process, all subsequent check points in that process are skipped. Demotion is **one-way**: the library provides no API to re-enable checking, so in-process behavior is monotonically weakened (either fully checked, or checked only up to the demotion point), and the same call can never flip between throwing and not throwing depending on the switch state. The function is thread-safe and idempotent; in an off artifact it is a no-op. Beyond this, the library provides the read-only query [contractCheckEnabled](./runtime/contract_runtime_package_api/contract_runtime_package_funcs.md#func-contractcheckenabled) (intended only for macro expansion output, returning whether checking is currently active); the base state of the switch is determined solely by the compile-time `contract_check`, and no API to re-enable checking is provided at run time beyond the one-way demotion above.
+**Run time**: an artifact compiled with checking on supports a one-shot demotion — after [disableContractChecks](./runtime/contract_runtime_package_api/contract_runtime_package_funcs.md#func-disablecontractchecks) is called anywhere in the process, all subsequent check points in that process are skipped. Demotion is one-way, thread-safe, and idempotent; the library provides no API to re-enable checking, and the function is a no-op in an off artifact. Beyond this, the library provides the read-only query [contractCheckEnabled](./runtime/contract_runtime_package_api/contract_runtime_package_funcs.md#func-contractcheckenabled) (intended only for macro expansion output, returning whether checking is currently active); the base state of the switch is determined solely by the compile-time `contract_check`.
 
-When checking is enabled, each contract clause is evaluated once at its check point; a type invariant is evaluated twice — before and after every member call of that type. Without a selector, members at internal visibility and broader (public, protected, and package-internal members) are checked by default, and the `on_public`/`on_protected`/`on_private` selectors can narrow the scope. Each contract evaluation is bracketed by an in-thread evaluation-state flag update. Keep contract expressions lightweight and avoid deploying types built on this library onto performance-sensitive hot paths.
+When checking is enabled, each contract clause is evaluated once at its check point; a type invariant is evaluated twice — before and after every member call of that type — and the `on_public`/`on_protected`/`on_private` selectors can narrow the scope of member visibility that triggers the check. Each contract evaluation is bracketed by an in-thread evaluation-state flag update. Keep contract expressions lightweight and avoid deploying types built on this library onto performance-sensitive hot paths.
 
 ### `@ghost` Usage Restrictions
 
@@ -78,63 +80,11 @@ Inherited member contracts are adapted to the subclass positionally (**member fu
 
 ### Contract Failure
 
-When a contract check fails, the corresponding contract exception is thrown. The messages of `requires`/`ensures`/`throws` failures contain the name of the function whose contract failed and the original contract clause; an `invariant` message contains the type name and the clause, while the messages of `@contractAssert` and `@loopInvariant` contain only the corresponding assertion or invariant expression. Non-contract exceptions (business exceptions) thrown during contract expression evaluation are not wrapped and propagate to the caller with their original types. Contract exceptions are all located in the [stdx.contract.runtime](./runtime/contract_runtime_package_api/contract_runtime_package_exceptions.md) subpackage, and [isContractException](./runtime/contract_runtime_package_api/contract_runtime_package_funcs.md#func-iscontractexception) can be used to determine whether an exception is a contract exception.
+When a contract check fails, the corresponding contract exception is thrown. The messages of `requires`/`ensures`/`throws` failures contain the name of the function whose contract failed and the original contract clause; an `invariant` message contains the type name and the clause, while the messages of `@contractAssert` and `@loopInvariant` contain only the corresponding assertion or invariant expression. Non-contract exceptions (business exceptions) thrown during contract expression evaluation are not wrapped and propagate to the caller with their original types. Contract exceptions are all provided by the [exception classes of stdx.contract.runtime](./runtime/contract_runtime_package_api/contract_runtime_package_exceptions.md), and [isContractException](./runtime/contract_runtime_package_api/contract_runtime_package_funcs.md#func-iscontractexceptionexception) can be used to determine whether an exception is a contract exception.
 
 ### Example
 
-The following example declares a precondition, a postcondition, and an exception contract for the withdrawal method of a bank account:
-
-<!-- verify -->
-```cangjie
-import stdx.contract.macros.*
-
-class BankAccount {
-    private var balance: Float64
-
-    init(balance: Float64) {
-        this.balance = balance
-    }
-
-    @Contract[
-        requires amount > 0.0
-        requires amount <= this.balance
-        ensures this.balance == $pre(this.balance) - amount
-        throws IllegalArgumentException if amount <= 0.0
-    ]
-    public func withdraw(amount: Float64): Unit {
-        if (amount <= 0.0) {
-            throw IllegalArgumentException("amount must be positive")
-        }
-        this.balance -= amount
-    }
-
-    public func getBalance(): Float64 {
-        this.balance
-    }
-}
-
-main() {
-    let account = BankAccount(100.0)
-    account.withdraw(30.0)
-    println(account.getBalance())
-    try {
-        account.withdraw(200.0)
-    } catch (e: ContractCheckRequiresException) {
-        println(e.message)
-    }
-}
-```
-
-Execution result:
-
-```text
-70.000000
-requires failed in withdraw: requires amount <= this.balance
-```
-
-> **Note:**
->
-> The output above assumes that contract checking is enabled at compile time (enabled by default). After rebuilding `stdx.contract.runtime` with `--cfg "contract_check=off"` to disable checking, contract clauses are not evaluated and the example does not throw an exception.
+The complete examples of function contracts, property contracts, type contracts, and contract inheritance are given in the `@Contract` macro examples in [stdx.contract.macros](./contract_package_api/contract_package_macros.md).
 
 ## API List
 

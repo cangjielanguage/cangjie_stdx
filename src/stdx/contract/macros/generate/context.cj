@@ -10,7 +10,7 @@ package stdx.contract.macros.generate
 
 import stdx.contract.macros.syntax.{Diagnostic}
 import std.ast.{Token, Tokens}
-import std.collection.{ArrayList, forEach, isEmpty}
+import std.collection.{ArrayList, isEmpty}
 
 /// Collects generation-time diagnostics and allocates shared names.
 internal class GenContext {
@@ -44,7 +44,9 @@ internal class GenContext {
      * @brief Shows all collected diagnostics to the user.
      */
     public func report(): Unit {
-        diagnostics.forEach {diagnostic => diagnostic.show()}
+        for (diagnostic in diagnostics) {
+            diagnostic.show()
+        }
     }
 
     /**

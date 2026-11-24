@@ -10,7 +10,7 @@ package stdx.contract.macros.validation
 
 import stdx.contract.macros.syntax.{Diagnostic, FunctionClause, PropContract, PropKind}
 import std.ast.{ASTException, FuncDecl, PropDecl}
-import std.collection.{ArrayList, forEach, isEmpty}
+import std.collection.{ArrayList, isEmpty}
 
 /**
  * @brief Validate a property contract against its `prop` declaration.
@@ -69,7 +69,9 @@ public func validatePropertyContract(contract: PropContract, owner: PropDecl): B
     let setterParameters = ArrayList<String>()
     setterParameters.add(setterBindingName(owner))
     validatePropertyVariableNames(setterClauses, setterParameters, {=> owner.setter}, diagnostics)
-    diagnostics.forEach {diagnostic => diagnostic.show()}
+    for (diagnostic in diagnostics) {
+        diagnostic.show()
+    }
     diagnostics.isEmpty()
 }
 

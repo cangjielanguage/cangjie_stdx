@@ -25,12 +25,9 @@ func substituteTypeArguments(tokens: Tokens, parameters: ArrayList<String>, argu
         let token = tokens[index]
         var replaced = false
         if (token.kind == IDENTIFIER && previous != DOT && !followedByColon(tokens, index)) {
-            for (parameterIndex in 0..parameters.size) {
-                if (isValue(token, parameters[parameterIndex])) {
-                    result.append(arguments[parameterIndex].toTokens())
-                    replaced = true
-                    break
-                }
+            if (let Some(replacement) <- substitutedIdentifier(token, parameters, arguments)) {
+                result.append(replacement)
+                replaced = true
             }
         }
         if (!replaced) {
@@ -44,6 +41,18 @@ func substituteTypeArguments(tokens: Tokens, parameters: ArrayList<String>, argu
     result
 }
 
+/// The replacement tokens for an identifier naming the first matching formal type parameter,
+/// or `None` when the identifier is not a formal type parameter.
+private func substitutedIdentifier(token: Token, parameters: ArrayList<String>,
+    arguments: ArrayList<TypeNode>): ?Tokens {
+    for (parameterIndex in 0..parameters.size) {
+        if (isValue(token, parameters[parameterIndex])) {
+            return Some(arguments[parameterIndex].toTokens())
+        }
+    }
+    None
+}
+
 /// A colon after an identifier makes it a label (`f(T: 1)`) or a map key, never a type.
 func followedByColon(tokens: Tokens, index: Int64): Bool {
     var cursor = index + 1
@@ -52,10 +61,6 @@ func followedByColon(tokens: Tokens, index: Int64): Bool {
     }
     cursor < tokens.size && tokens[cursor].kind == COLON
 }
-
-// ---------------------------------------------------------------------------
-// inherited-clause adaptation (#8 parameter renaming, #9 checker materialization)
-// ---------------------------------------------------------------------------
 
 /**
  * @brief Sanitize an arbitrary key or qualified type name into identifier characters so it
@@ -150,8 +155,8 @@ private func referencesAnyName(tokens: Tokens, names: HashSet<String>): Bool {
  * @return `true` when the condition can be replayed as a call to a generated checker.
  */
 public func memberConditionIsMaterializable(condition: Tokens, variableNames: HashSet<String>): Bool {
-    !isCheckerCallCondition(condition) && !conditionHasPre(condition) &&
-        !referencesAnyName(condition, variableNames)
+    let referencesVariable = referencesAnyName(condition, variableNames)
+    !isCheckerCallCondition(condition) && !conditionHasPre(condition) && !referencesVariable
 }
 
 /// Token-level parameter renaming for inherited clause text (#8): a parent parameter name
@@ -250,8 +255,9 @@ func adaptInheritedCondition(condition: Tokens, ret: ?IdentifierSyntax, ordinal:
     if (isCheckerCallCondition(condition)) {
         return alphaRenameTokens(condition, context.renames)
     }
+    let materializable = memberConditionIsMaterializable(condition, context.variableNames)
     if (context.checkerBase != "" && context.parentParams.size == context.childParams.size &&
-        memberConditionIsMaterializable(condition, context.variableNames)) {
+        materializable) {
         return checkerCallTokens(context.checkerBase + ordinal.toString(), context.childParams,
             context.instance, ret)
     }
@@ -321,13 +327,21 @@ func inheritedRenameCapture(parentParams: ArrayList<String>, childParams: ArrayL
     }
     for (clause in clauses) {
         if (let Some(tokens) <- clauseValueTokens(clause)) {
-            for (name in captured) {
-                let single = HashSet<String>()
-                single.add(name)
-                if (referencesAnyName(tokens, single)) {
-                    return Some(name)
-                }
+            if (let Some(name) <- capturedNameInTokens(tokens, captured)) {
+                return Some(name)
             }
+        }
+    }
+    None
+}
+
+/// The first captured variable read as a value in `tokens`, if any.
+private func capturedNameInTokens(tokens: Tokens, captured: HashSet<String>): ?String {
+    for (name in captured) {
+        let single = HashSet<String>()
+        single.add(name)
+        if (referencesAnyName(tokens, single)) {
+            return Some(name)
         }
     }
     None
@@ -500,12 +514,9 @@ func substituteValueTokens(tokens: Tokens, parameters: ArrayList<String>, argume
         var replaced = false
         if (token.kind == IDENTIFIER && previous != DOT && !followedByColon(tokens, index) &&
             !valueNames.contains(tokenText(token))) {
-            for (parameterIndex in 0..parameters.size) {
-                if (isValue(token, parameters[parameterIndex])) {
-                    result.append(arguments[parameterIndex].toTokens())
-                    replaced = true
-                    break
-                }
+            if (let Some(replacement) <- substitutedIdentifier(token, parameters, arguments)) {
+                result.append(replacement)
+                replaced = true
             }
         }
         if (!replaced) {
@@ -698,19 +709,28 @@ func expandPropertyInherits(attr: Tokens, memberName: String, owner: Decl,
     let result = Tokens()
     for (clause in parsed.value.clauses) {
         for (body in clause.clauses) {
-            match (body) {
-                case FunctionClause.Inherit(inherit) =>
-                    let expanded = expandInheritClause(inherit,
-                        InheritMemberSelector(memberName, Some(clause.kind)), owner, diagnostics)
-                    if (expanded.size > 0) {
-                        appendInheritedClause(result, prefixPropertyClause(clause.kind, expanded))
-                    }
-                case _ =>
-                    appendInheritedClause(result, prefixPropertyClause(clause.kind, functionClauseTokens(body)))
-            }
+            appendInheritedClause(result,
+                expandPropertyClauseTokens(clause.kind, body, memberName, owner, diagnostics))
         }
     }
     result
+}
+
+/// Expand one accessor clause of an inherited property contract into tokens.
+private func expandPropertyClauseTokens(kind: PropKind, body: FunctionClause, memberName: String,
+    owner: Decl, diagnostics: ArrayList<Diagnostic>): Tokens {
+    let expandedResult = Tokens()
+    match (body) {
+        case FunctionClause.Inherit(inherit) =>
+            let expanded = expandInheritClause(inherit,
+                InheritMemberSelector(memberName, Some(kind)), owner, diagnostics)
+            if (expanded.size > 0) {
+                appendInheritedClause(expandedResult, prefixPropertyClause(kind, expanded))
+            }
+        case _ =>
+            appendInheritedClause(expandedResult, prefixPropertyClause(kind, functionClauseTokens(body)))
+    }
+    expandedResult
 }
 
 /// Identifies the inheriting member: its signature key (or property name) and, for property
@@ -823,27 +843,44 @@ func matchMethodInheritedClauses(meta: ContractMetaData, memberKey: String, actu
         if (instantiateSignatureKey(key, meta.typeArgs, actual) != memberKey) {
             continue
         }
-        let parsed = parseFunctionContract(parentAttr)
+        let parsed = parseFunctionContract(parentAttr) // cjlint-ignore !G.VAR.02 the parse result is shared by the error check and the clause collection; narrowing would force a re-parse
         if (parsed.hasError()) {
             continue
         }
-        // Ordinals count the parent attribute's `requires`/`ensures` clauses in order;
-        // checker names use the same enumeration on both sides.
-        var ordinal: Int64 = 0
-        for (clause in parsed.value.clauses) {
-            if (matchesInheritKind(clause, inherit.kind, targetName)) {
-                matched.add(clause)
-                matchedKey = key
-                if (isNumberedClause(clause)) {
-                    matchedOrdinal = ordinal
-                }
-            }
-            if (isNumberedClause(clause)) {
-                ordinal += 1
+        let (any, ordinal) = collectMethodMatchedClauses(parsed.value.clauses, inherit, targetName, matched) // cjlint-ignore !G.VAR.02 both values come from one call and are consumed by the branch below
+        if (any) {
+            matchedKey = key
+            if (let Some(value) <- ordinal) {
+                matchedOrdinal = value
             }
         }
     }
     (matched, matchedKey, matchedOrdinal)
+}
+
+/// Append the clauses of one parent attribute that match the reference. Returns whether any
+/// clause matched and, if so, the ordinal of the last matching numbered clause.
+private func collectMethodMatchedClauses(clauses: ArrayList<FunctionClause>,
+    inherit: FunctionInheritClause, targetName: String,
+    matched: ArrayList<FunctionClause>): (Bool, ?Int64) {
+    // Ordinals count the parent attribute's `requires`/`ensures` clauses in order;
+    // checker names use the same enumeration on both sides.
+    var ordinal: Int64 = 0 // cjlint-ignore !G.VAR.02 the ordinal counts every clause in the loop, so it must outlive each iteration
+    var matchedOrdinal: ?Int64 = None
+    var any = false
+    for (clause in clauses) {
+        if (matchesInheritKind(clause, inherit.kind, targetName)) {
+            matched.add(clause)
+            any = true
+            if (isNumberedClause(clause)) {
+                matchedOrdinal = ordinal
+            }
+        }
+        if (isNumberedClause(clause)) {
+            ordinal += 1
+        }
+    }
+    (any, matchedOrdinal)
 }
 
 /// Report an unmatched or ambiguous reference; returns whether exactly one clause was matched.

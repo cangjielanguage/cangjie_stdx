@@ -193,7 +193,7 @@ func rewriteVariableInitializer(tokens: Tokens, names: HashSet<String>,
         // A function-typed variable is invoked directly (`f(1)`): the callee is a value
         // read, so the call-position guard is disabled for those names.
         if (token.kind == IDENTIFIER && names.contains(token.value) && !precededByDot(tokens, index) &&
-            !isCallOrLabelPosition(tokens, index, callable: callableNames.contains(token.value))) {
+            !isCallOrLabelPosition(tokens, index, callable: callableNames.contains(token.value))) { // cjlint-ignore !G.EXP.03 right operand is a pure predicate; short-circuit keeps per-token work minimal
             let storage = Token(IDENTIFIER, "_abs_" + token.value)
             output.append(quote(contractGhostGet($(storage), $(token.value))))
             index += 1

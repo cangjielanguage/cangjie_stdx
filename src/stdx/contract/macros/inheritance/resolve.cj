@@ -192,24 +192,29 @@ private func collectChildMemberParams(owner: Decl): HashMap<String, (ArrayList<S
             if (method.identifier.value == "init") {
                 continue
             }
-            let names = ArrayList<String>()
-            for (parameter in method.funcParams) {
-                try {
-                    names.add(parameter.identifier.value)
-                } catch (_: ASTException) {
-                    ()
-                }
-            }
-            var isStatic = false
-            for (modifier in method.modifiers) {
-                if (modifier.keyword.value == "static") {
-                    isStatic = true
-                }
-            }
-            result.add(methodSignatureKey(method), (names, isStatic))
+            result.add(methodSignatureKey(method), childMemberParamEntry(method))
         }
     }
     result
+}
+
+/// The ordered parameter names of one member and whether it is `static`.
+private func childMemberParamEntry(method: FuncDecl): (ArrayList<String>, Bool) {
+    let names = ArrayList<String>()
+    for (parameter in method.funcParams) {
+        try {
+            names.add(parameter.identifier.value)
+        } catch (_: ASTException) {
+            ()
+        }
+    }
+    var isStatic = false
+    for (modifier in method.modifiers) {
+        if (modifier.keyword.value == "static") {
+            isStatic = true
+        }
+    }
+    (names, isStatic)
 }
 
 func resolveInherits(clause: TypeInheritsClause, owner: Decl, diagnostics: ArrayList<Diagnostic>,
@@ -469,7 +474,9 @@ func declaredSuper(ty: TypeNode, owner: Decl): Bool {
         // qualification to address the right cross-package `.cmeta` record, while the class
         // header only sees the imported simple name. Comparing the trailing simple names
         // keeps the guard meaningful without rejecting that spelling.
-        if (superSimpleName(ty) != "" && superSimpleName(ty) == superSimpleName(superType)) {
+        let tyName = superSimpleName(ty) // cjlint-ignore !G.VAR.02 both simple names are derived once per supertype and compared right below
+        let superName = superSimpleName(superType) // cjlint-ignore !G.VAR.02 both simple names are derived once per supertype and compared right below
+        if (tyName != "" && tyName == superName) {
             return true
         }
     }
@@ -526,34 +533,36 @@ public func declaredTypeName(owner: Decl): String {
  */
 public func declaredTypeParameters(owner: Decl): ArrayList<String> {
     let names = ArrayList<String>()
+    let parameters = match (genericParameterTokens(owner)) {
+        case Some(value) => value
+        case None => return names
+    }
+    for (token in parameters) {
+        if (token.kind == IDENTIFIER) {
+            names.add(token.value)
+        }
+    }
+    names
+}
+
+/// The generic parameter tokens of a generic class, struct or interface declaration.
+private func genericParameterTokens(owner: Decl): ?Tokens {
     match (owner) {
         case value: ClassDecl =>
             if (value.isGenericDecl) {
-                for (token in value.genericParam.parameters) {
-                    if (token.kind == IDENTIFIER) {
-                        names.add(token.value)
-                    }
-                }
+                return Some(value.genericParam.parameters)
             }
         case value: StructDecl =>
             if (value.isGenericDecl) {
-                for (token in value.genericParam.parameters) {
-                    if (token.kind == IDENTIFIER) {
-                        names.add(token.value)
-                    }
-                }
+                return Some(value.genericParam.parameters)
             }
         case value: InterfaceDecl =>
             if (value.isGenericDecl) {
-                for (token in value.genericParam.parameters) {
-                    if (token.kind == IDENTIFIER) {
-                        names.add(token.value)
-                    }
-                }
+                return Some(value.genericParam.parameters)
             }
         case _ => ()
     }
-    names
+    None
 }
 
 func formalTypeArguments(parameters: ArrayList<String>): ArrayList<TypeNode> {
@@ -663,16 +672,23 @@ func validateCrossOriginNames(resolved: ResolvedTypeContract,
     let reported = HashSet<String>()
     for (entry in resolved.clauses) {
         if (let TypeClause.Variable(variable) <- entry.clause) {
-            match (invariantOrigins.get(variable.name.name)) {
-                case Some(origin) =>
-                    if (origin != entry.origin.key() && reported.add(variable.name.name)) {
-                        diagnostics.add(
-                            Diagnostic("an invariant and a `variable` clause from different origins both use the name `${variable.name.name}`; rename one",
-                                "contract inheritance", variable.tokens))
-                    }
-                case None => ()
-            }
+            reportCrossOriginNameConflict(entry, variable, invariantOrigins, reported, diagnostics)
         }
+    }
+}
+
+/// Report a name shared by an invariant and a `variable` clause of different origins.
+private func reportCrossOriginNameConflict(entry: ResolvedTypeClause, variable: VariableClause,
+    invariantOrigins: HashMap<String, String>, reported: HashSet<String>,
+    diagnostics: ArrayList<Diagnostic>): Unit {
+    match (invariantOrigins.get(variable.name.name)) {
+        case Some(origin) =>
+            if (origin != entry.origin.key() && reported.add(variable.name.name)) {
+                diagnostics.add(
+                    Diagnostic("an invariant and a `variable` clause from different origins both use the name `${variable.name.name}`; rename one",
+                        "contract inheritance", variable.tokens))
+            }
+        case None => ()
     }
 }
 
@@ -777,7 +793,7 @@ func validateConformingInvariants(resolved: ResolvedTypeContract, ownerName: Str
         return
     }
     let inheritedVariables = HashSet<String>()
-    let ownVariables = HashSet<String>()
+    let ownVariables = HashSet<String>() // cjlint-ignore !G.VAR.02 the set is filled in the first clause loop and consumed by the second
     for (entry in resolved.clauses) {
         if (let TypeClause.Variable(variable) <- entry.clause) {
             if (entry.origin.declaringType == ownerName) {
@@ -795,19 +811,25 @@ func validateConformingInvariants(resolved: ResolvedTypeContract, ownerName: Str
             if (entry.origin.declaringType != ownerName) {
                 continue
             }
-            let reported = HashSet<String>()
-            let conditionTokens = invariant.condition.tokens
-            for (index in 0..conditionTokens.size) {
-                let token = conditionTokens[index]
-                if (token.kind == IDENTIFIER && inheritedVariables.contains(token.value) &&
-                    !ownVariables.contains(token.value) && !reported.contains(token.value) &&
-                    !precededByDot(conditionTokens, index)) {
-                    diagnostics.add(
-                        Diagnostic("a `[conforming]` invariant may only reference newly added abstract variables and member variables: `${token.value}`",
-                            "contract inheritance", Tokens(token)))
-                    reported.add(token.value)
-                }
-            }
+            reportConformingViolations(invariant.condition.tokens, inheritedVariables, ownVariables,
+                diagnostics)
+        }
+    }
+}
+
+/// Report every inherited-only variable a `[conforming]` invariant condition references.
+private func reportConformingViolations(conditionTokens: Tokens, inheritedVariables: HashSet<String>,
+    ownVariables: HashSet<String>, diagnostics: ArrayList<Diagnostic>): Unit {
+    let reported = HashSet<String>() // cjlint-ignore !G.VAR.02 the set deduplicates diagnostics across the whole token loop
+    for (index in 0..conditionTokens.size) {
+        let token = conditionTokens[index] // cjlint-ignore !G.VAR.02 the token is read by the condition and reused in the diagnostic text
+        if (token.kind == IDENTIFIER && inheritedVariables.contains(token.value) &&
+            !ownVariables.contains(token.value) && !reported.contains(token.value) &&
+            !precededByDot(conditionTokens, index)) {
+            diagnostics.add(
+                Diagnostic("a `[conforming]` invariant may only reference newly added abstract variables and member variables: `${token.value}`",
+                    "contract inheritance", Tokens(token)))
+            reported.add(token.value)
         }
     }
 }
@@ -848,17 +870,21 @@ internal class AttrNames {
     internal func conflictsWith(other: AttrNames): ArrayList<String> {
         let result = ArrayList<String>()
         for (entry in byKind) {
-            match (other.byKind.get(entry[0])) {
-                case Some(theirs) =>
-                    for (name in entry[1]) {
-                        if (theirs.contains(name)) {
-                            result.add(name)
-                        }
-                    }
-                case None => ()
+            if (let Some(theirs) <- other.byKind.get(entry[0])) {
+                appendConflictingNames(entry[1], theirs, result)
             }
         }
         result
+    }
+
+    /// Append the names present in both sets.
+    private func appendConflictingNames(mine: HashSet<String>, theirs: HashSet<String>,
+        result: ArrayList<String>): Unit {
+        for (name in mine) {
+            if (theirs.contains(name)) {
+                result.add(name)
+            }
+        }
     }
 }
 

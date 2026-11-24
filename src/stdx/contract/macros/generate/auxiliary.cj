@@ -35,10 +35,26 @@ func auxiliaryNames(contract: FunctionContract): HashSet<String> {
     names
 }
 
+/// Whether the function contract declares a function-level `variable` clause.
+func hasVariableClause(contract: FunctionContract): Bool {
+    for (clause in contract.clauses) {
+        if (let Variable(_) <- clause) {
+            return true
+        }
+    }
+    false
+}
+
 /// Marker key for function-typed auxiliary variables; `(` cannot occur in an identifier,
 /// so it never collides with a real variable name.
 func callableAuxKey(name: String): String {
     "()" + name
+}
+
+/// Marker key for boxed auxiliary holders; `[` cannot occur in an identifier, so it never
+/// collides with a real variable name.
+func boxedAuxKey(): String {
+    "[]"
 }
 
 func isFunctionType(tokens: Tokens): Bool {
@@ -86,14 +102,14 @@ func rewriteAuxAt(tokens: Tokens, index: Int64, names: HashSet<String>, output: 
         return index + 1
     }
     // Prefix increment/decrement: `++x` / `--x`.
-    if ((token.kind == INCR || token.kind == DECR) && isPrefixAuxUpdate(tokens, index, names)) {
+    if ((token.kind == INCR || token.kind == DECR) && isPrefixAuxUpdate(tokens, index, names)) { // cjlint-ignore !G.EXP.03 right operand is a pure predicate; short-circuit keeps per-token work minimal
         if (!isStatementPosition(tokens, index)) {
             reportUpdateInValuePosition(token, tokens[index + 1].value, true)
         }
-        emitAuxUpdate(output, tokens[index + 1].value, token.kind == INCR)
+        emitAuxUpdate(output, tokens[index + 1].value, token.kind == INCR, names)
         return index + 2
     }
-    if (isAuxIdentifier(token, names) && isAuxReadPosition(tokens, index, names)) {
+    if (isAuxIdentifier(token, names) && isAuxReadPosition(tokens, index, names)) { // cjlint-ignore !G.EXP.03 right operand is a pure predicate; short-circuit keeps per-token work minimal
         return rewriteAuxReference(tokens, index, names, output)
     }
     output.append(token)
@@ -102,18 +118,35 @@ func rewriteAuxAt(tokens: Tokens, index: Int64, names: HashSet<String>, output: 
 
 /// Whether `++`/`--` at `index` prefixes an auxiliary variable reference.
 func isPrefixAuxUpdate(tokens: Tokens, index: Int64, names: HashSet<String>): Bool {
-    index + 1 < tokens.size && isAuxIdentifier(tokens[index + 1], names) &&
-        !precededByDot(tokens, index + 1) &&
-        !isCallOrLabelPosition(tokens, index + 1, callable: names.contains(callableAuxKey(tokens[index + 1].value)))
+    if (index + 1 >= tokens.size) {
+        return false
+    }
+    if (!isAuxIdentifier(tokens[index + 1], names)) {
+        return false
+    }
+    if (precededByDot(tokens, index + 1)) {
+        return false
+    }
+    !isCallOrLabelPosition(tokens, index + 1, callable: names.contains(callableAuxKey(tokens[index + 1].value)))
 }
 
 /// Whether the auxiliary identifier at `index` is a value read rather than a declaration,
 /// member access or call/label position.
 func isAuxReadPosition(tokens: Tokens, index: Int64, names: HashSet<String>): Bool {
-    !precededByDot(tokens, index) &&
-        (!precededByColon(tokens, index) || followsNamedArgumentLabel(tokens, index)) &&
-        !precededByDeclKeyword(tokens, index) &&
-        !isCallOrLabelPosition(tokens, index, callable: names.contains(callableAuxKey(tokens[index].value)))
+    if (precededByDot(tokens, index)) {
+        return false
+    }
+    // A colon before the token usually introduces a type annotation or a named-argument
+    // label; only the label's value (`f(label: v)`) is a real read.
+    let afterColon = precededByColon(tokens, index)
+    let namedArgumentValue = followsNamedArgumentLabel(tokens, index)
+    if (afterColon && !namedArgumentValue) {
+        return false
+    }
+    if (precededByDeclKeyword(tokens, index)) {
+        return false
+    }
+    !isCallOrLabelPosition(tokens, index, callable: names.contains(callableAuxKey(tokens[index].value)))
 }
 
 /// Rewrite one auxiliary variable reference (assignment, compound update, increment or
@@ -123,26 +156,26 @@ func rewriteAuxReference(tokens: Tokens, index: Int64, names: HashSet<String>, o
     let next = if (index + 1 < tokens.size) { tokens[index + 1].kind } else { ILLEGAL }
     if (next == ASSIGN) {
         let (rhs, after) = statementExpression(tokens, index + 2)
-        output.append(quote($(auxStorageToken(token.value)) = Some($(rewriteAux(rhs, names)))))
+        output.append(quote($(auxStorageRef(token.value, names)) = Some($(rewriteAux(rhs, names)))))
         return after
     }
     if (isCompoundAssign(next)) {
         let (rhs, after) = statementExpression(tokens, index + 2)
-        let read = auxRead(token.value)
+        let read = auxRead(token.value, names)
         let op = Token(compoundOperator(next))
         output.append(
-            quote($(auxStorageToken(token.value)) = Some($(read) $(op) ($(rewriteAux(rhs, names))))))
+            quote($(auxStorageRef(token.value, names)) = Some($(read) $(op) ($(rewriteAux(rhs, names))))))
         return after
     }
     if (next == INCR || next == DECR) {
         if (!isStatementPosition(tokens, index)) {
             reportUpdateInValuePosition(tokens[index + 1], token.value, false)
         }
-        emitAuxUpdate(output, token.value, next == INCR)
+        emitAuxUpdate(output, token.value, next == INCR, names)
         return index + 2
     }
     // A plain read.
-    output.append(auxRead(token.value))
+    output.append(auxRead(token.value, names))
     index + 1
 }
 
@@ -188,14 +221,24 @@ func auxStorageToken(name: String): Token {
     Token(IDENTIFIER, auxiliaryStorage(name))
 }
 
-func auxRead(name: String): Tokens {
-    quote(contractGhostGet($(auxStorageToken(name)), $(name)))
+/// Token stream addressing the auxiliary slot. A plain holder is the slot itself; a boxed
+/// holder (a `mut` method's body runs in a hoisted member helper, which receives the holder
+/// as a parameter) is the single element of its one-element array.
+func auxStorageRef(name: String, names: HashSet<String>): Tokens {
+    if (names.contains(boxedAuxKey())) {
+        return quote($(auxStorageToken(name))[0])
+    }
+    quote($(auxStorageToken(name)))
 }
 
-func emitAuxUpdate(output: Tokens, name: String, increment: Bool): Unit {
-    let read = auxRead(name)
+func auxRead(name: String, names: HashSet<String>): Tokens {
+    quote(contractGhostGet($(auxStorageRef(name, names)), $(name)))
+}
+
+func emitAuxUpdate(output: Tokens, name: String, increment: Bool, names: HashSet<String>): Unit {
+    let read = auxRead(name, names)
     let op = if (increment) { Token(ADD) } else { Token(SUB) }
-    output.append(quote($(auxStorageToken(name)) = Some($(read) $(op) 1)))
+    output.append(quote($(auxStorageRef(name, names)) = Some($(read) $(op) 1)))
 }
 
 /// True when `x++` / `++x` at `index` stands alone as a statement (after a separator,
@@ -215,8 +258,11 @@ func isStatementPosition(tokens: Tokens, index: Int64): Bool {
         afterSeparator = true
         cursor -= 1
     }
-    if (cursor < 0 || afterSeparator) {
-        return cursor < 0 || !continuesExpression(tokens[cursor].kind)
+    if (cursor < 0) {
+        return true
+    }
+    if (afterSeparator) {
+        return !continuesExpression(tokens[cursor].kind)
     }
     let kind = tokens[cursor].kind
     return kind == LCURL || kind == RCURL

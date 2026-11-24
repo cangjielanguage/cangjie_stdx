@@ -114,11 +114,7 @@ public func disableContractChecks(): Unit
 public func _contract_gateEnabled(): Bool
 ```
 
-功能：每个契约检查点的门函数，检查生效（见 [contractCheckEnabled](#func-contractcheckenabled)）且当前线程不处于契约表达式求值过程中时返回 `true`。内部 API，仅供宏展开产物使用；受编译期 `contract_check` 控制。用户不应直接调用。
-
-> **说明：**
->
-> 该函数为内部 API，仅供宏展开产物使用；宏展开生成的检查点只调用该函数，用户定义的同名函数不会与宏识别冲突。
+功能：每个契约检查点的门函数，检查生效（见 [contractCheckEnabled](#func-contractcheckenabled)）且当前线程不处于契约表达式求值过程中时返回 `true`。内部 API，仅供宏展开产物使用，受编译期 `contract_check` 控制，用户不应直接调用；宏展开生成的检查点只调用该函数，用户定义的同名函数不会与宏识别冲突。
 
 返回值：
 

@@ -26,7 +26,7 @@ internal func splitContractClauses(tokens: Tokens, grammar!: ClauseGrammar = Cla
 
     for (i in 0..tokens.size) {
         let kind = tokens[i].kind
-        if (depth == 0 && (kind == SEMI || (lineStart && startsClause(grammar, tokens[i])))) {
+        if (depth == 0 && (kind == SEMI || (lineStart && startsClause(grammar, tokens[i])))) { // cjlint-ignore !G.EXP.03 startsClause is a pure predicate; short-circuit keeps per-token work minimal
             let clause = trimSeparators(tokens[start..i])
             if (clause.size > 0) {
                 clauses.add(clause)
@@ -49,7 +49,7 @@ internal func splitContractClauses(tokens: Tokens, grammar!: ClauseGrammar = Cla
 
 func startsClause(grammar: ClauseGrammar, token: Token): Bool {
     match (grammar) {
-        case ClauseGrammar.Callable => token.kind == IDENTIFIER && isClauseKeyword(token)
+        case ClauseGrammar.Callable => isClauseKeyword(token)
         case ClauseGrammar.Property => token.kind == IDENTIFIER && (isValue(token, "get") || isValue(token, "set"))
         case ClauseGrammar.TypeLevel =>
             isElem(token, ["invariant", "variable", "inherits", "static", "on_public", "on_protected", "on_private"])

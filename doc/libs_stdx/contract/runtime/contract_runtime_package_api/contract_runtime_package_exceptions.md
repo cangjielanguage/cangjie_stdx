@@ -1,6 +1,6 @@
 # 异常类
 
-## abstract class ContractCheckException
+## class ContractCheckException
 
 ```cangjie
 public abstract class ContractCheckException <: Exception {
@@ -9,9 +9,9 @@ public abstract class ContractCheckException <: Exception {
 }
 ```
 
-功能：所有契约检查异常的公共基类。抽象类仅阻止直接实例化，不阻止子类化伪造；可通过 [isContractException](./contract_runtime_package_funcs.md#func-iscontractexception) 判断某个异常是否为契约异常，也可在 `try/catch` 中以该类型统一捕获全部契约失败。
+功能：所有契约检查异常的公共基类。可通过 [isContractException](./contract_runtime_package_funcs.md#func-iscontractexceptionexception) 判断某个异常是否为契约异常，也可在 `try/catch` 中以该类型统一捕获全部契约失败。
 
-> **说明：** 契约异常不受业务异常 `throws` 校验约束。契约不是安全边界：抽象基类仅阻止直接实例化，不阻止子类化伪造——本类可被继承，且本类与全部子类的构造函数均为 `public`，任何代码都可以构造这些异常（或其派生类型）使宏展开产物中的 `throws` 校验按契约失败处理，本库不防御这种主动绕过。
+契约异常不受业务异常 `throws` 校验约束。契约不是安全边界：抽象基类仅阻止直接实例化，不阻止子类化伪造——本类可被继承，且本类与全部子类的构造函数均为 `public`，任何代码都可以构造这些异常（或其派生类型）使宏展开产物中的 `throws` 校验按契约失败处理，本库不防御这种主动绕过。
 
 ### init()
 

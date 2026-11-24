@@ -16,7 +16,7 @@ import stdx.contract.macros.validation.astGetOrDefault
 import stdx.contract.macros.validation.validateVariableMemberNames
 import stdx.contract.runtime.ContractVisibility
 import std.ast.{ASTException, Body, ClassDecl, Decl, DiagReportLevel, FuncDecl, Modifier, PrimaryCtorDecl, PropDecl, StructDecl, Token, Tokens, TypeNode, VarDecl, diagReport}
-import std.collection.{ArrayList, HashSet, contains, forEach, isEmpty}
+import std.collection.{ArrayList, HashSet, contains, isEmpty}
 
 /**
  * @brief Expands a class type contract into the rewritten declaration tokens.
@@ -36,7 +36,9 @@ public func genClassContract(contract: TypeContract, owner: ClassDecl): Tokens {
     let generated = ClassDecl(owner.toTokens())
     absorbDeferredMemberContracts(resolved, generated.body, owner, diagnostics)
     if (!diagnostics.isEmpty()) {
-        diagnostics.forEach {diagnostic => diagnostic.show()}
+        for (diagnostic in diagnostics) {
+            diagnostic.show()
+        }
         return owner.toTokens()
     }
     registerMetaData(
@@ -70,7 +72,9 @@ public func genStructContract(contract: TypeContract, owner: StructDecl): Tokens
     let generated = StructDecl(owner.toTokens())
     absorbDeferredMemberContracts(resolved, generated.body, owner, diagnostics)
     if (!diagnostics.isEmpty()) {
-        diagnostics.forEach {diagnostic => diagnostic.show()}
+        for (diagnostic in diagnostics) {
+            diagnostic.show()
+        }
         return owner.toTokens()
     }
     registerMetaData(
@@ -281,7 +285,8 @@ func processTypeMethod(method: FuncDecl, ctx: TypeBodyContext, members: ArrayLis
         // Only instance constructors (and primary constructors) of non-open
         // classes are invariant checkpoints; `static init` is not in the spec's
         // checkpoint list, so no invariant check is injected there.
-        if (!(ctx.isClass && ctx.isOpen) && !methodHasModifier(method, "static")) {
+        let isStaticMethod = methodHasModifier(method, "static")
+        if (!(ctx.isClass && ctx.isOpen) && !isStaticMethod) {
             // Constructors are not filtered by their own visibility: every invariant
             // applies at the constructor exit (spec §3.2.4), and the body can read
             // private/protected members regardless of the constructor's modifier.
@@ -292,7 +297,8 @@ func processTypeMethod(method: FuncDecl, ctx: TypeBodyContext, members: ArrayLis
         members.add(method)
         return
     }
-    if (skipMethod(method, ctx.declared) || !isConcreteMethod(method)) {
+    let concreteMethod = isConcreteMethod(method)
+    if (skipMethod(method, ctx.declared) || !concreteMethod) {
         // Contracts are rejected on `const` functions (they execute at compile
         // time); report instead of silently dropping them.
         reportConstContract(method, ctx)
@@ -303,7 +309,10 @@ func processTypeMethod(method: FuncDecl, ctx: TypeBodyContext, members: ArrayLis
 }
 
 func reportConstContract(method: FuncDecl, ctx: TypeBodyContext): Unit {
-    if (!method.isConst() || skipMethod(method, ctx.declared)) {
+    if (!method.isConst()) {
+        return
+    }
+    if (skipMethod(method, ctx.declared)) {
         return
     }
     match (ctx.contract.memberAttrs.get(methodSignatureKey(method))) {
@@ -325,7 +334,9 @@ func processConcreteTypeMethod(method: FuncDecl, ctx: TypeBodyContext, members: 
     var functionContract = FunctionContract(Tokens())
     if (attr.size > 0) {
         let parsed = parseFunctionContract(attr)
-        parsed.diagnostics.forEach {diagnostic => diagnostic.show()}
+        for (diagnostic in parsed.diagnostics) {
+            diagnostic.show()
+        }
         if (parsed.hasError()) {
             members.add(method)
             return
@@ -397,7 +408,9 @@ func processInvariantOnlyProperty(property: PropDecl, ctx: TypeBodyContext, memb
 func processContractProperty(property: PropDecl, attr: Tokens, checks: Tokens, ctx: TypeBodyContext,
     members: ArrayList<Decl>): Unit {
     let parsed = parsePropertyContract(attr, setterAlias: setterParameterName(property))
-    parsed.diagnostics.forEach {diagnostic => diagnostic.show()}
+    for (diagnostic in parsed.diagnostics) {
+        diagnostic.show()
+    }
     if (parsed.hasError()) {
         members.add(property)
         return
@@ -414,7 +427,9 @@ func processContractProperty(property: PropDecl, attr: Tokens, checks: Tokens, c
     }
     // The setter wrapper is skipped for non-`mut` properties, so only a
     // `mut` accessor needs its body checked.
-    if (!propertyAccessorsHaveBodies(property, needGetter, needSetter && modifiersHave(property.modifiers, "mut"))) {
+    let isMutProperty = modifiersHave(property.modifiers, "mut")
+    let accessorsHaveBodies = propertyAccessorsHaveBodies(property, needGetter, needSetter && isMutProperty)
+    if (!accessorsHaveBodies) {
         diagReport(DiagReportLevel.ERROR, attr,
             "`@Contract` requires accessor bodies; an abstract property has no accessor to host its contract checks",
             "Contract")
@@ -509,8 +524,9 @@ func appendMemberConditionCheckers(checkers: ArrayList<Decl>, base: String, meth
                 }
                 ordinal += 1
             case FunctionClause.Ensures(c) =>
-                if (memberConditionIsMaterializable(c.condition.tokens, variableNames) &&
-                    (c.ret.isNone() || funcDeclReturnType(method).isSome())) {
+                let materializable = memberConditionIsMaterializable(c.condition.tokens, variableNames)
+                let hasReturnType = funcDeclReturnType(method).isSome()
+                if (materializable && (c.ret.isNone() || hasReturnType)) {
                     checkers.add(genMemberConditionChecker(base + ordinal.toString(), method,
                         c.condition.tokens, c.ret))
                 }
@@ -676,7 +692,8 @@ func propertyAccessorsHaveBodies(property: PropDecl, needGetter: Bool, needSette
 }
 
 func hasOpenOrAbstract(modifiers: ArrayList<Modifier>): Bool {
-    modifiersHave(modifiers, "open") || modifiersHave(modifiers, "abstract")
+    let isAbstract = modifiersHave(modifiers, "abstract")
+    modifiersHave(modifiers, "open") || isAbstract
 }
 
 /// Names occupying the member namespace of a type: declared functions, properties
@@ -730,15 +747,7 @@ func collectDeclaredMemberNames(body: Body): HashSet<String> {
 internal func validateEnsuresReturnNames(contract: FunctionContract, memberNames: HashSet<String>,
     subject: String): Unit {
     for (clause in contract.clauses) {
-        if (let Ensures(c) <- clause) {
-            if (let Some(ret) <- c.ret) {
-                if (memberNames.contains(ret.name)) {
-                    diagReport(DiagReportLevel.ERROR, ret.tokens,
-                        "`ensures` return name `" + ret.name + "` on `" + subject +
-                        "` collides with a member of the enclosing type", "Contract")
-                }
-            }
-        }
+        reportEnsuresReturnNameCollision(clause, memberNames, subject)
     }
 }
 

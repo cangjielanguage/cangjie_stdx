@@ -18,18 +18,20 @@ contract 包由两个子包组成：
 | 异常契约 | 函数、属性 | `throws` | 声明在满足条件时必须抛出的异常类型。 |
 | 类型不变式 | class、struct、interface | `invariant` | 类型实例在其公开接口被调用前后必须保持的条件。 |
 | 抽象状态 | class、struct、interface、函数契约 | `variable` | 为类型（尤其是接口）声明可供契约引用的抽象状态；也可在函数契约中声明供其他子句引用的函数级辅助变量。 |
-| 契约继承 | class、struct、interface | `inherits from` / `inherits <种类> <父类型>.<名称>` | 默认不继承父契约；`inherits from` 复用父类型声明的全部契约，并可附加 `[conforming]` 强制实现符合契约；`inherits requires/ensures/throws/variable/invariant` 选择性地继承单个命名契约（可重命名）。类级 `variable` 总是自动继承。同包（同一编译单元）内的父类型可直接引用；跨包契约继承需要环境变量约定（见下文「跨包契约继承」）。 |
+| 契约继承 | class、struct、interface | `inherits from` / `inherits <种类> <父类型>.<名称>` | 默认不继承父契约；`inherits from` 复用父类型声明的全部契约，`inherits requires/ensures/throws/variable/invariant` 选择性继承单个命名契约（可重命名）；类级 `variable` 总是自动继承。跨包场景见下文「跨包契约继承」。 |
 | 函数体断言 | 函数体 | `@contractAssert` | 在函数体内部任意位置检查的断言。 |
-| 循环不变式 | 函数体 | `@loopInvariant` | 在循环的检查点必须成立的条件：`while` 在每次迭代开始时及循环退出后、`for-in` 在每次迭代开始时、`do-while` 在循环体执行后条件求值前检查。 |
+| 循环不变式 | 函数体 | `@loopInvariant` | 在循环的检查点必须成立的条件。 |
 | 幽灵代码 | 函数体 | `@ghost` | 仅用于维护抽象状态、不参与业务逻辑的辅助代码。 |
 
-> extend 类型上的 @Contract 仅用于承载成员级契约：其成员函数/属性可标注 @Contract 声明 `requires`/`ensures`/`throws` 等成员级子句（成员也可用 `inherits` 选择性继承成员契约）；extend 自身不支持任何类型级子句（`variable`、`invariant`、`inherits`），`@Contract` 的子句列表必须为空，否则宏展开报编译错误。
+extend 类型上的 @Contract 仅用于承载成员级契约：其成员函数/属性可标注 @Contract 声明 `requires`/`ensures`/`throws` 等成员级子句（成员也可用 `inherits` 选择性继承成员契约）；extend 自身不支持任何类型级子句（`variable`、`invariant`、`inherits`），`@Contract` 的子句列表必须为空，否则宏展开报编译错误。
 
-> 直接在类型成员上标注 `@Contract`（外层类型未声明类型级 `@Contract`）时，宏展开只能看到该成员自身，无法感知外层类型的成员列表：函数级 `variable` 声明的名称若与外层类型的成员同名，实现体内的裸名读取会按函数级辅助变量求值（类型级路径对同一情形会直接报编译 ERROR）。请避免这种同名，或将契约声明在外层类型的 `@Contract` 上。
+直接在类型成员上标注 `@Contract`（外层类型未声明类型级 `@Contract`）时，宏展开只能看到该成员自身，无法感知外层类型的成员列表：函数级 `variable` 声明的名称若与外层类型的成员同名，实现体内的裸名读取会按函数级辅助变量求值（类型级路径对同一情形会直接报编译 ERROR）。请避免这种同名，或将契约声明在外层类型的 `@Contract` 上。
 
-> 宏在 token 层面分析 `match` 的 `case` 模式，用于识别会被契约改写波及的绑定名：`case Red =>` 这类无载荷枚举构造器与同名绑定在 token 层无法区分，会被按绑定名收集（宁可过报）。因此契约子句声明的辅助变量若与某个 `case` 构造器同名，该构造器名也会被改写。请避免同名，或为构造器路径加限定（如 `Color.Red`）。
+宏在 token 层面分析 `match` 的 `case` 模式，用于识别会被契约改写波及的绑定名：`case Red =>` 这类无载荷枚举构造器与同名绑定在 token 层无法区分，会被按绑定名收集（宁可过报）。因此契约子句声明的辅助变量若与某个 `case` 构造器同名，该构造器名也会被改写。请避免同名，或为构造器路径加限定（如 `Color.Red`）。
 
-> 上述子句的完整文法（如 `[名称]` 命名、`ensures r:` 返回值绑定、`$pre(...)` 入口快照引用、主构造函数上的契约等）见 [stdx.contract.macros](./contract_package_api/contract_package_macros.md) 中 `@Contract` 宏的说明。
+上述子句的完整文法（如 `[名称]` 命名、`ensures r:` 返回值绑定、`$pre(...)` 入口快照引用、主构造函数上的契约等）见 [stdx.contract.macros](./contract_package_api/contract_package_macros.md) 中 `@Contract` 宏的说明。
+
+`@ghost`、`@contractAssert`、`@loopInvariant` 均不要求宿主函数标注 `@Contract`：未标注时宏同样展开，执行仅受 `contract_check` 开关门控（检查开启时执行）。
 
 ### 启用与关闭
 
@@ -37,9 +39,9 @@ contract 包由两个子包组成：
 
 **编译期**：由条件编译变量 `contract_check` 控制，默认开启。开关的取值在**编译 `stdx.contract.runtime` 包时**固化。`cfg.toml` 的读取位置与编译模式相关：**包模式**（`cjc -p <包目录>` 或 cjpm 构建）读取**包源码目录**下的 `cfg.toml`（`stdx.contract.runtime` 包内自带 `cfg.toml`，声明的默认值为 `contract_check = "on"`），不读取进程工作目录下的 `cfg.toml`；**单文件模式**（直接编译单个 `.cj` 文件）才读取进程工作目录下的 `cfg.toml`。`--cfg` 命令行选项优先级最高，可覆盖 `cfg.toml` 的取值。使用 CMake 构建本库时，构建脚本显式传入 `--cfg "contract_check=on"`，该选项会覆盖包内 `cfg.toml`——因此修改包内 `cfg.toml` 不会改变 CMake 构建产物的开关；若包源码目录下没有 `cfg.toml` 且未通过命令行或 `cjpm.toml` 的 `compile-option` 显式传入，使用 `contract_check` 条件编译的代码将直接报编译错误。消费预编译 stdx 制品的应用无需任何操作。若要自行编译出不含任何契约检查的 runtime 制品，可在 runtime 源码目录之外执行 `cjc -p <runtime源码目录> --cfg "contract_check=off" --output-type=dylib`（在应用侧编译时附加该选项不会改变预编译运行时中已固化的开关）；off 版制品中所有检查点的开销为编译期常量判断，契约子句不会被求值。
 
-**运行期**：编译期开启的制品支持一次性降级——在进程内任意位置调用 [disableContractChecks](./runtime/contract_runtime_package_api/contract_runtime_package_funcs.md#func-disablecontractchecks) 后，本进程内后续所有检查点直接跳过。降级是**单向**的：库不提供重新开启检查的 API，因此进程内行为单调弱化（要么全程检查、要么只检查到降级点），同一次调用不会因开关状态不同而时抛异常时不抛异常。该函数线程安全且幂等；在 off 版制品中它是空操作。除此之外，库提供只读查询 [contractCheckEnabled](./runtime/contract_runtime_package_api/contract_runtime_package_funcs.md#func-contractcheckenabled)（仅供宏展开产物使用，返回当前检查是否生效）；开关基态仅由编译期 `contract_check` 决定，运行期除上述单向降级外不提供重新开启检查的 API。
+**运行期**：编译期开启的制品支持一次性降级——在进程内任意位置调用 [disableContractChecks](./runtime/contract_runtime_package_api/contract_runtime_package_funcs.md#func-disablecontractchecks) 后，本进程内后续所有检查点直接跳过。降级单向、线程安全且幂等，库不提供重新开启检查的 API；在 off 版制品中该函数为空操作。除此之外，库提供只读查询 [contractCheckEnabled](./runtime/contract_runtime_package_api/contract_runtime_package_funcs.md#func-contractcheckenabled)（仅供宏展开产物使用，返回当前检查是否生效）；开关基态仅由编译期 `contract_check` 决定。
 
-检查开启时，每个契约子句在其检查点求值一次；类型不变式（`invariant`）会在该类型的成员被调用前后各求值一次，未写选择器时默认对 internal 及更宽的成员（公开、受保护与包级内部成员）检查，可用 `on_public`/`on_protected`/`on_private` 选择器收窄，且每次契约求值伴随一次线程内求值状态的进入/退出标记。契约表达式应保持轻量，避免把使用本库的类型部署在性能敏感的热路径上。
+检查开启时，每个契约子句在其检查点求值一次；类型不变式（`invariant`）会在该类型的成员被调用前后各求值一次，可用 `on_public`/`on_protected`/`on_private` 选择器限定检查范围，且每次契约求值伴随一次线程内求值状态的进入/退出标记。契约表达式应保持轻量，避免把使用本库的类型部署在性能敏感的热路径上。
 
 ### `@ghost` 的使用限制
 
@@ -78,63 +80,11 @@ contract 包由两个子包组成：
 
 ### 契约失败
 
-契约检查失败时，会抛出对应的契约异常。其中 `requires`/`ensures`/`throws` 的异常信息包含失败函数名及原始契约子句，`invariant` 的异常信息包含类型名及子句，而 `@contractAssert` 与 `@loopInvariant` 的异常信息仅包含对应的断言/不变式表达式。契约表达式求值过程中抛出的非契约异常（业务异常）不会被包装，按原类型向调用方传播。契约异常统一位于 [stdx.contract.runtime](./runtime/contract_runtime_package_api/contract_runtime_package_exceptions.md) 子包中，且可以通过 [isContractException](./runtime/contract_runtime_package_api/contract_runtime_package_funcs.md#func-iscontractexception) 判断某个异常是否为契约异常。
+契约检查失败时，会抛出对应的契约异常。其中 `requires`/`ensures`/`throws` 的异常信息包含失败函数名及原始契约子句，`invariant` 的异常信息包含类型名及子句，而 `@contractAssert` 与 `@loopInvariant` 的异常信息仅包含对应的断言/不变式表达式。契约表达式求值过程中抛出的非契约异常（业务异常）不会被包装，按原类型向调用方传播。契约异常统一由 [stdx.contract.runtime 的异常类](./runtime/contract_runtime_package_api/contract_runtime_package_exceptions.md) 提供，且可以通过 [isContractException](./runtime/contract_runtime_package_api/contract_runtime_package_funcs.md#func-iscontractexceptionexception) 判断某个异常是否为契约异常。
 
 ### 示例
 
-下面的示例为银行账户的取款方法声明了前置条件、后置条件和异常契约：
-
-<!-- verify -->
-```cangjie
-import stdx.contract.macros.*
-
-class BankAccount {
-    private var balance: Float64
-
-    init(balance: Float64) {
-        this.balance = balance
-    }
-
-    @Contract[
-        requires amount > 0.0
-        requires amount <= this.balance
-        ensures this.balance == $pre(this.balance) - amount
-        throws IllegalArgumentException if amount <= 0.0
-    ]
-    public func withdraw(amount: Float64): Unit {
-        if (amount <= 0.0) {
-            throw IllegalArgumentException("amount must be positive")
-        }
-        this.balance -= amount
-    }
-
-    public func getBalance(): Float64 {
-        this.balance
-    }
-}
-
-main() {
-    let account = BankAccount(100.0)
-    account.withdraw(30.0)
-    println(account.getBalance())
-    try {
-        account.withdraw(200.0)
-    } catch (e: ContractCheckRequiresException) {
-        println(e.message)
-    }
-}
-```
-
-运行结果：
-
-```text
-70.000000
-requires failed in withdraw: requires amount <= this.balance
-```
-
-> **说明：**
->
-> 上述运行结果以编译期开启契约检查为前提（默认开启）；以 `--cfg "contract_check=off"` 重新构建 `stdx.contract.runtime` 关闭检查后，契约子句不会求值，示例不会抛出异常。
+函数契约、属性契约、类型契约与契约继承的完整示例，参见 [stdx.contract.macros](./contract_package_api/contract_package_macros.md) 中 `@Contract` 宏的示例。
 
 ## API 列表
 

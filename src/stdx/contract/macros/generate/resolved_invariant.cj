@@ -65,7 +65,7 @@ func declaredInvariantMethods(body: Body): HashSet<String> {
     let names = HashSet<String>()
     for (member in body.decls) {
         if (let method: FuncDecl <- member) {
-            let name = method.identifier.value
+            let name = method.identifier.value // cjlint-ignore !G.VAR.02 the identifier is matched twice below; a single local avoids re-reading the property
             if (name == "_contract_invariant" || name == "_contract_static_invariant") {
                 names.add(name)
             }
@@ -116,7 +116,7 @@ func genInvariantMethods(invariants: ArrayList<ResolvedInvariant>, typeName: Str
     } else {
         quote(private)
     }
-    let openModifier = if (isClass && isOpen) {
+    let openModifier = if (isClass && isOpen) { // cjlint-ignore !G.VAR.02 the modifier is captured by the generated declaration below
         quote(open)
     } else {
         Tokens()

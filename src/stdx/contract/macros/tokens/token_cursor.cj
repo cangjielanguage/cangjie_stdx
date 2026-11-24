@@ -129,7 +129,7 @@ public class TokenCursor {
      * position is then left unchanged.
      */
     public func consumeKinds(kinds: Array<TokenKind>): ?ArrayList<Token> {
-        let start = pos
+        let start = pos // cjlint-ignore !G.VAR.02 the entry position must survive the loop so a failed match can roll back
         let consumed = ArrayList<Token>()
         for (kind in kinds) {
             if (matches(kind)) {

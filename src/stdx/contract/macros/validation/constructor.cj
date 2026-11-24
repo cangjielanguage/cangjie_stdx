@@ -10,7 +10,7 @@ package stdx.contract.macros.validation
 
 import stdx.contract.macros.syntax.{Diagnostic, FunctionContract}
 import std.ast.{PrimaryCtorDecl, Tokens}
-import std.collection.{ArrayList, forEach, isEmpty}
+import std.collection.{ArrayList, isEmpty}
 
 /**
  * @brief Validate a constructor contract against its primary constructor declaration.
@@ -35,7 +35,9 @@ public func validateConstructorContract(contract: FunctionContract, owner: Prima
 
     collectContractNames(contract.clauses, diagnostics)
     validateVariableNames(contract.clauses, parameters, blockTokensOrEmpty({=> owner.block}), diagnostics)
-    diagnostics.forEach {diagnostic => diagnostic.show()}
+    for (diagnostic in diagnostics) {
+        diagnostic.show()
+    }
     diagnostics.isEmpty()
 }
 
@@ -59,6 +61,8 @@ public func reportConstructorEnsuresReturn(contract: FunctionContract): Bool {
                     "Contract", ret.tokens))
         }
     }
-    diagnostics.forEach {diagnostic => diagnostic.show()}
+    for (diagnostic in diagnostics) {
+        diagnostic.show()
+    }
     diagnostics.isEmpty()
 }

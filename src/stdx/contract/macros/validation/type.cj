@@ -11,7 +11,7 @@ package stdx.contract.macros.validation
 import stdx.contract.macros.syntax.{Diagnostic, TypeClause, TypeContract, TypeSyntax, VariableClause}
 import stdx.contract.macros.tokens.{destructuringGroupSpans, isValue, lambdaAndCaseBindingSpans, precededByDot, skipSeparators}
 import std.ast.{ASTException, Body, ClassDecl, Decl, DiagReportLevel, ExtendDecl, FuncDecl, FuncParam, InterfaceDecl, Modifier, PrimaryCtorDecl, PropDecl, StructDecl, Token, TokenKind, Tokens, VarDecl, VarPattern, diagReport}
-import std.collection.{ArrayList, HashMap, HashSet, contains, forEach, isEmpty}
+import std.collection.{ArrayList, HashMap, HashSet, contains, isEmpty}
 
 /**
  * @brief Validate a type-level contract and report violations as diagnostics.
@@ -63,7 +63,9 @@ public func validateTypeContract(contract: TypeContract, owner: Decl): Bool {
     validateMemberAuxiliaryAccess(owner, context, diagnostics)
     // Report variables whose initialization obligation no constructor fulfils.
     reportUnassignedAuxiliaryVariables(owner, context)
-    diagnostics.forEach {diagnostic => diagnostic.show()}
+    for (diagnostic in diagnostics) {
+        diagnostic.show()
+    }
     diagnostics.isEmpty()
 }
 
@@ -340,9 +342,10 @@ func validateGhostToken(tokens: Tokens, index: Int64, close: Int64, state: Ghost
         return
     }
     let local = isShadowedAt(state.localSpans, index, token.value) || state.outerShadow.contains(token.value)
+    let followingKind = nextKind(tokens, index, close)
     if (state.scopeVariables.contains(token.value) && !state.available.contains(token.value) && !local &&
         !precededByDot(tokens, index) && !followedByCallOrLabel(tokens, index) &&
-        nextKind(tokens, index, close) != ASSIGN && state.reportedReads.add(token.value)) {
+        followingKind != ASSIGN && state.reportedReads.add(token.value)) {
         diagnostics.add(
             Diagnostic("auxiliary variable `${token.value}` is read in `@ghost` before it is initialized",
                 "type contract", Tokens(token)))
@@ -353,7 +356,7 @@ func validateGhostToken(tokens: Tokens, index: Int64, close: Int64, state: Ghost
                 "type contract", Tokens(token)))
     }
     if (state.scopeVariables.contains(token.value) && !local && !precededByDot(tokens, index) &&
-        nextKind(tokens, index, close) == ASSIGN) {
+        followingKind == ASSIGN) {
         state.available.add(token.value)
     }
 }
@@ -516,7 +519,7 @@ func markAssignmentsInRange(tokens: Tokens, begin: Int64, range: (Int64, Int64),
         } else if (depth == 0 && !topLevelReturned && token.kind == IDENTIFIER &&
             pending.contains(token.value) && !assigned.contains(token.value) &&
             !local.contains(token.value) && !precededByDot(tokens, index) &&
-            nextKind(tokens, index, close) == ASSIGN && assigned.add(token.value)) {
+            nextKind(tokens, index, close) == ASSIGN && assigned.add(token.value)) { // cjlint-ignore !G.EXP.03 nextKind is a pure lookahead; short-circuit keeps per-token work minimal
             ()
         }
         index += 1
@@ -545,7 +548,7 @@ func reportStaticContextReads(tokens: Tokens, validation: TypeValidationContext,
                 Diagnostic("instance auxiliary variable `${token.value}` cannot be accessed from ${label}",
                     "type contract", Tokens(token)))
         } else if (token.kind == IDENTIFIER && !shadowed.contains(token.value) && !skipNames.contains(token.value) &&
-            !precededByDot(tokens, index) && !followedByLabelColon(tokens, index) &&
+            !precededByDot(tokens, index) && !followedByLabelColon(tokens, index) && // cjlint-ignore !G.EXP.03 pure lookahead; short-circuit keeps per-token work minimal
             instanceMembers.contains(token.value) && reported.add(token.value)) {
             // A call position (`name(...)`) is reported too: calling an instance function
             // from a static context is itself illegal (the implicit `this` cannot bind).
@@ -563,50 +566,63 @@ func reportStaticContextReads(tokens: Tokens, validation: TypeValidationContext,
 /// (such overloads may resolve statically).
 func instanceMemberNames(owner: Decl): HashSet<String> {
     let names = HashSet<String>()
-    let staticNames = HashSet<String>()
-    let body: Body
-    match (owner) {
-        case value: ClassDecl => body = value.body
-        case value: StructDecl => body = value.body
-        case value: InterfaceDecl => body = value.body
-        case value: ExtendDecl => body = value.body
-        case _ => return names
-    }
-    for (member in body.decls) {
-        match (member) {
-            case method: FuncDecl =>
-                if (hasModifier(method.modifiers, "static")) {
-                    staticNames.add(method.identifier.value)
-                }
-            case property: PropDecl =>
-                if (hasModifier(property.modifiers, "static")) {
-                    staticNames.add(property.identifier.value)
-                }
-            case field: VarDecl =>
-                if (hasModifier(field.modifiers, "static")) {
-                    staticNames.add(field.identifier.value)
-                }
-            case _ => ()
-        }
-    }
-    for (member in body.decls) {
-        match (member) {
-            case method: FuncDecl =>
-                if (!hasModifier(method.modifiers, "static") && !staticNames.contains(method.identifier.value)) {
-                    names.add(method.identifier.value)
-                }
-            case property: PropDecl =>
-                if (!hasModifier(property.modifiers, "static") && !staticNames.contains(property.identifier.value)) {
-                    names.add(property.identifier.value)
-                }
-            case field: VarDecl =>
-                if (!hasModifier(field.modifiers, "static") && !staticNames.contains(field.identifier.value)) {
-                    names.add(field.identifier.value)
-                }
-            case _ => ()
-        }
+    let staticNames = HashSet<String>() // cjlint-ignore !G.VAR.02 the set is filled by the static scan and consumed by the instance scan
+    if (let Some(body) <- memberBody(owner)) {
+        collectStaticMemberNames(body, staticNames)
+        collectInstanceMemberNames(body, staticNames, names)
     }
     names
+}
+
+/// The body of a declaration that lists ordinary members.
+func memberBody(owner: Decl): ?Body {
+    match (owner) {
+        case value: ClassDecl => Some(value.body)
+        case value: StructDecl => Some(value.body)
+        case value: InterfaceDecl => Some(value.body)
+        case value: ExtendDecl => Some(value.body)
+        case _ => None
+    }
+}
+
+/// Record the members that also have a same-name static declaration.
+func collectStaticMemberNames(body: Body, names: HashSet<String>): Unit {
+    for (member in body.decls) {
+        match (member) {
+            case method: FuncDecl => collectStaticName(method.modifiers, method.identifier.value, names)
+            case property: PropDecl => collectStaticName(property.modifiers, property.identifier.value, names)
+            case field: VarDecl => collectStaticName(field.modifiers, field.identifier.value, names)
+            case _ => ()
+        }
+    }
+}
+
+func collectStaticName(modifiers: ArrayList<Modifier>, name: String, names: HashSet<String>): Unit {
+    if (hasModifier(modifiers, "static")) {
+        names.add(name)
+    }
+}
+
+/// Record the members whose name has no same-name static declaration.
+func collectInstanceMemberNames(body: Body, staticNames: HashSet<String>, names: HashSet<String>): Unit {
+    for (member in body.decls) {
+        match (member) {
+            case method: FuncDecl =>
+                collectInstanceName(method.modifiers, method.identifier.value, staticNames, names)
+            case property: PropDecl =>
+                collectInstanceName(property.modifiers, property.identifier.value, staticNames, names)
+            case field: VarDecl =>
+                collectInstanceName(field.modifiers, field.identifier.value, staticNames, names)
+            case _ => ()
+        }
+    }
+}
+
+func collectInstanceName(modifiers: ArrayList<Modifier>, name: String, staticNames: HashSet<String>,
+    names: HashSet<String>): Unit {
+    if (!hasModifier(modifiers, "static") && !staticNames.contains(name)) {
+        names.add(name)
+    }
 }
 
 /// Implementation code must not read or write auxiliary variables. Local
@@ -722,20 +738,27 @@ func contractRanges(tokens: Tokens): ArrayList<(Int64, Int64)> {
     let ranges = ghostGateRanges(tokens)
     var index: Int64 = 0
     while (index < tokens.size) {
-        if (tokens[index].kind == AT) {
-            let nameIndex = skipSeparators(tokens, index + 1)
-            if (nameIndex < tokens.size && tokens[nameIndex].kind == IDENTIFIER &&
-                isContractMacroName(tokens[nameIndex].value)) {
-                if (let Some(close) <- macroExtent(tokens, nameIndex)) {
-                    ranges.add((index, close))
-                    index = close + 1
-                    continue
-                }
-            }
+        if (let Some(close) <- contractMacroExtentAt(tokens, index)) {
+            ranges.add((index, close))
+            index = close + 1
+            continue
         }
         index += 1
     }
     ranges
+}
+
+/// End index of the contract macro invocation starting at `index`, when it is one.
+func contractMacroExtentAt(tokens: Tokens, index: Int64): ?Int64 {
+    if (tokens[index].kind != AT) {
+        return None
+    }
+    let nameIndex = skipSeparators(tokens, index + 1)
+    if (nameIndex >= tokens.size || tokens[nameIndex].kind != IDENTIFIER ||
+        !isContractMacroName(tokens[nameIndex].value)) {
+        return None
+    }
+    macroExtent(tokens, nameIndex)
 }
 
 func isContractMacroName(name: String): Bool {
@@ -848,10 +871,7 @@ func isGhostMemberCall(tokens: Tokens, index: Int64, close: Int64): Bool {
 /// True when a direct call `foo(` or a generic call `foo<...>(` follows the identifier.
 /// A lone comparison `foo < bar` never closes the angle-bracket depth and yields false.
 func followedByInvocation(tokens: Tokens, index: Int64, close: Int64): Bool {
-    var cursor = index + 1
-    while (cursor < close && (tokens[cursor].kind == NL || tokens[cursor].kind == SEMI)) {
-        cursor += 1
-    }
+    let cursor = skipNewlinesAndSemis(tokens, index + 1, close)
     if (cursor >= close) {
         return false
     }
@@ -861,23 +881,37 @@ func followedByInvocation(tokens: Tokens, index: Int64, close: Int64): Bool {
     if (!isValue(tokens[cursor], "<")) {
         return false
     }
+    let afterGeneric = skipAngleBrackets(tokens, cursor, close)
+    afterGeneric < close && tokens[afterGeneric].kind == LPAREN
+}
+
+/// Index of the first token at or after `start` that is neither a line break nor a
+/// semicolon, bounded by `limit`.
+func skipNewlinesAndSemis(tokens: Tokens, start: Int64, limit: Int64): Int64 {
+    var cursor = start
+    while (cursor < limit && (tokens[cursor].kind == NL || tokens[cursor].kind == SEMI)) {
+        cursor += 1
+    }
+    cursor
+}
+
+/// Index just past the angle-bracket group opened at `start`, or `limit` when the group
+/// stays unbalanced before `limit`.
+func skipAngleBrackets(tokens: Tokens, start: Int64, limit: Int64): Int64 {
     var depth = 0
-    while (cursor < close) {
+    var cursor = start
+    while (cursor < limit) {
         if (isValue(tokens[cursor], "<")) {
             depth += 1
         } else if (isValue(tokens[cursor], ">")) {
             depth -= 1
             if (depth == 0) {
-                cursor += 1
-                while (cursor < close && (tokens[cursor].kind == NL || tokens[cursor].kind == SEMI)) {
-                    cursor += 1
-                }
-                return cursor < close && tokens[cursor].kind == LPAREN
+                return skipNewlinesAndSemis(tokens, cursor + 1, limit)
             }
         }
         cursor += 1
     }
-    false
+    limit
 }
 
 func nextKind(tokens: Tokens, index: Int64, limit: Int64): TokenKind {
@@ -1099,33 +1133,48 @@ func collectMemberNames(owner: Decl): HashSet<String> {
 
 func collectBodyMemberNames(body: Body, names: HashSet<String>): Unit {
     for (member in body.decls) {
-        match (member) {
-            case value: FuncDecl =>
-                if (value.identifier.value.size > 0) {
-                    names.add(value.identifier.value)
-                }
-            case value: PropDecl =>
-                if (value.identifier.value.size > 0) {
-                    names.add(value.identifier.value)
-                }
-            case value: VarDecl =>
-                if (value.identifier.value.size > 0) {
-                    names.add(value.identifier.value)
-                } else {
-                    match (value.pattern) {
-                        case pattern: VarPattern => names.add(pattern.identifier.value)
-                        case _ => ()
-                    }
-                }
-            case _ => ()
-        }
+        collectMemberName(member, names)
+    }
+}
+
+func collectMemberName(member: Decl, names: HashSet<String>): Unit {
+    match (member) {
+        case value: FuncDecl => addNonEmptyName(value.identifier.value, names)
+        case value: PropDecl => addNonEmptyName(value.identifier.value, names)
+        case value: VarDecl => addDeclaredVariableName(value, names)
+        case _ => ()
+    }
+}
+
+func addNonEmptyName(name: String, names: HashSet<String>): Unit {
+    if (name.size > 0) {
+        names.add(name)
+    }
+}
+
+/// The identifier token bound by a variable-like declaration, including a simple
+/// pattern binding.
+func declaredVariableIdentifier(variable: VarDecl): ?Token {
+    if (variable.identifier.value.size > 0) {
+        return Some(variable.identifier)
+    }
+    if (let pattern: VarPattern <- variable.pattern) {
+        return Some(pattern.identifier)
+    }
+    None
+}
+
+func addDeclaredVariableName(variable: VarDecl, names: HashSet<String>): Unit {
+    if (let Some(identifier) <- declaredVariableIdentifier(variable)) {
+        names.add(identifier.value)
     }
 }
 
 /// Generator-owned member names that user code must not declare. Exact `_contract_invariant`
 /// and `_contract_static_invariant` stay available because users may supply their own checker.
 func isGeneratedMemberName(name: String): Bool {
-    name == "_contract_body" || name == "_contract_property_body" || name.startsWith("_abs_") ||
+    name == "_contract_body" || name == "_contract_property_body" || name == "_contract_do_while_first_iteration" ||
+        name.startsWith("_abs_") ||
         name.startsWith("_contract_aux_") ||
         name.startsWith("_contract_ctor_") ||
         name.startsWith("_contract_invariant_body") ||
@@ -1146,21 +1195,22 @@ func reportGeneratedMemberNames(owner: Decl, diagnostics: ArrayList<Diagnostic>)
 
 func reportGeneratedNamesInBody(body: Body, diagnostics: ArrayList<Diagnostic>): Unit {
     for (member in body.decls) {
-        match (member) {
-            case method: FuncDecl => reportGeneratedMemberName(method.identifier, "function name", diagnostics)
-            case value: PropDecl => reportGeneratedMemberName(value.identifier, "member name", diagnostics)
-            case value: VarDecl =>
-                if (value.identifier.value.size > 0) {
-                    reportGeneratedMemberName(value.identifier, "member name", diagnostics)
-                } else {
-                    match (value.pattern) {
-                        case pattern: VarPattern =>
-                            reportGeneratedMemberName(pattern.identifier, "member name", diagnostics)
-                        case _ => ()
-                    }
-                }
-            case _ => ()
-        }
+        reportGeneratedNameOf(member, diagnostics)
+    }
+}
+
+func reportGeneratedNameOf(member: Decl, diagnostics: ArrayList<Diagnostic>): Unit {
+    match (member) {
+        case method: FuncDecl => reportGeneratedMemberName(method.identifier, "function name", diagnostics)
+        case value: PropDecl => reportGeneratedMemberName(value.identifier, "member name", diagnostics)
+        case value: VarDecl => reportGeneratedVariableName(value, diagnostics)
+        case _ => ()
+    }
+}
+
+func reportGeneratedVariableName(variable: VarDecl, diagnostics: ArrayList<Diagnostic>): Unit {
+    if (let Some(identifier) <- declaredVariableIdentifier(variable)) {
+        reportGeneratedMemberName(identifier, "member name", diagnostics)
     }
 }
 

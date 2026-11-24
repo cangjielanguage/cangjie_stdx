@@ -11,7 +11,7 @@ package stdx.contract.macros.parse
 import stdx.contract.macros.tokens.{TokenCursor}
 import stdx.contract.macros.syntax.{Diagnostic}
 import std.ast.{Tokens}
-import std.collection.{ArrayList, forEach, isEmpty, max, min}
+import std.collection.{ArrayList, isEmpty, max, min}
 
 /**
  * @brief The outcome of parsing a construct of the `@Contract` macro family: the parsed
@@ -68,7 +68,9 @@ public class ParseResult<T> {
      * `Diagnostic.fallback`.
      */
     public func report(): Unit {
-        diagnostics.forEach {d => d.show()}
+        for (d in diagnostics) {
+            d.show()
+        }
     }
 }
 
