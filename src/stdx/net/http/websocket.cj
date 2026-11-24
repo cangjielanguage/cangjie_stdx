@@ -47,6 +47,11 @@ public class WebSocket {
     let readMutex = Mutex()
     let isClosed = AtomicBool(false)
     let isSentCloseFrame = AtomicBool(false)
+    // incremental UTF-8 validation state for fragmented Text messages,
+    // as a multi-byte UTF-8 sequence may be split across frame boundaries.
+    // RFC 6455 8.1.
+    let utf8Validator = Utf8Validator()
+    var inTextMessage = false
 
     init(conn: WebSocketConn, subProtocol: String, isClient: Bool) {
         this.conn = conn
@@ -144,6 +149,7 @@ public class WebSocket {
                 case _ => ()
             }
             readFramePayload(frame)
+            validateTextFrameUtf8(frame)
         }
         return frame
     }
@@ -197,6 +203,44 @@ public class WebSocket {
 
     // cjlint-ignore -start !G.OTH.03
     /**
+     * validate the UTF-8 conformance of Text data incrementally.
+     * an endpoint MUST validate the UTF-8 conformance of all Text data
+     * in the message. if a validity check fails, then the endpoint MUST
+     * _fail the websocket connection_ (close code 1007 INVALID_DATA).
+     * a multi-byte UTF-8 sequence may be split across the frame boundaries
+     * of a fragmented message, so the validation state is maintained across
+     * read() calls until the message is complete (fin == true).
+     * RFC 6455 8.1.
+     */
+    // cjlint-ignore -end
+    private func validateTextFrameUtf8(frame: WebSocketFrame): Unit {
+        match (frame.frameType) {
+            case TextWebFrame =>
+                utf8Validator.reset()
+                validateFramePayloadUtf8(frame)
+                inTextMessage = !frame.fin
+            case ContinuationWebFrame =>
+                if (inTextMessage) {
+                    validateFramePayloadUtf8(frame)
+                    if (frame.fin) {
+                        inTextMessage = false
+                    }
+                }
+            case _ => ()
+        }
+    }
+
+    private func validateFramePayloadUtf8(frame: WebSocketFrame): Unit {
+        if (!utf8Validator.feed(frame.payload)) {
+            failTheWebSocketConnection(WebSocketStatusCode.INVALID_DATA, "invalid UTF-8 in Text message")
+        }
+        if (frame.fin && !utf8Validator.isComplete()) {
+            failTheWebSocketConnection(WebSocketStatusCode.INVALID_DATA, "invalid UTF-8 in Text message")
+        }
+    }
+
+    // cjlint-ignore -start !G.OTH.03
+    /**
      * Implementations that have implementation- and/or platform-specific
      * limitations regarding the frame size or total message size after
      * reassembly from multiple frames MUST protect themselves against
@@ -233,10 +277,24 @@ public class WebSocket {
         }
 
         match (frameType) {
-            // control frames cannot be fragmented and must have a payload length of 125 bytes or less.
-            // an unfragmented message consists of a single frame with th FIN bit set and an opcode other than 0.
-            // unfragment
-            //                          FIN = 1, Opcode != 0
+            case PingWebFrame | PongWebFrame | CloseWebFrame =>
+                writeControlFrame(frameType, byteArray)
+            case TextWebFrame | BinaryWebFrame =>
+                writeDataFrames(frameType, byteArray, frameSize)
+            case _ => throw WebSocketException("Invalid frame type '${frameType}'.")
+        }
+    }
+
+    /**
+     * Sends a control frame (Ping/Pong/Close). Control frames cannot be
+     * fragmented and must have a payload length of 125 bytes or less.
+     * RFC 6455 5.5.
+     *
+     * @throws WebSocketException if the control frame payload exceeds 125 bytes,
+     *          or the frame type or close status code is invalid.
+     */
+    private func writeControlFrame(frameType: WebSocketFrameType, byteArray: Array<UInt8>): Unit {
+        match (frameType) {
             case PingWebFrame | PongWebFrame =>
                 if (byteArray.size > 125) {
                     throw WebSocketException("Control frame payload length '${byteArray.size}' exceeds maximum 125.")
@@ -249,11 +307,10 @@ public class WebSocket {
                     case byteArray.size == 1 => throw WebSocketException("Invalid close frame payload: length is '1'.")
                     case byteArray.size <= 125 =>
                         let status = toUInt16(byteArray[..2])
-                        // valid status code ranges defined in
-                        // RFC 6455 7.4.2.
-                        // status must between 1000 and 4999,
-                        // 1005, 1006, 1015 are reserved values and must not be
-                        // set as status code in a Close control frame by an endpoint.
+                        // valid status code ranges defined in RFC 6455 7.4.2.
+                        // status must between 1000 and 4999, 1005, 1006, 1015 are reserved
+                        // values and must not be set as status code in a Close control
+                        // frame by an endpoint.
                         if (status >= 5000 || status < 1000 || status == 1005 || status == 1006 || status == 1015) {
                             throw WebSocketException("Invalid close status code '${status}'.")
                         }
@@ -262,39 +319,54 @@ public class WebSocket {
                         "Control frame payload length '${byteArray.size}' exceeds maximum 125.")
                 }
                 isSentCloseFrame.store(true)
-            // a fragmented message consists of a single frame with the FIN bit
-            // clear and an opcode other than 0, followed by zero or more frames
-            // with the FIN bit clear and the opcode set to 0, and terminated by
-            // a single frame with the FIN bit set and an opcode of 0.
-            case TextWebFrame | BinaryWebFrame =>
-                // must not send any more data frames after sending a Close frame
-                // RFC 6455 5.1.1.
-                if (isSentCloseFrame.load()) {
-                    throw WebSocketException("Cannot send data frames after Close frame.")
-                }
-                if (frameSize <= 0) {
-                    throw WebSocketException(
-                        "Invalid argument 'frameSize': expected a positive value, got '${frameSize}'.")
-                }
-                // unfragment
-                //                      FIN = 1, Opcode != 0
-                if (byteArray.size <= frameSize) {
-                    writeFrame(true, frameType, byteArray, isClient)
-                    return
-                }
-                // fragment
-                // first frame:        FIN = 0, Opcode != 0
-                writeFrame(false, frameType, byteArray.slice(0, frameSize), isClient)
-                var sendLen = frameSize
-                // intermediate frame:  FIN = 0, Opcode = 0
-                while (sendLen + frameSize < byteArray.size) {
-                    writeFrame(false, ContinuationWebFrame, byteArray.slice(sendLen, frameSize), isClient)
-                    sendLen += frameSize
-                }
-                // last frame:          FIN = 1, Opcode = 0
-                writeFrame(true, ContinuationWebFrame, byteArray.slice(sendLen, (byteArray.size - sendLen)), isClient)
             case _ => throw WebSocketException("Invalid frame type '${frameType}'.")
         }
+    }
+
+    /**
+     * Sends a Text/Binary data frame, fragmenting when the payload exceeds
+     * frameSize. A fragmented message consists of a single frame with the FIN
+     * bit clear and an opcode other than 0, followed by zero or more frames
+     * with the FIN bit clear and the opcode set to 0, and terminated by a
+     * single frame with the FIN bit set and an opcode of 0. RFC 6455 5.4.
+     *
+     * @throws WebSocketException if data frames are sent after a Close frame,
+     *          'frameSize' is not a positive value,
+     *          or the Text frame payload is not valid UTF-8.
+     */
+    private func writeDataFrames(frameType: WebSocketFrameType, byteArray: Array<UInt8>, frameSize: Int64): Unit {
+        // must not send any more data frames after sending a Close frame.
+        // RFC 6455 5.1.1.
+        if (isSentCloseFrame.load()) {
+            throw WebSocketException("Cannot send data frames after Close frame.")
+        }
+        if (frameSize <= 0) {
+            throw WebSocketException(
+                "Invalid argument 'frameSize': expected a positive value, got '${frameSize}'.")
+        }
+        // the payload of a Text frame must be valid UTF-8.
+        // the whole message is validated before fragmentation,
+        // as a multi-byte UTF-8 sequence may be split across
+        // frame boundaries of the fragmented frames.
+        // RFC 6455 5.6.
+        if (frameType == TextWebFrame && !isValidUtf8Message(byteArray)) {
+            throw WebSocketException("Invalid UTF-8 in Text frame payload.")
+        }
+        // unfragmented message: FIN = 1, Opcode != 0
+        if (byteArray.size <= frameSize) {
+            writeFrame(true, frameType, byteArray, isClient)
+            return
+        }
+        // first frame:        FIN = 0, Opcode != 0
+        writeFrame(false, frameType, byteArray.slice(0, frameSize), isClient)
+        var sendLen = frameSize
+        // intermediate frame:  FIN = 0, Opcode = 0
+        while (sendLen + frameSize < byteArray.size) {
+            writeFrame(false, ContinuationWebFrame, byteArray.slice(sendLen, frameSize), isClient)
+            sendLen += frameSize
+        }
+        // last frame:          FIN = 1, Opcode = 0
+        writeFrame(true, ContinuationWebFrame, byteArray.slice(sendLen, (byteArray.size - sendLen)), isClient)
     }
 
     private func writeFrame(fin: Bool, frameType: WebSocketFrameType, byteArray: Array<UInt8>, isClient: Bool) {

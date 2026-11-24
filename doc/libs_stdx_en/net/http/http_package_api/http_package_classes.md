@@ -3597,6 +3597,7 @@ The `read` function returns a [WebSocketFrame](http_package_classes.md#class-web
 > - If an unrecognized frame type is received (only Continuation, Text, Binary, Close, Ping, Pong are supported), the underlying connection is closed, and an exception is thrown.
 > - If a fragmented or payload length exceeds 125 bytes for control frames (Close, Ping, Pong), the underlying connection is closed, and an exception is thrown.
 > - If a payload length exceeds 20MB, the underlying connection is closed, and an exception is thrown.
+> - If a Text frame whose payload is not valid UTF-8 is received (fragmented Text messages are validated incrementally as a whole message, and multi-byte UTF-8 sequences may be split across fragment boundaries), the underlying connection is closed, and an exception is thrown.
 > - For fragmented data frames (messages composed of multiple continuation frames), there is no limit on the total size of the complete message after assembling all fragments.
 > - If `read` is called after `closeConn` closes the connection, an exception is thrown.
 
@@ -3624,7 +3625,8 @@ Function: Sends data. Not thread-safe (i.e., multi-threaded writing on the same 
 >
 > - For data frames (Text, Binary), if the `byteArray` exceeds `frameSize` (default 4 * 1024 bytes), it is split into payloads of `frameSize` or smaller and sent as fragmented frames. Otherwise, no fragmentation occurs.
 > - For control frames (Close, Ping, Pong), the `byteArray` size must not exceed 125 bytes. Close frames include a 2-byte status code (valid codes are listed in RFC 6455 7.4. Status Codes). After sending a Close frame, sending data frames is prohibited and will throw an exception.
-> - Users must ensure the `byteArray` complies with the protocol (e.g., Text frame payloads must be UTF-8 encoded). If `frameSize` is set for data frames, it must be greater than 0; otherwise, an exception is thrown.
+> - Users must ensure the `byteArray` complies with the protocol. If `frameSize` is set for data frames, it must be greater than 0; otherwise, an exception is thrown.
+> - When sending a Text frame, the payload must be valid UTF-8 encoding (the whole message is validated, and multi-byte UTF-8 sequences may be split across fragment boundaries); otherwise, an exception is thrown.
 > - If `frameSize` is less than or equal to 0 for data frames, an exception is thrown.
 > - If a control frame's data exceeds 125 bytes, an exception is thrown.
 > - If an unsupported frame type (not Text, Binary, Close, Ping, Pong) is passed, an exception is thrown.

@@ -9545,6 +9545,7 @@ read 函数返回一个 [WebSocketFrame](http_package_classes.md#class-websocket
 > - 收到无法理解的帧类型（只支持 Continuation，Text，Binary，Close，Ping，Pong），断开底层连接并抛出异常；
 > - 收到分段或 payload 长度大于 125 bytes 的控制帧（Close，Ping，Pong），断开底层连接并抛出异常；
 > - 收到 payload 长度大于 20M 的帧，断开底层连接并抛出异常；
+> - 收到 payload 不是合法 UTF-8 编码的 Text 帧（分片 Text 消息按整条消息增量校验，多字节 UTF-8 序列允许被分片帧边界切分），断开底层连接并抛出异常；
 > - WebSocket 没有分段帧聚合消息大小限制，即由多个分段帧组成的完整消息的总大小没有限制；
 > - closeConn 关闭连接后继续调用读，抛出异常。
 
@@ -9576,7 +9577,8 @@ public func write(frameType: WebSocketFrameType, byteArray: Array<UInt8>, frameS
 >
 > - 发送数据帧（Text，Binary）时，若 byteArray 大于 frameSize（默认 4 * 1024 bytes），会将其切分为不超过 frameSize 的 payload 并以分段帧形式发送；否则不分段；
 > - 如果发送控制帧（Close，Ping，Pong），传入的 byteArray 的大小需要小于等于 125 bytes，Close 帧的前两个字节为状态码，可用的状态码见 RFC 6455 7.4. Status Codes 协议规定，Close 帧发送之后，禁止再发送数据帧，如果发送则会抛出异常；
-> - 用户需要自己保证其传入的 byteArray 符合协议，如 Text 帧的 payload 需要是 UTF-8 编码，如果数据帧设置了 frameSize，那么需要大于 0，否则抛出异常；
+> - 用户需要自己保证其传入的 byteArray 符合协议，如果数据帧设置了 frameSize，那么需要大于 0，否则抛出异常；
+> - 发送 Text 帧时，payload 必须是合法的 UTF-8 编码（对整个消息校验，多字节 UTF-8 序列允许被分片帧边界切分），否则抛出异常；
 > - 发送数据帧时，frameSize 小于等于 0，抛出异常；
 > - 用户发送控制帧时，传入的数据大于 125 bytes，抛出异常；
 > - 用户传入非 Text，Binary，Close，Ping，Pong 类型的帧类型，抛出异常；
