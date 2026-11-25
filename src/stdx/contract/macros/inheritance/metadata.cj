@@ -342,22 +342,47 @@ func absorb(target: HashMap<String, Tokens>, name: String, attr: Tokens): Unit {
 func mergeAttrOrigins(target: HashMap<String, HashMap<String, HashSet<String>>>,
     source: HashMap<String, HashMap<String, HashSet<String>>>): Unit {
     for ((key, owners) in source) {
-        let inner = match (target.get(key)) {
-            case Some(value) => value
-            case None =>
-                let fresh = HashMap<String, HashSet<String>>()
-                target.add(key, fresh)
-                fresh
-        }
+        let inner = getOrCreateAttrOwners(target, key) // cjlint-ignore !G.VAR.02 the owner map is resolved once per key and reused by the nested owner loop
         for ((owner, names) in owners) {
-            match (inner.get(owner)) {
-                case Some(existing) =>
-                    for (name in names) {
-                        existing.add(name)
-                    }
-                case None => inner.add(owner, names)
-            }
+            mergeAttrOwnerNames(inner, owner, names)
         }
+    }
+}
+
+/// Merge one owner's `kind|name` set into a per-key owner map, still aliasing the source set
+/// when the owner is new.
+func mergeAttrOwnerNames(inner: HashMap<String, HashSet<String>>, owner: String,
+    names: HashSet<String>): Unit {
+    if (let Some(existing) <- inner.get(owner)) {
+        for (name in names) {
+            existing.add(name)
+        }
+        return
+    }
+    inner.add(owner, names)
+}
+
+/// Get-or-create the per-key owner map of a provenance map.
+func getOrCreateAttrOwners(target: HashMap<String, HashMap<String, HashSet<String>>>,
+    key: String): HashMap<String, HashSet<String>> {
+    match (target.get(key)) { // cjlint-ignore !G.VAR.02 get-or-create runs once per key; the map is shared by both branches of the owner loop
+        case Some(value) => value
+        case None =>
+            let fresh = HashMap<String, HashSet<String>>()
+            target.add(key, fresh)
+            fresh
+    }
+}
+
+/// Get-or-create one owner's `kind|name` set inside a per-key provenance map.
+func getOrCreateDeclared(inner: HashMap<String, HashSet<String>>,
+    owner: String): HashSet<String> {
+    match (inner.get(owner)) {
+        case Some(value) => value
+        case None =>
+            let fresh = HashSet<String>()
+            inner.add(owner, fresh)
+            fresh
     }
 }
 
@@ -367,20 +392,8 @@ func recordAttrOrigin(target: HashMap<String, HashMap<String, HashSet<String>>>,
     if (entries.isEmpty()) {
         return
     }
-    let inner = match (target.get(key)) {
-        case Some(value) => value
-        case None =>
-            let fresh = HashMap<String, HashSet<String>>()
-            target.add(key, fresh)
-            fresh
-    }
-    let declared = match (inner.get(owner)) {
-        case Some(value) => value
-        case None =>
-            let fresh = HashSet<String>()
-            inner.add(owner, fresh)
-            fresh
-    }
+    let inner = getOrCreateAttrOwners(target, key) // cjlint-ignore !G.VAR.02 resolve the shared owner map once, not per entry
+    let declared = getOrCreateDeclared(inner, owner) // cjlint-ignore !G.VAR.02 resolve the shared name set once, not per entry
     for (entry in entries) {
         declared.add(entry[0] + "|" + entry[1])
     }
@@ -415,11 +428,6 @@ public func combineAttrs(first: Tokens, second: Tokens): Tokens {
     combined
 }
 
-/// Prefix of the positional placeholders that stand for a method's own type parameters in
-/// signature keys (`id(_contract_ty_0)`); it must lex as a plain identifier, because stored
-/// keys are re-lexed with `cangjieLex` on the instantiation side.
-const TYPE_PARAM_PLACEHOLDER_PREFIX = "_contract_ty_"
-
 /**
  * @brief Signature key used to index member contracts, e.g. `foo(Int64,String)`.
  *
@@ -431,7 +439,9 @@ const TYPE_PARAM_PLACEHOLDER_PREFIX = "_contract_ty_"
  * @return The compact signature key of the method.
  */
 public func methodSignatureKey(method: FuncDecl): String {
-    let typeParameters = methodTypeParameterNames(method)
+    // Compute the type-parameter names once per method instead of once per parameter,
+    // keeping the scan at O(P+T) rather than O(P×T).
+    let typeParameters = methodTypeParameterNames(method) // cjlint-ignore !G.VAR.02 hoisting avoids recomputing the list per parameter
     let parameters = ArrayList<String>()
     for (parameter in method.funcParams) {
         parameters.add(normalizedTypeParameterKey(parameter.paramType, typeParameters))
@@ -454,33 +464,37 @@ func methodTypeParameterNames(method: FuncDecl): ArrayList<String> {
 }
 
 /// Compact type text with the method's own type parameter names replaced by positional
-/// placeholders. Member accesses (`x.T`) are never substituted, mirroring
-/// `substituteTypeArguments` on the instantiation side.
+/// placeholders (`_contract_ty_0`); the placeholder must lex as a plain identifier, because
+/// stored keys are re-lexed with `cangjieLex` on the instantiation side. Member accesses
+/// (`x.T`) are never substituted, mirroring `substituteTypeArguments` on that side.
 func normalizedTypeParameterKey(ty: TypeNode, typeParameters: ArrayList<String>): String {
     if (typeParameters.isEmpty()) {
         return typeReferenceKey(ty)
     }
-    let result = Tokens()
-    var previous = TokenKind.ILLEGAL
+    let result = Tokens() // cjlint-ignore !G.VAR.02 the accumulator is filled inside the token loop and consumed after it; narrowing its scope would change semantics
+    var previous = TokenKind.ILLEGAL // cjlint-ignore !G.VAR.02 previous-token context threads state across loop iterations; narrowing its scope would change semantics
     for (token in ty.toTokens()) {
-        var replaced = false
-        if (token.kind == IDENTIFIER && previous != DOT) {
-            for (index in 0..typeParameters.size) {
-                if (token.value == typeParameters[index]) {
-                    result.append(Token(IDENTIFIER, TYPE_PARAM_PLACEHOLDER_PREFIX + index.toString()))
-                    replaced = true
-                    break
-                }
-            }
-        }
-        if (!replaced) {
-            result.append(token)
-        }
+        result.append(replacedTypeParameterToken(token, previous, typeParameters) ?? token)
         if (token.kind != NL) {
             previous = token.kind
         }
     }
     tokenValuesCompactString(result)
+}
+
+/// Positional placeholder token for one method type parameter name; None keeps the original
+/// token (member accesses `x.T` and non-matching identifiers are never substituted).
+func replacedTypeParameterToken(token: Token, previous: TokenKind,
+    typeParameters: ArrayList<String>): ?Token {
+    if (token.kind != IDENTIFIER || previous == DOT) {
+        return None
+    }
+    for (index in 0..typeParameters.size) {
+        if (token.value == typeParameters[index]) {
+            return Token(IDENTIFIER, "_contract_ty_" + index.toString())
+        }
+    }
+    None
 }
 
 /**
@@ -575,15 +589,15 @@ public class ContractMetaData {
     public init(typeName: String, typeArgs: ArrayList<String>, contracts: ResolvedTypeContract,
         isInterface!: Bool, isOpen!: Bool, memberAttrs!: HashMap<String, Tokens>,
         propertyAttrs!: HashMap<String, Tokens>,
-        memberAttrOrigins!: HashMap<String, HashMap<String, HashSet<String>>> = HashMap<String,
-            HashMap<String, HashSet<String>>>(),
-        propertyAttrOrigins!: HashMap<String, HashMap<String, HashSet<String>>> = HashMap<String,
-            HashMap<String, HashSet<String>>>(),
-        allMemberSignatures!: HashSet<String> = HashSet<String>(),
-        valueNames!: HashSet<String> = HashSet<String>(),
-        memberParamNames!: HashMap<String, ArrayList<String>> = HashMap<String, ArrayList<String>>(),
-        memberCheckerBases!: HashMap<String, String> = HashMap<String, String>(),
-        packageName!: String = contractPackageName()) {
+        memberAttrOrigins!: HashMap<String, HashMap<String, HashSet<String>>> =
+            HashMap<String, HashMap<String, HashSet<String>>>(), // cjlint-ignore !G.FUN.01 config-carrier metadata record: the named parameters are the persisted fields of one contract type; splitting them into structs would only move the field list
+        propertyAttrOrigins!: HashMap<String, HashMap<String, HashSet<String>>> =
+            HashMap<String, HashMap<String, HashSet<String>>>(), // cjlint-ignore !G.FUN.01 config-carrier metadata record: the named parameters are the persisted fields of one contract type; splitting them into structs would only move the field list
+        allMemberSignatures!: HashSet<String> = HashSet<String>(), // cjlint-ignore !G.FUN.01 config-carrier metadata record: the named parameters are the persisted fields of one contract type; splitting them into structs would only move the field list
+        valueNames!: HashSet<String> = HashSet<String>(), // cjlint-ignore !G.FUN.01 config-carrier metadata record: the named parameters are the persisted fields of one contract type; splitting them into structs would only move the field list
+        memberParamNames!: HashMap<String, ArrayList<String>> = HashMap<String, ArrayList<String>>(), // cjlint-ignore !G.FUN.01 config-carrier metadata record: the named parameters are the persisted fields of one contract type; splitting them into structs would only move the field list
+        memberCheckerBases!: HashMap<String, String> = HashMap<String, String>(), // cjlint-ignore !G.FUN.01 config-carrier metadata record: the named parameters are the persisted fields of one contract type; splitting them into structs would only move the field list
+        packageName!: String = contractPackageName()) { // cjlint-ignore !G.FUN.01 config-carrier metadata record: the named parameters are the persisted fields of one contract type; splitting them into structs would only move the field list
         this.typeName = unqualifiedTypeName(typeName)
         this.packageName = packageName
         this.fullName = if (packageName == "") {
@@ -640,24 +654,34 @@ public func collectValueMemberNames(body: Body): HashSet<String> {
     let names = HashSet<String>()
     for (member in body.decls) {
         if (let method: FuncDecl <- member) {
-            for (parameter in method.funcParams) {
-                try {
-                    names.add(parameter.identifier.value)
-                } catch (_: ASTException) {
-                    ()
-                }
-            }
+            collectParameterValueNames(names, method)
         } else if (let property: PropDecl <- member) {
             names.add(property.identifier.value)
         } else if (let field: VarDecl <- member) {
-            try {
-                names.add(field.identifier.value)
-            } catch (_: ASTException) {
-                ()
-            }
+            addFieldValueName(names, field)
         }
     }
     names
+}
+
+/// Add every method parameter name; a parameter without an identifier contributes nothing.
+func collectParameterValueNames(names: HashSet<String>, method: FuncDecl): Unit {
+    for (parameter in method.funcParams) {
+        try {
+            names.add(parameter.identifier.value)
+        } catch (_: ASTException) {
+            ()
+        }
+    }
+}
+
+/// Add a field name; a declaration without an identifier contributes nothing.
+func addFieldValueName(names: HashSet<String>, field: VarDecl): Unit {
+    try {
+        names.add(field.identifier.value)
+    } catch (_: ASTException) {
+        ()
+    }
 }
 
 /**
@@ -747,9 +771,9 @@ func searchMetaDataLocked(key: String): ?ContractMetaData {
     if (let Some(value) <- _CONTRACT_META_REGISTRY.get(key)) {
         return value
     }
-    let name = unqualifiedTypeName(key)
+    let name = unqualifiedTypeName(key) // cjlint-ignore !G.VAR.02 the derived key is shared by the in-memory lookup and the on-disk fallback; its live range already spans the enclosing branches
     if (name == key) {
-        let currentPackage = contractPackageName()
+        let currentPackage = contractPackageName() // cjlint-ignore !G.VAR.02 the current-package probe is shared by the lookup below; its live range already spans the enclosing branch
         if (currentPackage != "") {
             if (let Some(value) <- _CONTRACT_META_REGISTRY.get(currentPackage + "." + name)) {
                 return value

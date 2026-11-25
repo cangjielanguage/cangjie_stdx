@@ -1,6 +1,6 @@
 # Exceptions
 
-## abstract class ContractCheckException
+## class ContractCheckException
 
 ```cangjie
 public abstract class ContractCheckException <: Exception {
@@ -9,9 +9,9 @@ public abstract class ContractCheckException <: Exception {
 }
 ```
 
-Function: The common base class of all contract-check exceptions. Being abstract only prevents direct instantiation; it does not prevent forging through subclassing. Use [isContractException](./contract_runtime_package_funcs.md#func-iscontractexception) to check whether an exception is a contract exception, or catch all contract failures uniformly with this type in a `try/catch`.
+Function: The common base class of all contract-check exceptions. Use [isContractException](./contract_runtime_package_funcs.md#func-iscontractexceptionexception) to check whether an exception is a contract exception, or catch all contract failures uniformly with this type in a `try/catch`.
 
-> **Note:** Contract exceptions are exempt from the business-exception `throws` verification. Contracts are not a security boundary: the abstract base class only prevents direct instantiation, not forging through subclassing — this class can be inherited, and the constructors of this class and all its subclasses are `public`, so any code can construct these exceptions (or derived types) to make the `throws` verification in macro-expanded code treat the check as a contract failure; this library does not defend against such deliberate bypasses.
+Contract exceptions are exempt from the business-exception `throws` verification. Contracts are not a security boundary: the base class only prevents direct instantiation, not forging through subclassing — this class can be inherited, and the constructors of this class and all its subclasses are `public`, so any code can construct these exceptions (or derived types) to make the `throws` verification in macro-expanded code treat the check as a contract failure; this library does not defend against such deliberate bypasses.
 
 ### init()
 

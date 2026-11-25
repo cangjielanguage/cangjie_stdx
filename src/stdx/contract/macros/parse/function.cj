@@ -174,7 +174,11 @@ func parseFunctionVariable(state: ParseState): ?FunctionClause {
     let start = state.cursor.pos
     state.cursor.forward() // "variable"
     let name = parseIdentifier(state)
-    if (name.isNone() || state.cursor.consumeKind(COLON).isNone()) {
+    if (name.isNone()) {
+        state.reportError("variable clause needs a name and `:` before its type")
+        return None
+    }
+    if (state.cursor.consumeKind(COLON).isNone()) {
         state.reportError("variable clause needs a name and `:` before its type")
         return None
     }

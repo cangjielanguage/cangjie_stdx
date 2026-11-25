@@ -11,7 +11,7 @@ package stdx.contract.macros.validation
 import stdx.contract.macros.syntax.{Diagnostic, FunctionClause, FunctionContract, IdentifierSyntax, InheritClauseKind, TypeInheritTarget}
 import stdx.contract.macros.tokens.{destructuringGroupSpans, isValue, lambdaAndCaseBindingTokens}
 import std.ast.{DiagReportLevel, FuncDecl, Token, Tokens, VarDecl, VarPattern, diagReport}
-import std.collection.{ArrayList, HashSet, contains, forEach, isEmpty}
+import std.collection.{ArrayList, HashSet, contains, isEmpty}
 
 /**
  * @brief Validate a function-level contract against its `func` declaration.
@@ -43,15 +43,7 @@ public func validateFunctionContract(contract: FunctionContract, owner: FuncDecl
     // cannot collide with the injected bindings.
     for (node in owner.block.nodes) {
         if (let variable: VarDecl <- node) {
-            if (variable.identifier.value.size > 0) {
-                validateReservedName(variable.identifier.value, Tokens(variable.identifier))
-            } else {
-                match (variable.pattern) {
-                    case pattern: VarPattern =>
-                        validateReservedName(pattern.identifier.value, Tokens(pattern.identifier))
-                    case _ => ()
-                }
-            }
+            validateLocalDeclaration(variable)
         }
     }
 
@@ -82,8 +74,21 @@ public func validateFunctionContract(contract: FunctionContract, owner: FuncDecl
     }
     collectContractNames(contract.clauses, diagnostics)
     validateVariableNames(contract.clauses, parameters, blockTokensOrEmpty({=> owner.block}), diagnostics)
-    diagnostics.forEach { diagnostic => diagnostic.show() }
+    for (diagnostic in diagnostics) {
+        diagnostic.show()
+    }
     diagnostics.isEmpty()
+}
+
+/// Reject reserved prefixes on a top-level local declaration of the body.
+func validateLocalDeclaration(variable: VarDecl): Unit {
+    if (variable.identifier.value.size > 0) {
+        validateReservedName(variable.identifier.value, Tokens(variable.identifier))
+        return
+    }
+    if (let pattern: VarPattern <- variable.pattern) {
+        validateReservedName(pattern.identifier.value, Tokens(pattern.identifier))
+    }
 }
 
 /// A function-level `variable` is rewritten by name at token level, so a parameter or local

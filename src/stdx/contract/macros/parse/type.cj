@@ -160,7 +160,12 @@ func parseTypeInherits(state: ParseState, start: Int64, category: String): ?Type
     }
     var conforming = false
     if (state.cursor.consumeKind(LSQUARE).isSome()) {
-        if (!state.cursor.consumeValue("conforming") || state.cursor.consumeKind(RSQUARE).isNone()) {
+        if (!state.cursor.consumeValue("conforming")) {
+            state.reportError("`inherits from` supports only the `[conforming]` modifier", category,
+                state.cursor.tokens[start..state.cursor.pos])
+            return None
+        }
+        if (state.cursor.consumeKind(RSQUARE).isNone()) {
             state.reportError("`inherits from` supports only the `[conforming]` modifier", category,
                 state.cursor.tokens[start..state.cursor.pos])
             return None
@@ -259,7 +264,12 @@ func isTypeLikeTokens(tokens: Tokens): Bool {
 func parseVariableClause(state: ParseState, isStatic: Bool, start: Int64, category: String): ?VariableClause {
     state.cursor.forward() // "variable"
     let name = parseIdentifier(state)
-    if (name.isNone() || state.cursor.consumeKind(COLON).isNone()) {
+    if (name.isNone()) {
+        state.reportError("variable clause needs a name and `:` before its type", category,
+            state.cursor.tokens[start..state.cursor.pos])
+        return None
+    }
+    if (state.cursor.consumeKind(COLON).isNone()) {
         state.reportError("variable clause needs a name and `:` before its type", category,
             state.cursor.tokens[start..state.cursor.pos])
         return None
@@ -327,7 +337,8 @@ func parseOptionalLabel(state: ParseState, category: String): ?IdentifierSyntax 
         // `[flag][0]` and `[flag].x` are expressions, not clause names; `[flag] (...)` is a
         // labeled clause with a parenthesized condition; a token that cannot begin an
         // expression (e.g. `[flag] == expected`) marks the bracket group as the condition head.
-        if (next != LSQUARE && next != DOT && !cannotBeginCondition(next)) {
+        let cannotBegin = cannotBeginCondition(next)
+        if (next != LSQUARE && next != DOT && !cannotBegin) {
             let ident = tokens[1]
             return IdentifierSyntax(ident.value, Tokens(ident))
         }

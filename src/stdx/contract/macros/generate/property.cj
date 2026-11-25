@@ -157,8 +157,17 @@ private class GenStructPropertyAccessor <: GenCallable {
             }
             arguments.append(name)
         }
+        // Boxed auxiliary holders are shared with the hoisted setter body through named
+        // parameters, so the forwarding stays legal after any named parameter.
+        appendBoxedAuxParams(helper, arguments, contract)
         let call = quote(this.$(helper.identifier)($(arguments)))
         (Tokens(), call, helper.toTokens())
+    }
+
+    /// The setter body is hoisted into a sibling `mut` member, so its function-level
+    /// `variable` holders must be boxed to stay reachable from both functions.
+    protected override func auxiliaryBoxed(): Bool {
+        hasVariableClause(contract)
     }
 }
 

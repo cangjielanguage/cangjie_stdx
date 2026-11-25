@@ -15,7 +15,7 @@ import stdx.contract.macros.validation.{astGetOrDefault, callableBlock, validate
 import std.ast.{ASTException, Block, DiagReportLevel, DoWhileExpr, Expr, ForInExpr, FuncDecl, IfExpr,
     LambdaExpr, MatchExpr, Node, PropDecl, SpawnExpr, StructDecl, SynchronizedExpr, Tokens, TryExpr, WhileExpr,
     diagReport, getChildMessages, setItem}
-import std.collection.{ArrayList, forEach}
+import std.collection.{ArrayList}
 
 /**
  * @brief Publishes a property contract for the enclosing type contract to expand.
@@ -238,7 +238,9 @@ func absorbLocalContractsInLambda(expression: LambdaExpr): Bool {
 /// declarations to `output`. Keeps the original declaration when generation fails.
 func lowerLocalFunctionContract(local: FuncDecl, attr: Tokens, output: ArrayList<Node>): Unit {
     let parsed = parseFunctionContract(attr)
-    parsed.diagnostics.forEach {diagnostic => diagnostic.show()}
+    for (diagnostic in parsed.diagnostics) {
+        diagnostic.show()
+    }
     var contract: ?FunctionContract = None
     if (!parsed.hasError()) {
         let candidate = parsed.value

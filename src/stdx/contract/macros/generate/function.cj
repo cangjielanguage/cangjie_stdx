@@ -78,17 +78,6 @@ internal class GenStructMember <: GenCallable {
             return super.genBodyBinding()
         }
 
-        // A mut method cannot host a local helper function, so a local auxiliary
-        // variable cannot be shared with the hoisted body.
-        for (clause in contract.clauses) {
-            if (let Variable(variable) <- clause) {
-                ctx.error(
-                    "function-level `variable` is not supported in a `mut` method.",
-                    "function contract", variable.tokens)
-                break
-            }
-        }
-
         let helper = FuncDecl(owner.toTokens())
         helper.identifier = Token(IDENTIFIER, "_contract_invariant_body_" + owner.identifier.value)
         let prototype = if (privateHelper) {
@@ -110,6 +99,10 @@ internal class GenStructMember <: GenCallable {
             }
             arguments.append(name)
         }
+        // Boxed auxiliary holders are shared with the hoisted body through named
+        // parameters, so the forwarding stays legal after any named parameter of the
+        // original method.
+        appendBoxedAuxParams(helper, arguments, contract)
         let typeArguments = if (owner.isGenericDecl) {
             owner.genericParam.toTokens()
         } else {
@@ -117,5 +110,11 @@ internal class GenStructMember <: GenCallable {
         }
         let call = quote(this.$(helper.identifier)$(typeArguments)($(arguments)))
         (Tokens(), call, helper.toTokens())
+    }
+
+    /// A `mut` method's body is hoisted into a sibling member, so its function-level
+    /// `variable` holders must be boxed to stay reachable from both functions.
+    protected override func auxiliaryBoxed(): Bool {
+        methodHasModifier(owner, "mut") && hasVariableClause(contract)
     }
 }

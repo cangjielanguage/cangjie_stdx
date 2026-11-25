@@ -11,7 +11,7 @@ package stdx.contract.macros.generate
 import stdx.contract.macros.tokens.isValue
 import stdx.contract.macros.syntax.{ExprWithPreSyntax, FunctionContract, IdentifierSyntax, VariableClause}
 import stdx.contract.macros.validation.astGetOrDefault
-import std.ast.{DiagReportLevel, FuncDecl, ToTokens, Token, Tokens, diagReport, parseType}
+import std.ast.{DiagReportLevel, FuncDecl, FuncParam, ToTokens, Token, Tokens, diagReport, parseType}
 import std.collection.{ArrayList, HashSet, map}
 
 /// Share contract phases and state for one callable or accessor generation.
@@ -47,7 +47,9 @@ internal abstract class GenCallable {
             ctx.report()
             return owner.toTokens()
         }
-        if (modifiersHave(owner.modifiers, "async") || modifiersHave(owner.modifiers, "reasync")) {
+        let isAsync = modifiersHave(owner.modifiers, "async")
+        let isReasync = modifiersHave(owner.modifiers, "reasync")
+        if (isAsync || isReasync) {
             // The hoisted `_contract_body` helper would silently lose the async modifier and
             // fail to compile inside the macro; reject up front with a readable diagnostic
             // (contract expressions must not suspend either way).
@@ -80,6 +82,9 @@ internal abstract class GenCallable {
      */
     public open func genWrappedBody(): (Tokens, Tokens) {
         let names = auxiliaryNames(contract)
+        if (auxiliaryBoxed()) {
+            names.add(boxedAuxKey())
+        }
         owner.block = rewriteAuxiliaryMacros(owner.block, names)
         let gate = genGate()
         let (bodyHelper, bodyCall, members) = genBodyBinding()
@@ -133,6 +138,14 @@ internal abstract class GenCallable {
     /// the same global gate wrapper, so subclasses only override this when that ever changes.
     protected open func genGate(): Tokens {
         quote(_contract_gateEnabled())
+    }
+
+    /// Whether the function-level `variable` holders are boxed into one-element arrays so a
+    /// hoisted body helper can share them with the wrapper body. Only the `mut` method shape
+    /// hoists its body into a sibling member; every other shape keeps a local helper and the
+    /// holders stay plain locals.
+    protected open func auxiliaryBoxed(): Bool {
+        false
     }
 
     /// Return local declarations, the body call, and sibling declarations.
@@ -315,7 +328,9 @@ func throwsExceptionalMessage(context: String, clauses: String): String {
 
 /// One `?T` holder per function-level `variable` clause, initialized unconditionally: a
 /// checks-off build never throws on reads of an auxiliary variable that shadows a
-/// same-named member or global; it behaves as a local holding its initial value.
+/// same-named member or global; it behaves as a local holding its initial value. When the
+/// holder is boxed, its `mut` method body runs in a hoisted member helper and reaches the
+/// slot through a parameter, so the holder is a one-element array both sides share.
 func auxiliaryHolderDecl(variable: VariableClause, names: HashSet<String>): Tokens {
     let storage = Token(IDENTIFIER, auxiliaryStorage(variable.name.name))
     let ty = variable.ty.tokens
@@ -323,7 +338,26 @@ func auxiliaryHolderDecl(variable: VariableClause, names: HashSet<String>): Toke
         case Some(initExpr) => quote(Some($(rewriteAux(initExpr.tokens, names))))
         case None => quote(None)
     }
+    if (names.contains(boxedAuxKey())) {
+        return quote(let $(storage): Array<?$(ty)> = [$(initializer)])
+    }
     quote(var $(storage): ?$(ty) = $(initializer))
+}
+
+/// Forward every boxed auxiliary holder to a hoisted body helper: one named parameter per
+/// `variable` clause on `helper`, and the matching named argument on the helper call. Named
+/// form keeps the forwarding legal after any named parameter of the original callable.
+func appendBoxedAuxParams(helper: FuncDecl, arguments: Tokens, contract: FunctionContract): Unit {
+    for (clause in contract.clauses) {
+        if (let Variable(variable) <- clause) {
+            let storage = auxStorageToken(variable.name.name)
+            helper.funcParams.add(FuncParam(quote($(storage)!: Array<?$(variable.ty.tokens)>)))
+            if (arguments.size > 0) {
+                arguments.append(quote(,))
+            }
+            arguments.append(quote($(storage): $(storage)))
+        }
+    }
 }
 
 /// Splice the `$pre(argument)` occurrences of an `ensures` condition: the tokens between

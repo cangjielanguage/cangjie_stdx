@@ -10,7 +10,7 @@ package stdx.contract.macros.validation
 
 import stdx.contract.macros.syntax.{FunctionClause}
 import stdx.contract.macros.tokens.precededByDot
-import std.ast.{ASTException, Block, CallExpr, DiagReportLevel, DoWhileExpr, Expr, ForInExpr, FuncDecl, FuncParam, IfExpr, MatchExpr, Node, RefExpr, SpawnExpr, SynchronizedExpr, Token, Tokens, TryExpr, VarDecl, VarPattern, WhileExpr, diagReport}
+import std.ast.{ASTException, Block, CallExpr, DiagReportLevel, DoWhileExpr, Expr, ForInExpr, FuncDecl, FuncParam, IfExpr, MatchExpr, Node, RefExpr, SpawnExpr, SynchronizedExpr, Token, Tokens, TryExpr, VarDecl, WhileExpr, diagReport}
 import std.collection.{ArrayList, HashSet, contains, isEmpty}
 
 /**
@@ -151,15 +151,14 @@ func collectGhostDeclarationsInNode(node: Node, names: HashSet<String>): Unit {
 func collectGhostBodyDeclarations(block: Block, names: HashSet<String>): Unit {
     for (node in block.nodes) {
         if (let variable: VarDecl <- node) {
-            if (variable.identifier.value.size > 0) {
-                names.add(variable.identifier.value)
-            } else {
-                match (variable.pattern) {
-                    case pattern: VarPattern => names.add(pattern.identifier.value)
-                    case _ => ()
-                }
-            }
+            addGhostBodyDeclaration(variable, names)
         }
+    }
+}
+
+private func addGhostBodyDeclaration(variable: VarDecl, names: HashSet<String>): Unit {
+    if (let Some(identifier) <- declaredVariableIdentifier(variable)) {
+        names.add(identifier.value)
     }
 }
 

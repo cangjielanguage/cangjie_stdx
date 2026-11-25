@@ -48,10 +48,6 @@ internal func contractPackageName(): String {
     }
 }
 
-// ---------------------------------------------------------------------------
-// public entry points (called from metadata.cj hooks)
-// ---------------------------------------------------------------------------
-
 /// One-shot flag for the persistence-failure WARNING below: a single broken setup (e.g. a
 /// misconfigured `CANGJIE_STDX_CONTRACT_META_DIR`) would repeat the same failure for every
 /// `@Contract`, so it is reported only once. Only touch this under `_CONTRACT_META_REGISTRY_MUTEX`.
@@ -130,37 +126,40 @@ internal func loadMetaDataFromDisk(name: String): ?ContractMetaData {
         candidates = dedupeIdenticalRecords(candidates)
     }
     if (candidates.size > 1) {
-        // Same-package records win over same-name records of other packages: a workspace
-        // build and a dependency build can both leave a `<Name>.cmeta`, and picking the
-        // foreign one would silently inherit the wrong contract. Only a still-ambiguous
-        // selection is reported.
-        let currentPackage = contractPackageName()
-        if (currentPackage != "") {
-            let preferred = metaFileName(currentPackage + "." + name)
-            let samePackage = ArrayList<String>()
-            for (path in candidates) {
-                if (path.endsWith("/" + preferred) || path.endsWith("\\" + preferred)) {
-                    samePackage.add(path)
-                }
-            }
-            if (samePackage.size == 1) {
-                candidates = samePackage
-            }
-        }
+        candidates = preferCurrentPackageRecords(name, candidates)
     }
     if (candidates.size > 1) {
         reportAmbiguousMeta(name, candidates)
         return None
     }
     for (path in candidates) {
-        let bytes: ?Array<UInt8> = readWholeFileSafe(path)
-        match (bytes) {
-            case Some(value) =>
-                return parseMetaData(name, value)
-            case None => ()
+        if (let Some(bytes) <- readWholeFileSafe(path)) {
+            return parseMetaData(name, bytes)
         }
     }
     None
+}
+
+/// Same-package records win over same-name records of other packages: a workspace build and a
+/// dependency build can both leave a `<Name>.cmeta`, and picking the foreign one would
+/// silently inherit the wrong contract. Only an unambiguous same-package match replaces the
+/// candidate list; every other selection is left to the caller's ambiguity check.
+func preferCurrentPackageRecords(name: String, candidates: ArrayList<String>): ArrayList<String> {
+    let currentPackage = contractPackageName()
+    if (currentPackage == "") {
+        return candidates
+    }
+    let preferred = metaFileName(currentPackage + "." + name) // cjlint-ignore !G.VAR.02 the preferred file name is computed once and reused inside the candidate loop
+    let samePackage = ArrayList<String>()
+    for (path in candidates) {
+        if (path.endsWith("/" + preferred) || path.endsWith("\\" + preferred)) {
+            samePackage.add(path)
+        }
+    }
+    if (samePackage.size == 1) {
+        return samePackage
+    }
+    candidates
 }
 
 /// Drop candidates whose file content equals one already seen, keeping the first occurrence.
@@ -171,12 +170,7 @@ func dedupeIdenticalRecords(candidates: ArrayList<String>): ArrayList<String> {
     for (path in candidates) {
         var duplicate = false
         if (let Some(bytes) <- readWholeFileSafe(path)) {
-            for (known in seen) {
-                if (bytes == known) {
-                    duplicate = true
-                    break
-                }
-            }
+            duplicate = containsKnownContent(seen, bytes)
             if (!duplicate) {
                 seen.add(bytes)
             }
@@ -186,6 +180,16 @@ func dedupeIdenticalRecords(candidates: ArrayList<String>): ArrayList<String> {
         }
     }
     kept
+}
+
+/// Whether `bytes` equals the content of one already-kept record.
+func containsKnownContent(seen: ArrayList<Array<UInt8>>, bytes: Array<UInt8>): Bool {
+    for (known in seen) {
+        if (bytes == known) {
+            return true
+        }
+    }
+    false
 }
 
 /// Resolve the record files matching `name` across every meta directory. A qualified name maps
@@ -199,29 +203,37 @@ func metaFileCandidates(name: String): ArrayList<String> {
             continue
         }
         if (qualified) {
-            let path = dir + "/" + metaFileName(name)
-            if (exists(path)) {
-                candidates.add(path)
-            }
+            appendQualifiedRecord(candidates, dir, name)
             continue
         }
-        let plain = name + ".cmeta"
-        let suffix = "." + name + ".cmeta"
-        // Records are written flat into the meta directory, so one listing level is enough;
-        // a recursive walk would only rescan unrelated subdirectories.
-        try {
-            for (info in Directory.readFrom(Path(dir))) {
-                let fileName = info.name
-                if (fileName == plain || fileName.endsWith(suffix)) {
-                    candidates.add(info.path.toString())
-                }
-            }
-        } catch (e: Exception) {
-            // An unreadable directory behaves like a miss.
-            ()
-        }
+        appendSimpleNamedRecords(candidates, dir, name)
     }
     candidates
+}
+
+/// Add the exact `<dir>/<qualified name>.cmeta` path when that file exists.
+func appendQualifiedRecord(candidates: ArrayList<String>, dir: String, name: String): Unit {
+    let path = dir + "/" + metaFileName(name) // cjlint-ignore !G.VAR.02 the derived path feeds the existence check directly; inlining would duplicate the concatenation
+    if (exists(path)) {
+        candidates.add(path)
+    }
+}
+
+/// Add every record in `dir` matching the simple name, i.e. `<Name>.cmeta` as well as
+/// `<package>.<Name>.cmeta`.
+func appendSimpleNamedRecords(candidates: ArrayList<String>, dir: String, name: String): Unit {
+    // Records are written flat into the meta directory, so one listing level is enough;
+    // a recursive walk would only rescan unrelated subdirectories.
+    try {
+        for (info in Directory.readFrom(Path(dir))) {
+            if (info.name == name + ".cmeta" || info.name.endsWith("." + name + ".cmeta")) {
+                candidates.add(info.path.toString())
+            }
+        }
+    } catch (e: Exception) {
+        // An unreadable directory behaves like a miss.
+        ()
+    }
 }
 
 /// A simple-name reference cannot pick between records of different packages; taking either
@@ -276,10 +288,6 @@ func metaDirCandidates(): ArrayList<String> {
     dirs
 }
 
-// ---------------------------------------------------------------------------
-// cjpm layout probing (default `CANGJIE_STDX_CONTRACT_META_DIR` only)
-// ---------------------------------------------------------------------------
-
 /// One-shot cache for cjpm layout probing (see `probeCjpmDependencyMetaDirs`): the project
 /// layout cannot change mid-compilation. Only touch these globals while holding
 /// `_CONTRACT_META_REGISTRY_MUTEX`; all callers run under it.
@@ -298,22 +306,31 @@ func probeCjpmDependencyMetaDirs(): ArrayList<String> {
     }
     _cjpmMetaDirsProbed = true
     try {
-        let cwd = trimTrailingSeparators(getWorkingDirectory().toString())
-        if (let Some(root) <- findCjpmModuleRoot(cwd)) {
-            appendExistingMetaDir(_PROBED_CJPM_META_DIRS, root)
-            // `parseCjpmPathDependencies` returns ready `<dep>/target/contract_meta` candidates
-            // (it already filtered out missing directories); just merge them in order.
-            for (dep in parseCjpmPathDependencies(root)) {
-                if (!_PROBED_CJPM_META_DIRS.contains(dep)) {
-                    _PROBED_CJPM_META_DIRS.add(dep)
-                }
-            }
-        }
+        probeCjpmLayout()
     } catch (e: Exception) {
         // Probing is opportunistic: any failure leaves the default dirs in effect.
         ()
     }
     _PROBED_CJPM_META_DIRS
+}
+
+/// Locate the cjpm module root from the working directory and merge its own and its path
+/// dependencies' meta directories into the one-shot probe cache.
+func probeCjpmLayout(): Unit {
+    if (let Some(root) <- findCjpmModuleRoot(trimTrailingSeparators(getWorkingDirectory().toString()))) {
+        appendExistingMetaDir(_PROBED_CJPM_META_DIRS, root)
+        // `parseCjpmPathDependencies` returns ready `<dep>/target/contract_meta` candidates
+        // (it already filtered out missing directories); just merge them in order.
+        for (dep in parseCjpmPathDependencies(root)) {
+            appendUniqueMetaDir(dep)
+        }
+    }
+}
+
+func appendUniqueMetaDir(dir: String): Unit {
+    if (!_PROBED_CJPM_META_DIRS.contains(dir)) {
+        _PROBED_CJPM_META_DIRS.add(dir)
+    }
 }
 
 /// Walk up from `startDir` until a directory containing `cjpm.toml` is found. None when the
@@ -459,7 +476,10 @@ func isAbsolutePath(path: String): Bool {
         return true
     }
     let bytes = path.toArray()
-    bytes.size >= 2 && bytes[1] == 58 && isDrivePrefix(String.fromUtf8([bytes[0]])) // ':'
+    if (bytes.size < 2 || bytes[1] != 58) {
+        return false
+    }
+    isDrivePrefix(String.fromUtf8([bytes[0]])) // ':'
 }
 
 /// Append `<packageDir>/target/contract_meta` when that directory exists, deduplicating.
@@ -497,10 +517,16 @@ func readWholeFileSafe(path: String): ?Array<UInt8> {
     }
 }
 
+/**
+ * @brief Read a whole small text file, refusing implausibly large ones.
+ *
+ * @param path Path of a `.cmeta` record or a `cjpm.toml` file.
+ * @return The whole file content.
+ * @throws Exception when the file exceeds `_MAX_READ_FILE_BYTES` (the limit only catches a
+ * corrupt or hostile file that would otherwise be loaded whole), or when the path cannot be
+ * inspected or read; the caller treats that like any other unreadable file.
+ */
 func readWholeFile(path: String): Array<UInt8> {
-    // Records read here (`.cmeta` files and `cjpm.toml`) are small text files. Refuse an
-    // implausibly large one instead of letting a corrupt or hostile file exhaust compiler
-    // memory; the caller treats the failure like any other unreadable file.
     let size = FileInfo(Path(path)).size
     if (size > _MAX_READ_FILE_BYTES) {
         throw Exception("refusing to read ${path}: ${size} bytes exceeds the ${_MAX_READ_FILE_BYTES}-byte limit")
@@ -870,7 +896,13 @@ func readAttrOrigins(reader: MetaReader, hash: UInt64): (UInt64, HashMap<String,
 
 /// Whether the stream starts with the expected magic and format header.
 func readMetaMagic(reader: MetaReader): Bool {
-    reader.word() == "CFGMETA" && reader.int() == META_FORMAT_VERSION && reader.word() == "TYPE"
+    if (reader.word() != "CFGMETA") {
+        return false
+    }
+    if (reader.int() != META_FORMAT_VERSION) {
+        return false
+    }
+    reader.word() == "TYPE"
 }
 
 /// Mutable state of one record read from a `.cmeta` stream. Each `read*` step consumes its
@@ -1122,8 +1154,22 @@ func parseMetaData(name: String, data: Array<UInt8>): ?ContractMetaData {
             return None
         }
         let state = MetaParseState(name, reader)
-        if (!state.readHeader() || !state.readSignatures() || !state.readClauses() ||
-            !state.readMemberAttrs() || !state.readPropertyAttrs() || !state.readValueNames()) {
+        if (!state.readHeader()) {
+            return None
+        }
+        if (!state.readSignatures()) {
+            return None
+        }
+        if (!state.readClauses()) {
+            return None
+        }
+        if (!state.readMemberAttrs()) {
+            return None
+        }
+        if (!state.readPropertyAttrs()) {
+            return None
+        }
+        if (!state.readValueNames()) {
             return None
         }
         // The record self-describes its type name (and package, when the build supplied one).
@@ -1244,10 +1290,6 @@ func metaClauseTokens(clause: TypeClause): Tokens {
         case InvariantInherit(_) => Tokens()
     }
 }
-
-// ---------------------------------------------------------------------------
-// token stream <-> source text (public std.ast surface only)
-// ---------------------------------------------------------------------------
 
 /// Text of `token` with an empty fallback: value-less tokens (e.g. EOF) throw
 /// `NoneValueException` on `.value` in newer compilers instead of returning `""`.

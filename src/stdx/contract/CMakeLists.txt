@@ -15,7 +15,7 @@ set(CONTRACT_MACROS_SRCS
     CACHE INTERNAL "")
 
 set(CONTRACT_MACROS_TOKENS_SRCS
-    cursor.cj
+    token_cursor.cj
     tokens.cj
     CACHE INTERNAL "")
 
@@ -29,7 +29,7 @@ set(CONTRACT_MACROS_SYNTAX_SRCS
 set(CONTRACT_MACROS_PARSE_SRCS
     body.cj
     clause.cj
-    context.cj
+    parse_result.cj
     declaration.cj
     expression.cj
     function.cj
@@ -63,7 +63,7 @@ set(CONTRACT_MACROS_GENERATE_SRCS
     function.cj
     helper.cj
     interface.cj
-    invariant.cj
+    resolved_invariant.cj
     property.cj
     type.cj
     variable.cj

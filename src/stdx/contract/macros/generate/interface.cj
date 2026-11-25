@@ -10,11 +10,11 @@ package stdx.contract.macros.generate
 
 import stdx.contract.macros.inheritance.{ContractMetaData, ResolvedTypeContract, attrOriginHasOwner, collectAllMemberSignatures, collectValueMemberNames, combineAttrs, declaredTypeParameters, expandMemberInherits, methodSignatureKey, recordDeclaredAttrOrigin, registerMetaData, reportInheritedNameConflicts, resolveTypeContract, unionInto}
 import stdx.contract.macros.parse.{parseFunctionContract, parsePropertyContract}
-import stdx.contract.macros.syntax.{Diagnostic, PropContract, PropKind, TypeClause, TypeContract}
+import stdx.contract.macros.syntax.{Diagnostic, PropClause, PropContract, PropKind, TypeClause, TypeContract}
 import stdx.contract.macros.tokens.{tokensStableKey}
 import stdx.contract.runtime.ContractVisibility
 import std.ast.{ASTException, Body, Decl, ExtendDecl, FuncDecl, InterfaceDecl, PropDecl, Token, Tokens, parseDecl}
-import std.collection.{ArrayList, HashSet, contains, forEach, isEmpty}
+import std.collection.{ArrayList, HashSet, contains, isEmpty}
 
 /**
  * @brief Expands an interface type contract into the rewritten declaration tokens.
@@ -33,7 +33,9 @@ public func genInterfaceContract(contract: TypeContract, owner: InterfaceDecl): 
     let diagnostics = ArrayList<Diagnostic>()
     let resolved = resolveTypeContract(contract, owner, diagnostics)
     if (!diagnostics.isEmpty()) {
-        diagnostics.forEach {diagnostic => diagnostic.show()}
+        for (diagnostic in diagnostics) {
+            diagnostic.show()
+        }
         return owner.toTokens()
     }
     let generated = InterfaceDecl(owner.toTokens())
@@ -59,7 +61,9 @@ public func genInterfaceContract(contract: TypeContract, owner: InterfaceDecl): 
     generated.body = Body(members)
 
     if (!diagnostics.isEmpty()) {
-        diagnostics.forEach {diagnostic => diagnostic.show()}
+        for (diagnostic in diagnostics) {
+            diagnostic.show()
+        }
         return owner.toTokens()
     }
     registerMetaData(
@@ -138,7 +142,9 @@ func processInterfaceMethod(method: FuncDecl, expansion: InterfaceExpansion,
         return
     }
     let parsed = parseFunctionContract(attr)
-    parsed.diagnostics.forEach {diagnostic => diagnostic.show()}
+    for (diagnostic in parsed.diagnostics) {
+        diagnostic.show()
+    }
     if (parsed.hasError()) {
         members.add(method)
         return
@@ -230,8 +236,10 @@ func processInterfaceProperty(property: PropDecl, expansion: InterfaceExpansion,
         parseInterfacePropertyContract(attr, property, checks.size)
     // The setter wrapper is skipped for non-`mut` properties, so only a `mut`
     // accessor needs its body checked.
-    if (attr.size == 0 && checks.size == 0 || parseFailed || !propertyAccessorsHaveBodies(property,
-        needGetter, needSetter && modifiersHave(property.modifiers, "mut"))) {
+    let isMutProperty = modifiersHave(property.modifiers, "mut")
+    let setterNeedsBodyCheck = needSetter && isMutProperty
+    let accessorsHaveBodies = propertyAccessorsHaveBodies(property, needGetter, setterNeedsBodyCheck)
+    if (attr.size == 0 && checks.size == 0 || parseFailed || !accessorsHaveBodies) {
         members.add(property)
         return
     }
@@ -258,20 +266,32 @@ func parseInterfacePropertyContract(attr: Tokens, property: PropDecl, checksSize
     var parsedContract: ?PropContract = None
     if (attr.size > 0) {
         let parsed = parsePropertyContract(attr, setterAlias: setterParameterName(property))
-        parsed.diagnostics.forEach {diagnostic => diagnostic.show()}
+        for (diagnostic in parsed.diagnostics) {
+            diagnostic.show()
+        }
         if (parsed.hasError()) {
             parseFailed = true
         } else {
             parsedContract = Some(parsed.value)
-            for (clause in parsed.value.clauses) {
-                match (clause.kind) {
-                    case PropKind.Getter => needGetter = true
-                    case PropKind.Setter => needSetter = true
-                }
-            }
+            let (hasGetter, hasSetter) = declaredPropertyKinds(parsed.value.clauses)
+            needGetter = needGetter || hasGetter
+            needSetter = needSetter || hasSetter
         }
     }
     (needGetter, needSetter, parseFailed, parsedContract)
+}
+
+/// Which accessors the property contract declares a clause for.
+func declaredPropertyKinds(clauses: ArrayList<PropClause>): (Bool, Bool) {
+    var hasGetter = false
+    var hasSetter = false
+    for (clause in clauses) {
+        match (clause.kind) {
+            case PropKind.Getter => hasGetter = true
+            case PropKind.Setter => hasSetter = true
+        }
+    }
+    (hasGetter, hasSetter)
 }
 
 func mergeInterfacePropertyContract(expansion: InterfaceExpansion, name: String, raw: Tokens,
@@ -338,7 +358,9 @@ public func genExtendContract(contract: TypeContract, owner: ExtendDecl): Tokens
         processExtendMember(member, expansion, members)
     }
     if (!diagnostics.isEmpty()) {
-        diagnostics.forEach {diagnostic => diagnostic.show()}
+        for (diagnostic in diagnostics) {
+            diagnostic.show()
+        }
         return owner.toTokens()
     }
     generated.body = Body(members)
@@ -410,7 +432,9 @@ func processExtendMethod(method: FuncDecl, expansion: ExtendExpansion, members: 
             reportConformingRequires(raw, key, expansion.diagnostics)
         }
         let parsed = parseFunctionContract(attr)
-        parsed.diagnostics.forEach {diagnostic => diagnostic.show()}
+        for (diagnostic in parsed.diagnostics) {
+            diagnostic.show()
+        }
         if (!parsed.hasError()) {
             validateEnsuresReturnNames(parsed.value, expansion.memberNames, method.identifier.value)
             appendGenerated(members, genFunction(parsed.value, method))
@@ -435,7 +459,9 @@ func processExtendProperty(property: PropDecl, expansion: ExtendExpansion,
             reportConformingPropertyRequires(raw, name, expansion.diagnostics)
         }
         let parsed = parsePropertyContract(attr, setterAlias: setterParameterName(property))
-        parsed.diagnostics.forEach {diagnostic => diagnostic.show()}
+        for (diagnostic in parsed.diagnostics) {
+            diagnostic.show()
+        }
         if (!parsed.hasError()) {
             validateEnsuresReturnNamesProperty(parsed.value, expansion.memberNames, property.identifier.value)
             // The extended type's kind (class or struct) is invisible here, so the

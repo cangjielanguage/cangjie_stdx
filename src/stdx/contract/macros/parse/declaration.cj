@@ -19,9 +19,9 @@ import std.collection.{ArrayList}
  * The annotated declaration is parsed first, and its kind picks both the clause
  * grammar and the `ContractSyntax` variant: classes, structs, interfaces, and extends
  * use the type-level grammar, primary constructors and functions use the callable
- * grammar, and properties use the accessor grammar. Enum declarations are rejected
- * with a compile-time diagnostic and an empty contract; any other declaration kind
- * yields a diagnostic in the returned `ParseResult` instead.
+ * grammar, and properties use the accessor grammar. Enum declarations and `@C` interop
+ * types are rejected with a compile-time diagnostic and an empty contract; any other
+ * declaration kind yields a diagnostic in the returned `ParseResult` instead.
  *
  * @param attr The contract clauses carried in `@Contract[...]`.
  * @param input The annotated declaration.
@@ -36,6 +36,17 @@ public func parseContract(attr: Tokens, input: Tokens): ParseResult<ContractDecl
     func branch<T>(parser: (Tokens) -> ParseResult<T>, wrap: (T) -> ContractSyntax): ParseResult<ContractDeclaration> {
         let parsed = parser(attr)
         ParseResult(ContractDeclaration(declaration, wrap(parsed.value), attr), parsed.diagnostics)
+    }
+
+    // `@C` interop types are foreign memory layouts; contracts cannot be enforced on
+    // them (design v2 §3.1.7). Only the `@C` annotation still visible on the parsed
+    // declaration can be rejected, i.e. when `@Contract` is written before `@C`; when
+    // `@C` comes first the compiler consumes it and this check cannot see it (the
+    // documented limitation in contract_package_macros.md).
+    if (declaration is StructDecl && hasCAnnotation(declaration)) {
+        diagReport(DiagReportLevel.ERROR, input,
+            "@Contract is not supported on `@C` interop types", "Contract")
+        return ParseResult(ContractDeclaration(declaration, ContractSyntax.Empty, attr), ArrayList<Diagnostic>())
     }
 
     match (declaration) {
@@ -59,6 +70,18 @@ public func parseContract(attr: Tokens, input: Tokens): ParseResult<ContractDecl
                     "bad decl kind", input))
             ParseResult(ContractDeclaration(declaration, ContractSyntax.Empty, attr), diagnostics)
     }
+}
+
+/// Whether the declaration carries the built-in `@C` interop annotation. The annotation
+/// identifier is `C`; other annotations on the same declaration (including `@Contract`
+/// itself) are ignored.
+func hasCAnnotation(declaration: Decl): Bool {
+    for (annotation in declaration.annotations) {
+        if (annotation.identifier.value == "C") {
+            return true
+        }
+    }
+    false
 }
 
 /// The default `parseDecl` cannot parse a primary constructor (`C(public let x: T) { ... }`)

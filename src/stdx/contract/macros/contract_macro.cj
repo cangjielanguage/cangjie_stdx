@@ -206,7 +206,10 @@ func expandCallableContract(attr: Tokens, input: Tokens, contract: FunctionContr
 
 func expandConstructorCallable(input: Tokens, contract: FunctionContract, owner: PrimaryCtorDecl): Tokens {
     let returnBindingOk = reportConstructorEnsuresReturn(contract)
-    if (!returnBindingOk || !validateConstructorContract(contract, owner)) {
+    if (!returnBindingOk) {
+        return input
+    }
+    if (!validateConstructorContract(contract, owner)) {
         return input
     }
     validateGhostUsage(contract.clauses, callableBlock({=> owner.block}), owner.funcParams)
@@ -220,12 +223,15 @@ func expandFunctionCallable(attr: Tokens, input: Tokens, contract: FunctionContr
     // diagnostic. Inside an enclosing type contract the guard does not apply:
     // bodiless interface/abstract members are legitimate there, their contract
     // is deferred to the type-level generation via `storeDeferredMethodContract`.
-    if (!insideParentContext("Contract") && !directFuncHasModifier(owner, "foreign") &&
-        !functionHasBody(owner)) {
-        diagReport(DiagReportLevel.ERROR, attr,
-            "`@Contract` cannot annotate a function without a body; declare the contract on the enclosing type instead",
-            "Contract")
-        return input
+    if (!insideParentContext("Contract")) {
+        let isForeign = directFuncHasModifier(owner, "foreign")
+        let hasBody = functionHasBody(owner)
+        if (!isForeign && !hasBody) {
+            diagReport(DiagReportLevel.ERROR, attr,
+                "`@Contract` cannot annotate a function without a body; declare the contract on the enclosing type instead",
+                "Contract")
+            return input
+        }
     }
     if (!validateFunctionContract(contract, owner)) {
         return input
