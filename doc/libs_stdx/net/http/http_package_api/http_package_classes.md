@@ -4061,6 +4061,13 @@ public func addTrailers(trailers: HttpHeaders): HttpRequestBuilder
 
 功能：向请求 trailer 添加参数 [HttpHeaders](http_package_classes.md#class-httpheaders) 中的键值对。
 
+> **说明：**
+>
+> - 设置了 trailers 的请求：HTTP/1.1 下将自动以 chunked 方式发送（无需手工声明 Transfer-Encoding 或 Trailer 头），HTTP/2 下以 trailers HEADERS 帧发送。
+> - 请求同时显式设置 Content-Length 与 trailers 时会抛出 HttpException；TRACE/CONNECT 方法不允许携带 trailers。
+> - trailer 字段名不允许使用 HTTP 语义禁止的字段（类别涵盖消息分帧、路由、认证、条件请求、逐跳、响应控制、载荷编码/类型等，完整清单见 TRAILER_EXCLUDE_LIST），否则抛出 HttpException。
+> - 重定向时 trailers 的转发规则：同源（scheme/host/port 一致）且方法不变（如 307/308 重放 body）时正常转发；跨源（含 https 降级到 http）或方法改为 GET（301/302/303，body 被丢弃）时不转发（trailers 可能包含完整性元数据，属于原请求的私有信息）。
+
 参数：
 
 - trailers: [HttpHeaders](http_package_classes.md#class-httpheaders) - 传入的 trailer 对象。
@@ -7793,7 +7800,7 @@ h1 request 检查和处理：
 - 请求头 "trailer" 中，value 不允许存在 "transfer-encoding"，"trailer"，"content-length"；
 - 请求头 "expect" 中，value 中存在非 "100-continue" 的值，将会返回 417 响应；
 - HTTP/1.0 默认短连接，若想保持长连接需要包含请求头 "connection: keep-alive" 与 "keep-alive: timeout = XX, max = XX"，将会自动保持 timeout 时长的连接。HTTP/1.1 默认长连接，当解析 request 失败则关闭连接；
-- 仅允许在 chunked 模式下存在 trailer，且 trailer 中条目的 name 必须被包含在 "trailer" 请求头中，否则将自动删除。
+- 仅允许在 chunked 模式下存在 trailer；trailer 中条目的 name 若被包含在 "trailer" 请求头中则保留，未声明的条目不再自动删除，但 HTTP 语义禁止的字段（完整清单见 TRAILER_EXCLUDE_LIST，涵盖消息分帧、路由、认证、条件请求、逐跳、响应控制、载荷编码/类型等类别）仍会被忽略。注意：trailers 内容来自对端（客户端），服务端处理时应视为不可信输入，按字段名白名单使用。
 
 h1 response 检查和处理：
 
@@ -7820,7 +7827,7 @@ h2 request 检查和处理：
 - 如果有 "trailer" header，其值不能包含 "transfer-encoding"，"trailer"，"content-length"，否则关闭流；
 - 仅在升级 [WebSocket](http_package_classes.md#class-websocket) 场景下支持 CONNECT 方法，否则关闭流；
 - pseudo headers 中，必须包含 ":method"、":scheme"、":path"，其中 ":method" 值必须由 tokens 字符组成，":scheme" 值必须为 "https"，":path" 不能为空，否则关闭流；
-- trailer 中条目的 name 必须被包含在 "trailer" 头中，否则将自动删除；
+- trailer 中条目的 name 若被包含在 "trailer" 头中则保留，未声明的条目不再自动删除，但 HTTP 语义禁止的字段仍会被忽略；
 - request headers 大小不能超过 maxHeaderListSize，否则关闭连接。
 
 h2 response 检查和处理：
@@ -7834,7 +7841,6 @@ h2 response 检查和处理：
     - headers 包含 "content-length"，但 "content-length" 不合法（无法被解析为 Int64 值，或包含多个不同值），如果用户调用 [HttpResponseWriter](http_package_classes.md#class-httpresponsewriter) 类的 write 函数，将抛出 [HttpException](http_package_exceptions.md#class-httpexception)，如果用户 handler 已经结束，将打印日志；
     - headers 包含 "content-length"，同时 response.body.length 不为 -1，"content-length" 值与 body.length 不符，同 6.1 处理；
     - headers 包含 "content-length"，同时 response.body.length 为 -1，或 body.length 与 "content-length" 值一致，则保留 "content-length" header；
-- trailer 中条目必须被包含在 "trailer" 头中，否则将自动删除；
 - 如果 handler 中抛出异常，且用户未调用 write 发送部分响应，将返回 500 响应。如果用户已经调用 write 发送部分响应，将发送 RST 帧关闭 stream。
 
 h2 server 发完 response 之后，如果 stream 状态不是 CLOSED，会发送带 NO_ERROR 错误码的 RST 帧关闭 stream，避免已经处理完毕的 stream 继续占用服务器资源。

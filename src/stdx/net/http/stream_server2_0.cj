@@ -599,7 +599,8 @@ class HttpEngineConn2 <: HttpEngineConn & InputStream {
     var connect = false
     // whether response with streamEnd has been sent on stream
     var responded = false
-    // in case trailer processed before headers, trailer will be removed because there is no trailer header
+    // in case trailer processed before headers, forbidden fields will still
+    // be dropped once the trailer is merged (checkTrailer runs unconditionally)
     // use SyncCounter to ensure header processed first
     var headerSyncCounter = SyncCounter(1)
 
@@ -815,7 +816,7 @@ class HttpEngineConn2 <: HttpEngineConn & InputStream {
             }
 
             if (name == "trailer") {
-                if (!Str(value).splitAllMatch(SYMBOL_COMMA, {v => !TrailerExcludeList.contains(v)})) {
+                if (!Str(value).splitAllMatch(SYMBOL_COMMA, {v => !trailerNameForbidden(v.trim())})) {
                     headerSyncCounter.dec()
                     throw HttpStreamException(ProtocolError, "Malformed request: invalid trailer value in header.")
                 }
@@ -857,11 +858,11 @@ class HttpEngineConn2 <: HttpEngineConn & InputStream {
             for ((k, v) in fields) {
                 trailers.add(k, v) // throw HttpException, if k or v contain invalid elements
             }
-            // remove trailers, name of which is absent in header "trailer"
+            // forbidden fields are always dropped, regardless of any "Trailer"
+            // declaration (RFC 9110 6.5.1); checkTrailer does not depend on the
+            // request headers, so it is called unconditionally
             headerSyncCounter.waitUntilZero()
-            if (let Some(headers) <- request._headers) {
-                checkTrailer(request)
-            }
+            checkTrailer(request)
         } catch (e: HttpException) {
             throw HttpStreamException(ProtocolError, "Invalid trailer field: ${e.message}")
         }

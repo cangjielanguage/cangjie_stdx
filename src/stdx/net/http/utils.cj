@@ -654,7 +654,7 @@ func checkConnection(headers: HttpHeaders): Unit {
 
 func checkTrailerInHeader(headers: HttpHeaders, isReq: Bool): Unit {
     if (let Some(hv) <- headers.getInternal("trailer")) {
-        let ret = hv.splitAllMatch(SYMBOL_COMMA, {v => !TrailerExcludeList.contains(v)})
+        let ret = hv.splitAllMatch(SYMBOL_COMMA, {v => !trailerNameForbidden(v.trim())})
         if (!ret) {
             throw chooseException("Invalid trailer header: contains forbidden field.", isReq)
         }
@@ -681,12 +681,60 @@ func checkTrailer(responseBuilder: HttpResponseBuilder): Unit {
     }
 }
 
+// whether a trailer field name is already declared in the "Trailer" header
+// (case-insensitive)
+func trailerNameDeclared(hv: HeaderValue, n: Str): Bool {
+    let values = splitValuesByComma([hv.toString()])
+    for (v in values) {
+        if (n.equals(Str(v))) {
+            return true
+        }
+    }
+    return false
+}
+
+// whether a trailer field name matches the forbidden list
+// (case-insensitive, per RFC 9110 6.5.1)
+func trailerNameForbidden(n: Str): Bool {
+    for (ex in TRAILER_EXCLUDE_LIST) {
+        if (n.equals(ex, sensitive: false)) {
+            return true
+        }
+    }
+    return false
+}
+
+// sender-side fail-fast validation for user-set request trailers:
+// forbidden field names (RFC 9110 6.5.1) throw instead of being sent or
+// silently dropped; shared by the H1 and H2 client send paths.
+//
+// @throws HttpException if a trailer field name is forbidden
+func checkUserTrailersForSend(request: HttpRequest): Unit {
+    if (let Some(tr) <- request._trailers) {
+        for ((n, _) in tr.map) {
+            if (trailerNameForbidden(n)) {
+                throw HttpException("Invalid trailer field: '${n}' is forbidden in trailers.")
+            }
+        }
+    }
+}
+
 func checkTrailer(request: HttpRequest): Unit {
     if (let Some(tr) <- request._trailers) {
-        if (let Some(hv) <- request.headers.getInternal("trailer")) {
-            checkTrailer(tr, hv)
-        } else {
-            request._trailers = None
+        // forbidden fields are always dropped, regardless of any "Trailer"
+        // declaration (receiver-side policy: ignore per RFC 9110); this
+        // function serves both the client send path and the H2 server
+        // receive path; sender-side fail-fast validation lives in checkRequest.
+        // The "Trailer" declaration is an optional hint (RFC 9110 6.5.1) and
+        // is NOT enforced: undeclared (non-forbidden) entries are kept.
+        let toRemove = ArrayList<Str>()
+        for ((n, _) in tr.map) {
+            if (trailerNameForbidden(n)) {
+                toRemove.add(n)
+            }
+        }
+        for (n in toRemove) {
+            tr.map.remove(n)
         }
     }
 }

@@ -587,12 +587,29 @@ class HttpClientEngine2 {
 
     /*
      * this is a sync API, async one can be easily implemented based on this one
+     *
+     * @throws HttpException if the request is invalid (e.g. forbidden trailer
+     *          fields, TRACE/CONNECT carrying trailers, stream limits reached)
      */
     func request(req: HttpRequest): HttpResponse {
         if (req.method == "CONNECT" && remoteSettings[SettingsEnableConnectProtocol.code] == 0) {
             throw HttpException("Target HTTP/2 server doesn't allow CONNECT method.")
         }
         checkUserAgent(req._version, req.headers)
+        // sender-side validation for user-set trailers, symmetric with H1
+        checkUserTrailersForSend(req)
+        // parity with H1: validate the user-declared trailer names
+        // (isReq=false: client-side pre-validation throws HttpException,
+        //  not the server-side HttpStatusException)
+        checkTrailerInHeader(req.headers, false)
+        // parity with the H1 send path: TRACE/CONNECT must not carry trailers
+        if (req.method == "TRACE" || req.method == "CONNECT") {
+            if (let Some(tr) <- req._trailers) {
+                if (!tr.isEmpty()) {
+                    throw HttpException("Request method '${req.method}' does not support trailers.")
+                }
+            }
+        }
 
         let stream: ClientStream = send(req)
         // block in receive
