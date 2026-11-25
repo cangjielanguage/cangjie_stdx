@@ -138,7 +138,9 @@ Type: UInt32
 public prop poolSize: Int64
 ```
 
-Functionality: Configures the size of the connection pool used by the HTTP/1.1 client, which also represents the maximum number of simultaneous connections to the same host (host:port).
+Functionality: Configures the size of the connection pool used by the HTTP/1.1 client, which also represents the maximum number of simultaneously active (in-use) connections to the same host (host:port). Pooled idle connections do not consume this limit.
+
+When concurrent requests to the same host exceed this limit, the excess requests queue up and wait for a free connection instead of throwing an exception directly. The waiting phase is not bounded by readTimeout/writeTimeout; waiting requests receive the corresponding exception when the client is closed or the connection establishment fails. The limit is accounted per host (host:port) and shared by plain and TLS connections. When the number of pooled idle connections for the host reaches poolSize, a newly returned connection is closed instead of being kept as idle.
 
 Type: Int64
 
@@ -755,7 +757,9 @@ Return Value:
 public func poolSize(size: Int64): ClientBuilder
 ```
 
-Function: Configure the size of the connection pool used by the HTTP/1.1 client, which also represents the maximum number of simultaneous connections to the same host (host:port).
+Function: Configure the size of the connection pool used by the HTTP/1.1 client, which also represents the maximum number of simultaneously active (in-use) connections to the same host (host:port). Pooled idle connections do not consume this limit.
+
+When concurrent requests to the same host exceed this limit, the excess requests queue up and wait for a free connection instead of throwing an exception directly. The waiting phase is not bounded by readTimeout/writeTimeout; waiting requests receive the corresponding exception when the client is closed or the connection establishment fails. The limit is accounted per host (host:port) and shared by plain and TLS connections. When the number of pooled idle connections for the host reaches poolSize, a newly returned connection is closed instead of being kept as idle.
 
 Parameters:
 
