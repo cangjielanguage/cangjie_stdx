@@ -240,16 +240,8 @@ func applyTrailersForSend(request: HttpRequest, chunked: Bool): Bool {
         }
     }
     checkTrailer(request)
-    if (chunked) {
-        return chunked
-    }
-    if (let Some(cl) <- request.contentLength) {
-        let _ = cl
-        throw HttpException("Request trailers cannot be sent with content-length, use transfer-encoding: chunked instead.")
-    }
-    request.headers.add("transfer-encoding", "chunked")
     // declare the trailer field names for strict receivers
-    // (dedup case-insensitively)
+    // (dedup case-insensitively) - regardless of the framing chosen below
     let toDeclare = ArrayList<Str>()
     for ((n, _) in tr.map) {
         let declared = match (request.headers.getInternal("trailer")) {
@@ -263,7 +255,18 @@ func applyTrailersForSend(request: HttpRequest, chunked: Bool): Bool {
     for (n in toDeclare) {
         request.headers.add("trailer", n.toString())
     }
-    return true
+    // trailers can only be transmitted with chunked transfer-coding
+    // (RFC 9110 11.6): switch automatically when the user set neither
+    // transfer-encoding nor content-length
+    if (!chunked) {
+        if (let Some(cl) <- request.contentLength) {
+            let _ = cl
+            throw HttpException("Request trailers cannot be sent with content-length, use transfer-encoding: chunked instead.")
+        }
+        request.headers.add("transfer-encoding", "chunked")
+        return true
+    }
+    return chunked
 }
 
 /**

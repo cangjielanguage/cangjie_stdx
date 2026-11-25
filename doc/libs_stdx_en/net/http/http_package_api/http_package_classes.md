@@ -1556,7 +1556,7 @@ Function: Adds key-value pairs from the [HttpHeaders](http_package_classes.md#cl
 >
 > - A request with trailers set: on HTTP/1.1 it is automatically sent with chunked transfer-coding (no manual Transfer-Encoding or Trailer header is required); on HTTP/2 it is sent as trailers HEADERS frames.
 > - Setting Content-Length explicitly together with trailers throws HttpException; the TRACE/CONNECT methods also reject trailers.
-> - Trailer field names must not use fields forbidden by HTTP semantics (e.g. content-length, transfer-encoding, trailer, host, authorization, cookie, content-encoding, content-type, content-range, expect, max-forwards), otherwise HttpException is thrown.
+> - Trailer field names must not use fields forbidden by HTTP semantics (categories: message framing, routing, authentication, conditional requests, hop-by-hop, response control, payload encoding/type; the full list is TRAILER_EXCLUDE_LIST), otherwise HttpException is thrown.
 > - Redirect trailer forwarding rules: forwarded when same-origin (scheme/host/port unchanged) and the method is preserved (e.g. 307/308 body replay); not forwarded when the target is cross-origin (including an https->http downgrade) or the method is switched to GET (301/302/303, body dropped). Trailers may carry integrity metadata that belongs to the original request.
 
 Parameters:
@@ -2909,7 +2909,7 @@ h1 Request Validation and Processing:
 - For "trailer" header, values cannot include "transfer-encoding", "trailer", or "content-length";
 - For "expect" header, values containing anything other than "100-continue" will return 417 response;
 - HTTP/1.0 defaults to short-lived connections. To maintain persistent connections, include headers "connection: keep-alive" and "keep-alive: timeout = XX, max = XX" to automatically maintain connections for specified timeout duration. HTTP/1.1 defaults to persistent connections. Failed request parsing closes the connection;
-- Trailers are only allowed in chunked mode; trailer entry names declared in the "trailer" request header are kept, undeclared entries are no longer automatically removed, but fields forbidden by HTTP semantics (content-length, transfer-encoding, trailer, host, authorization, cookie, content-encoding, content-type, content-range, expect, max-forwards, cache-control, set-cookie, www-authenticate, proxy-authenticate) are still ignored.
+- Trailers are only allowed in chunked mode; trailer entry names declared in the "trailer" request header are kept, undeclared entries are no longer automatically removed, but fields forbidden by HTTP semantics (content-length, transfer-encoding, trailer, host, authorization, cookie, content-encoding, content-type, content-range, expect, max-forwards, cache-control, set-cookie, www-authenticate, proxy-authenticate) are still ignored. Note: trailer content comes from the peer (client side) and should be treated as untrusted input by the server - process by field-name allowlist.
 
 h1 Response Validation and Processing:
 

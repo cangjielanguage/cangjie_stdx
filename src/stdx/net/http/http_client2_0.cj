@@ -598,6 +598,10 @@ class HttpClientEngine2 {
         checkUserAgent(req._version, req.headers)
         // sender-side validation for user-set trailers, symmetric with H1
         checkUserTrailersForSend(req)
+        // parity with H1: validate the user-declared trailer names
+        // (isReq=false: client-side pre-validation throws HttpException,
+        //  not the server-side HttpStatusException)
+        checkTrailerInHeader(req.headers, false)
         // parity with the H1 send path: TRACE/CONNECT must not carry trailers
         if (req.method == "TRACE" || req.method == "CONNECT") {
             if (let Some(tr) <- req._trailers) {

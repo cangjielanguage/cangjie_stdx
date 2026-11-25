@@ -70,7 +70,9 @@ let TRAILER_EXCLUDE_LIST: Array<Str> = [Str("transfer-encoding"), Str("trailer")
     Str("expect"), Str("max-forwards"), Str("cache-control"), Str("set-cookie"), Str("www-authenticate"),
     Str("proxy-authenticate"), Str("proxy-authorization"), Str("te"), Str("connection"), Str("keep-alive"),
     Str("proxy-connection"), Str("upgrade"), Str("range"), Str("if-match"), Str("if-none-match"),
-    Str("if-modified-since"), Str("if-unmodified-since"), Str("if-range")]
+    Str("if-modified-since"), Str("if-unmodified-since"), Str("if-range"),
+    Str("age"), Str("date"), Str("expires"), Str("retry-after"),
+    Str("vary"), Str("warning")]
 
 // operator ** is better than <<
 // min value of max frame size
