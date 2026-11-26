@@ -303,7 +303,7 @@ public class WebSocket {
             case CloseWebFrame =>
                 match {
                     // the first two bytes of the body must be 2-byte unsigned integer.
-                    case byteArray.size == 0 => writeFrame(true, CloseWebFrame, byteArray, isClient)
+                    case byteArray.size == 0 => writeFrame(true, CloseWebFrame, byteArray, isClient, markClose: true)
                     case byteArray.size == 1 => throw WebSocketException("Invalid close frame payload: length is '1'.")
                     case byteArray.size <= 125 =>
                         let status = toUInt16(byteArray[..2])
@@ -314,11 +314,10 @@ public class WebSocket {
                         if (status >= 5000 || status < 1000 || status == 1005 || status == 1006 || status == 1015) {
                             throw WebSocketException("Invalid close status code '${status}'.")
                         }
-                        writeFrame(true, CloseWebFrame, byteArray, isClient)
+                        writeFrame(true, CloseWebFrame, byteArray, isClient, markClose: true)
                     case _ => throw WebSocketException(
                         "Control frame payload length '${byteArray.size}' exceeds maximum 125.")
                 }
-                isSentCloseFrame.store(true)
             case _ => throw WebSocketException("Invalid frame type '${frameType}'.")
         }
     }
@@ -336,7 +335,9 @@ public class WebSocket {
      */
     private func writeDataFrames(frameType: WebSocketFrameType, byteArray: Array<UInt8>, frameSize: Int64): Unit {
         // must not send any more data frames after sending a Close frame.
-        // RFC 6455 5.1.1.
+        // RFC 6455 5.5.1.
+        // this is only a fast-path check; the authoritative check is
+        // performed under writeMutex in writeFrame.
         if (isSentCloseFrame.load()) {
             throw WebSocketException("Cannot send data frames after Close frame.")
         }
@@ -369,22 +370,50 @@ public class WebSocket {
         writeFrame(true, ContinuationWebFrame, byteArray.slice(sendLen, (byteArray.size - sendLen)), isClient)
     }
 
-    private func writeFrame(fin: Bool, frameType: WebSocketFrameType, byteArray: Array<UInt8>, isClient: Bool) {
+    /**
+     * write a single frame, atomic with the close-flag store under
+     * writeMutex: a data frame (Text/Binary/Continuation) either reaches the
+     * wire before the Close frame, or is rejected here once the close flag
+     * has been stored by the markClose store below. for a fragmented message
+     * this also re-checks the flag between fragments.
+     * RFC 6455 5.5.1.
+     *
+     * @throws WebSocketException if data frames are sent after the Close
+     *          frame has been sent.
+     */
+    private func writeFrame(fin: Bool, frameType: WebSocketFrameType, byteArray: Array<UInt8>, isClient: Bool,
+        markClose!: Bool = false) {
         synchronized(writeMutex) {
+            if (isDataWebFrame(frameType) && isSentCloseFrame.load()) {
+                throw WebSocketException("Cannot send data frames after Close frame.")
+            }
             let frameBytesExceptPayload = toWebSocketFrameBytesExceptPayload(fin, frameType, byteArray.size, isClient)
             conn.writeRaw(frameBytesExceptPayload)
-            if (byteArray.isEmpty()) {
-                return
+            if (!byteArray.isEmpty()) {
+                // client must mask data frames sent to server.
+                let payload = if (isClient) {
+                    // last 4 bytes is maskingKey.
+                    maskOrUnmask(frameBytesExceptPayload[frameBytesExceptPayload.size - 4..], byteArray)
+                } else {
+                    byteArray
+                }
+                conn.writeRaw(payload)
             }
-            // client must mask data frames sent to server.
-            let payload = if (isClient) {
-                // last 4 bytes is maskingKey.
-                maskOrUnmask(frameBytesExceptPayload[frameBytesExceptPayload.size - 4..], byteArray)
-            } else {
-                byteArray
+            if (markClose) {
+                // store the flag right after the Close frame is on the wire,
+                // within the same critical section: a concurrent data writer
+                // either precedes the Close frame on the wire, or is rejected
+                // by the check above. on a write failure the flag stays unset,
+                // so a retry re-attempts the send and later data writes
+                // surface the underlying socket error.
+                // RFC 6455 5.5.1.
+                isSentCloseFrame.store(true)
             }
-            conn.writeRaw(payload)
         }
+    }
+
+    private func isDataWebFrame(frameType: WebSocketFrameType): Bool {
+        frameType == TextWebFrame || frameType == BinaryWebFrame || frameType == ContinuationWebFrame
     }
 
     /**
@@ -406,8 +435,7 @@ public class WebSocket {
         // status none means the Close frame contains no body.
         let statusCode = match (status) {
             case None =>
-                writeFrame(true, CloseWebFrame, Array<UInt8>(), isClient)
-                isSentCloseFrame.store(true)
+                writeFrame(true, CloseWebFrame, Array<UInt8>(), isClient, markClose: true)
                 return
             case Some(value) => value
         }
@@ -431,8 +459,7 @@ public class WebSocket {
         let payload = Array<UInt8>(2 + reasonArr.size, repeat: 0)
         statusArr.copyTo(payload, 0, 0, 2)
         reasonArr.copyTo(payload, 0, 2, reasonArr.size)
-        writeFrame(true, CloseWebFrame, payload, isClient)
-        isSentCloseFrame.store(true)
+        writeFrame(true, CloseWebFrame, payload, isClient, markClose: true)
     }
 
     /**
