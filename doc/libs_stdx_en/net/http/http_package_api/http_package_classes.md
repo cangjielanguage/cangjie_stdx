@@ -130,6 +130,8 @@ public prop maxHeaderListSize: UInt32
 
 Functionality: Gets the maximum HTTP/2 header size supported by the client. This size refers to the maximum allowed total length of all header fields in the response headers, including the length of field names (name), field values (value), and the pseudo-header overhead automatically added for each field (typically 32 bytes per field, which includes the pseudo-header information added by the HTTP/2 protocol itself). By default, this maximum length is set to UInt32.Max.
 
+This configuration only applies to the receiving direction (i.e., the response headers received by the client). The total size limit of the header list in the sending direction (i.e., the request headers and trailers sent by the client) is advertised by the server through the HTTP/2 SETTINGS_MAX_HEADER_LIST_SIZE setting, and an HttpException is thrown when the limit is exceeded.
+
 Type: UInt32
 
 ### prop poolSize
@@ -728,6 +730,8 @@ public func maxHeaderListSize(size: UInt32): ClientBuilder
 ```
 
 Function: Get the maximum header size supported by the client's HTTP/2. This size refers to the maximum allowed total length of all header fields in the response headers, including the length of all field names (name), field values (value), and the pseudo-header overhead automatically added for each field (typically 32 bytes per field, which includes the pseudo-header information added by the HTTP/2 protocol itself). By default, this maximum length is set to UInt32.Max.
+
+This configuration only applies to the receiving direction (i.e., the response headers received by the client). The total size limit of the header list in the sending direction (i.e., the request headers and trailers sent by the client) is advertised by the server through the HTTP/2 SETTINGS_MAX_HEADER_LIST_SIZE setting, and an HttpException is thrown when the limit is exceeded.
 
 Parameters:
 
@@ -2741,7 +2745,9 @@ Type: UInt32
 public prop maxHeaderListSize: UInt32
 ```
 
-Functionality: Gets the maximum HTTP/2 header size supported by the client. This size refers to the maximum allowed total length of all header fields in the response headers, including the length of field names, values, and the pseudo-header overhead automatically added for each field (typically 32 bytes per field, including pseudo-header information added by the HTTP/2 protocol itself). By default, this maximum length is set to UInt32.Max.
+Functionality: Gets the maximum HTTP/2 header size supported by the server. This size refers to the maximum allowed total length of all header fields in the request headers, including the length of field names, values, and the pseudo-header overhead automatically added for each field (typically 32 bytes per field, including pseudo-header information added by the HTTP/2 protocol itself). By default, this maximum length is set to 8192.
+
+The server advertises this value to clients through the HTTP/2 SETTINGS_MAX_HEADER_LIST_SIZE setting. When the total size of the request headers and trailers sent by the client exceeds this value, the client will throw an HttpException.
 
 Type: UInt32
 
@@ -3279,7 +3285,9 @@ Return Value:
 public func maxHeaderListSize(size: UInt32): ServerBuilder
 ```
 
-Function: Gets the client-supported maximum HTTP/2 header size. This size refers to the maximum allowed total length of all header fields in the response, including field names, values, and pseudo-header overhead (typically 32 bytes per field). Default is UInt32.Max.
+Function: Sets the maximum HTTP/2 header size supported by the server. This size refers to the maximum allowed total length of all header fields in the request headers, including field names, values, and pseudo-header overhead (typically 32 bytes per field). Default is 8192.
+
+The server advertises this value to clients through the HTTP/2 SETTINGS_MAX_HEADER_LIST_SIZE setting. When the total size of the request headers and trailers sent by the client exceeds this value, the client will throw an HttpException.
 
 Parameters:
 

@@ -94,6 +94,10 @@ class ClientStream {
             if (let Some(t) <- timeout) {
                 throw t
             }
+            // the stream failed before/while sending frames: reset it so that
+            // the write thread can advance lastSendId, otherwise later streams
+            // (with larger stream ids) would be blocked in the cache forever
+            close(Cancel)
             throw e
         } finally {
             // stop timer after write request
@@ -753,9 +757,22 @@ class Http2ClientEngineConn <: StreamingSocket {
         if (quit) {
             return
         }
+        checkHeaderListSize(fieldBlock)
         let fieldsFrame = FieldsFrame(streamId, fieldBlock, last: streamEnd)
         if (!outputQueue.send(fieldsFrame, MESSAGE_PRIORITY)) {
             throw HttpException("Output queue closed while writing headers.")
+        }
+    }
+
+    private func checkHeaderListSize(fields: FieldsList): Unit {
+        let maxListSize = stream.engine.remoteSettings[SettingsMaxHeaderListSize.code]
+        var totalSize: Int64 = 0
+        for (field in fields) {
+            totalSize += fieldSize(field)
+        }
+        if (totalSize > Int64(maxListSize)) {
+            throw HttpException(
+                "Request header list size '${totalSize}' exceeds maximum '${maxListSize}' set by peer's SETTINGS_MAX_HEADER_LIST_SIZE.")
         }
     }
 
