@@ -2253,7 +2253,7 @@ public init(name: String, value: String, expires!: ?DateTime = None, maxAge!: ?I
 
 功能：[Cookie](http_package_classes.md#class-cookie) 构造器。
 
-该构造器会检查传入的各项属性是否满足协议要求，如果不满足则会产生 IllegalArgumentException。具体要求见 [RFC 6265 4.1.1.](https://httpwg.org/specs/rfc6265.html#sane-set-cookie-syntax)。
+该构造器会检查传入的各项属性是否满足协议要求，如果不满足则会产生 IllegalArgumentException。具体要求见 [RFC 6265 4.1.1.](https://httpwg.org/specs/rfc6265.html#sane-set-cookie-syntax)。其中 maxAge 例外：RFC 6265 4.1.1 的 `max-age-av` 语法仅约束服务端发送；按 RFC 6265 [5.2.2](https://httpwg.org/specs/rfc6265.html#cookie-av) 的接收规则，0 和负数是合法输入，语义为该 [Cookie](http_package_classes.md#class-cookie) 立即过期，因此构造器同样接受 maxAge 小于等于 0 的输入。
 
 > **注意：**
 >
@@ -2282,7 +2282,7 @@ public init(name: String, value: String, expires!: ?DateTime = None, maxAge!: ?I
     ```
 
 - expires!: ?DateTime - 设置 [Cookie](http_package_classes.md#class-cookie) 的过期时间，默认为 None，时间必须在 1601 年之后。
-- maxAge!: ?Int64 - [Cookie](http_package_classes.md#class-cookie) 的最大生命周期，默认为 None，如果 [Cookie](http_package_classes.md#class-cookie) 既有 expires 属性，也有 maxAge，这两个过期时间都会失效，[Cookie](http_package_classes.md#class-cookie) 会被降级为会话级，Client 打开期间有效，Client 关闭后就失效。
+- maxAge!: ?Int64 - [Cookie](http_package_classes.md#class-cookie) 的最大生命周期，默认为 None，如果 [Cookie](http_package_classes.md#class-cookie) 既有 expires 属性，也有 maxAge，这两个过期时间都会失效，[Cookie](http_package_classes.md#class-cookie) 会被降级为会话级，Client 打开期间有效，Client 关闭后就失效。maxAge 支持 0 和负数：当 maxAge 小于等于 0 时，该 [Cookie](http_package_classes.md#class-cookie) 存入 [CookieJar](http_package_interfaces.md#interface-cookiejar) 后立即过期，用于删除同名、同 domain、同 path 的已存 [Cookie](http_package_classes.md#class-cookie)，见 RFC 6265 5.2.2。注意如果需要通过 `Set-Cookie` 下发该 [Cookie](http_package_classes.md#class-cookie)，RFC 6265 4.1.1 要求服务端发送的 Max-Age 值为正整数。
 
     ```text
     max-age-av     = "Max-Age=" non-zero-digit *DIGIT
