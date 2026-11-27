@@ -113,6 +113,9 @@ class HttpClient2 <: HttpClient {
                 httpLogDebug(logger, "[HttpClient2#request] restart engine to ${connnectKey}")
                 let newHttpEngine = createEngine(connnectKey, isToProxy)
                 engines.add(connnectKey, newHttpEngine)
+                // route the current request to the new engine instead of the
+                // dead one, which would fail with "Connection closed."
+                httpEngine = newHttpEngine
             } else if (httpEngine.closing || httpEngine.lastStreamId.load() >= httpEngine.maxStreamId) {
                 httpLogDebug(logger, "[HttpClient2#request] restart engine to ${connnectKey}")
                 // keep most 2 connections to one server
@@ -122,6 +125,8 @@ class HttpClient2 <: HttpClient {
                 closingEngines.add(connnectKey, httpEngine)
                 let newHttpEngine = createEngine(connnectKey, isToProxy)
                 engines.add(connnectKey, newHttpEngine)
+                // the closing engine can not take new streams any more
+                httpEngine = newHttpEngine
             }
         }
 
@@ -326,9 +331,26 @@ class HttpClientEngine2 {
     private func startReceiveLoop() {
         spawn {
             httpLogTrace(logger, "[HttpClientEngine2#startReceiveLoop] read thread start")
-            do {
-                receiveResponse()
-            } while (!quit.load())
+            try {
+                do {
+                    receiveResponse()
+                } while (!quit.load())
+            } catch (e: HttpConnectionException) {
+                // RFC 9113 5.4.1: a connection error must tear the connection
+                // down, otherwise the engine stays in the pool as a zombie and
+                // every later request blocks until readTimeout.
+                httpLogWarn(logger,
+                    "[HttpClientEngine2#startReceiveLoop] connection exception occurred in read thread: ${e.message}")
+                if (!quit.load()) {
+                    close(code: e.h2Error, msg: e.message)
+                }
+            } catch (e: Exception) {
+                httpLogWarn(logger,
+                    "[HttpClientEngine2#startReceiveLoop] exception occurred in read thread: ${e.message}")
+                if (!quit.load()) {
+                    close(code: H2Error.InternalError, msg: e.message)
+                }
+            }
         }
     }
 
@@ -853,8 +875,11 @@ class HttpClientEngine2 {
 
     private func onPingRead(frame: PingFrame): Unit {
         if (frame.ack) {
+            // RFC 9113 6.7: a PING ack with no outstanding PING is a protocol
+            // error. dequeue() would park here forever on an unsolicited ack,
+            // so tryDequeue fails fast and the loop guard closes the engine.
             let timer = pingWaitingqueue
-                .dequeue()
+                .tryDequeue()
                 .getOrThrow({
                     => HttpConnectionException(ProtocolError, "No ping in queue when receive ack.")
                 })
@@ -894,8 +919,12 @@ class HttpClientEngine2 {
     private func onSettingsRead(frame: SettingsFrame): Unit {
         // apply settings when receive ack and stop timeout task
         if (frame.ack) {
+            // RFC 9113 6.5: a SETTINGS ack with no outstanding SETTINGS is a
+            // protocol error. dequeue() would park here forever on an
+            // unsolicited ack, so tryDequeue fails fast and the loop guard
+            // closes the engine.
             let (setting, timer) = settingsWaitingQueue
-                .dequeue()
+                .tryDequeue()
                 .getOrThrow({
                     => HttpConnectionException(ProtocolError, "No settings in queue when receive ack.")
                 })
