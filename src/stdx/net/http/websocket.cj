@@ -52,6 +52,10 @@ public class WebSocket {
     // RFC 6455 8.1.
     let utf8Validator = Utf8Validator()
     var inTextMessage = false
+    // fragmentation state of the message being received, guarded by readMutex.
+    // true between a non-final data frame and the final continuation frame.
+    // RFC 6455 5.6.
+    var fragmentInProgress = false
 
     init(conn: WebSocketConn, subProtocol: String, isClient: Bool) {
         this.conn = conn
@@ -148,8 +152,20 @@ public class WebSocket {
                     }
                 case _ => ()
             }
+
+            // a data frame must not be received before the previous fragmented
+            // message is finished, and a continuation frame must have a preceding
+            // data frame.
+            // RFC 6455 5.6.
+            checkFragmentationState(frame)
+
             readFramePayload(frame)
             validateTextFrameUtf8(frame)
+
+            // the body of a Close frame must contain a valid status code and
+            // UTF-8 reason.
+            // RFC 6455 5.5.1 / 7.4.
+            validateCloseFrame(frame)
         }
         return frame
     }
@@ -236,6 +252,73 @@ public class WebSocket {
         }
         if (frame.fin && !utf8Validator.isComplete()) {
             failTheWebSocketConnection(WebSocketStatusCode.INVALID_DATA, "invalid UTF-8 in Text message")
+        }
+    }
+
+    /**
+     * check the frame against the fragmentation state of the message being
+     * received, to reject orphan continuation frames and new data frames
+     * interleaved into a fragmented message.
+     * RFC 6455 5.6.
+     */
+    private func checkFragmentationState(frame: WebSocketFrame): Unit {
+        match (frame.frameType) {
+            case ContinuationWebFrame =>
+                if (!fragmentInProgress) {
+                    failTheWebSocketConnection(WebSocketStatusCode.PROTOCOL_ERROR,
+                        "continuation frame received without an initial data frame")
+                }
+                if (frame.fin) {
+                    // the fragmented message is finished, new data frames are
+                    // allowed again.
+                    // RFC 6455 5.6.
+                    fragmentInProgress = false
+                }
+            case TextWebFrame | BinaryWebFrame =>
+                if (fragmentInProgress) {
+                    failTheWebSocketConnection(WebSocketStatusCode.PROTOCOL_ERROR,
+                        "data frame received before the previous fragmented message was finished")
+                }
+                if (!frame.fin) {
+                    fragmentInProgress = true
+                }
+            case _ => () // control frames are already checked to be unfragmented
+        }
+    }
+
+    /**
+     * validate the received Close frame body: the payload length must be 0 or
+     * at least 2, the status code must not be a reserved one, and the reason
+     * must be valid UTF-8.
+     * RFC 6455 5.5.1 / 7.4.
+     */
+    private func validateCloseFrame(frame: WebSocketFrame): Unit {
+        if (frame.frameType != CloseWebFrame) {
+            return
+        }
+        let payload = frame.payload
+        // the first two bytes of the body must be a 2-byte unsigned integer.
+        if (payload.size == 1) {
+            failTheWebSocketConnection(WebSocketStatusCode.PROTOCOL_ERROR,
+                "close frame payload length '1' is invalid, expected 0 or at least 2")
+        }
+        if (payload.size >= 2) {
+            let status = toUInt16(payload[..2])
+            // valid status code ranges defined in RFC 6455 7.4.1/7.4.2.
+            // 1004 is reserved, 1005, 1006, 1015 are reserved values and must not
+            // appear on the wire, 1016-1999 are reserved for extensions and
+            // 2000-2999 are reserved for versions of the protocol.
+            if (status < 1000 || status >= 5000 || status == 1004 || status == 1005 || status == 1006 ||
+                status == 1015 || (status >= 1016 && status <= 2999)) {
+                failTheWebSocketConnection(WebSocketStatusCode.PROTOCOL_ERROR,
+                    "invalid close status code '${status}'")
+            }
+            // the body may contain UTF-8-encoded data with value reason.
+            // RFC 6455 5.5.1.
+            if (payload.size > 2 && !isValidUtf8Message(payload[2..])) {
+                failTheWebSocketConnection(WebSocketStatusCode.INVALID_DATA,
+                    "close frame reason contains invalid UTF-8 data")
+            }
         }
     }
 
