@@ -14,7 +14,7 @@ OAT.xml @xuanjz
 /src/stdx/log/ @ChaosJohn
 /src/stdx/logger/ @ChaosJohn
 
-/src/stdx/net/ @PigHardWorking
+/src/stdx/net/ @jiyuan_99
 
 /src/stdx/syntax/ @mini-tang
 /schema/StdxSyntaxFormat.fbs @mini-tang
