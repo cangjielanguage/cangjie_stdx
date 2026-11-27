@@ -81,6 +81,46 @@ public func operation<T, S>(name: String, body: (S) -> T): Operation<S> where T 
 
 
 /**
+ * Stride of the `operationId` encoding: every actor's operation indices
+ * occupy their own 2^32-wide band of ids, so ids stay unique for any
+ * operation count a scenario can actually build (an actor would need
+ * 2^32 operations to spill into the next actor's band), and the
+ * actor/index split stays decodable by division and modulo.
+ *
+ * (The historical stride was 1000, which a single 1000+-operation actor
+ * exceeded — its ids then collided with the next actor's and silently
+ * corrupted consistency validation: merged histories, skipped
+ * operations, false verdicts.)
+ */
+internal const OPERATION_ID_STRIDE: Int64 = 4294967296
+
+/**
+ * The unique, decodable id of one operation invocation: the actor's band
+ * plus the operation's index. Throws on ids outside the encodable range
+ * (a negative actor or index, or bands past Int64) rather than wrapping
+ * into another actor's band — an id collision corrupts consistency
+ * validation silently, so overflow must fail loudly.
+ */
+internal func encodeOperationId(actorId: Int64, operationIndex: Int64): Int64 {
+    if (actorId < 0 || actorId > Int64.Max / OPERATION_ID_STRIDE ||
+        operationIndex < 0 || operationIndex >= OPERATION_ID_STRIDE) {
+        throw IllegalArgumentException("operation id out of encodable range: " +
+            "actor ${actorId}, operation ${operationIndex}.")
+    }
+    return actorId * OPERATION_ID_STRIDE + operationIndex
+}
+
+/** The actor half of an `operationId` (see `encodeOperationId`). */
+internal func operationActorOf(operationId: Int64): Int64 {
+    return operationId / OPERATION_ID_STRIDE
+}
+
+/** The operation-index half of an `operationId` (see `encodeOperationId`). */
+internal func operationIndexOf(operationId: Int64): Int64 {
+    return operationId % OPERATION_ID_STRIDE
+}
+
+/**
  * Recorded form of a single operation execution, captured by the framework as
  * actors run their operation lists.
  *
@@ -119,6 +159,6 @@ public class OperationInvocation {
     ) {}
 
     prop operationId: Int64 {
-        get() { actorId * 1000 + operationIndex }
+        get() { encodeOperationId(actorId, operationIndex) }
     }
 }

@@ -202,30 +202,26 @@ internal class PctWaitForGraph {
     // holders (the sound-under-approximation cases).
     private func edgeTargets(a: Int64): Array<Int64> {
         if (!table.isWaiting(a)) {
-            return Array<Int64>(0, { _ => 0 })
+            return []
         }
         let kind = table.waitEdgeOf(a)
         if (kind == NoEdge) {
-            return Array<Int64>(0, { _ => 0 })
+            return []
         }
-        let keyOpt = table.waitKeyOf(a)
-        if (keyOpt.isNone()) {
-            return Array<Int64>(0, { _ => 0 })
-        }
-        let key = keyOpt.getOrThrow() // cjlint-ignore !G.ERR.03 invariant-guarded extraction: a preceding isNone()/contains() gate (or the ScenarioBuilder contract, see comment) guarantees Some here; None would be a framework bug where throwing is the intended behavior
+        let key = table.waitKeyOf(a) ?? return []
         if (kind == JoinFuture) {
             // The mediated-join edge (a retained route; no producer today).
             if (let Some(owner) <- table.liveChildOwner(key)) {
                 return [owner]
             }
-            return Array<Int64>(0, { _ => 0 })
+            return []
         }
         let holders = holderActors(key)
         if (kind == HoldExclusive) {
             if (holders.size == 1) {
                 return holders
             }
-            return Array<Int64>(0, { _ => 0 }) // 0 (untracked) or ambiguous: no sound edge
+            return [] // 0 (untracked) or ambiguous: no sound edge
         }
         return holders // HoldAll: every tracked holder must release
     }
@@ -241,6 +237,16 @@ internal class PctWaitForGraph {
      * the cycle (starting and ending at `me`).
      */
     internal func detectCycle(me: Int64): ?Array<Int64> { // cjlint-ignore !G.FUN.01 single cohesive algorithm block; splitting it would scatter the invariant across helpers without simplifying any step
+        // A self-edge — me waiting on a key it already holds, the
+        // non-reentrant self-deadlock — is a one-actor cycle. Check it
+        // before the cheap gate below: the gate requires another waiting
+        // actor, so a lone self-deadlock would otherwise degrade into an
+        // undiagnosed hang instead of a reported cycle.
+        for (t in edgeTargets(me)) {
+            if (t == me) {
+                return Some([me, me])
+            }
+        }
         // Cheap gate: a cycle needs at least one OTHER Waiting actor
         // carrying a live edge kind.
         var anyCandidate = false
@@ -261,9 +267,6 @@ internal class PctWaitForGraph {
         let seen = Array<Bool>(table.slotCount(), { _ => false }) // cjlint-ignore !G.VAR.02 the variable threads state across loop/algorithm iterations (accumulator or framework context); narrowing its scope would change semantics
         let queue = ArrayList<Int64>()
         for (t in edgeTargets(me)) {
-            if (t == me) {
-                return Some([me, me]) // self-edge: a reentrant self-deadlock
-            }
             if (parent[t] == -1) {
                 parent[t] = me
                 queue.add(t)

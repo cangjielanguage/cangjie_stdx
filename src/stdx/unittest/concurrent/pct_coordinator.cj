@@ -11,7 +11,6 @@ package stdx.unittest.concurrent
 import std.collection.ArrayList
 import std.random.Random
 import std.sync.Monitor
-import std.sync.Mutex
 
 /**
  * The Cangjie-side PCT coordinator: the token protocol engine of one PCT
@@ -63,19 +62,44 @@ import std.sync.Mutex
  *  - any other dispatch-in-state combination increments `protocolViolations`
  *    (it must stay zero; buildSchedule fails loudly otherwise).
  *
- * The framework's own synchronization (the coordinator lock, the actor
+ * The framework's own synchronization (the engine lock, the actor
  * gates) is plain std.sync — safe because this package is precompiled
  * WITHOUT `--cj-pct`, so the compiler-inserted dispatch calls exist only
  * in user-binary code and can never re-enter the coordinator through
  * framework-internal parks (enforced by the compilation boundary).
  *
- * Decision sites (all serialized by `lock`, a std.sync.Mutex; wakes happen
- * outside it, so a woken thread is the only possible lock taker):
+ * Every method below runs inside ONE engine region owned by its caller's
+ * route (pctRoute, pct_dispatch.cj — the dispatch entries and the
+ * window's lifecycle calls; the primitive lives in pct_engine_lock.cj):
+ * the bodies are plain assume-locked code (matching the *Locked helper
+ * naming) and never manage the lock themselves — the blocking waits go
+ * through drain sections (pctWithTemporarilyUnlocked, owned by
+ * PctGate.park and the two monitor waits — a park under the lock would
+ * deadlock the grantee), so a route's region composes across a body's
+ * parks (the drain releases the region's hold and restores it). Nested
+ * bodies are plain nested calls inside the one region (pollSelf's poll,
+ * medCondWait's Mesa re-acquire). Wakes run under the lock: a gate open
+ * is a non-blocking notify and the gate monitors are leaves, so the
+ * woken thread merely contends until the waking region ends. The route's
+ * catch delegates to handleException: engine-control aborts (the
+ * wait-for cycle abort, the external-wait rejection, the DPOR
+ * obstruction recovery) and wrapped user-closure failures
+ * (PctUserClosureError, unwrapped at the route) rethrow — they must
+ * unwind user code; everything else is recorded as the iteration's
+ * protocol failure and the route returns None — the caller applies its
+ * degraded value, surfaced by buildSchedule. Exceptions to the routing:
+ * buildSchedule (a plain region — its throws ARE the surfacing),
+ * awaitRegisteredActors/onSpawnSiteAfter (the registrar's bounded waits
+ * must run without the engine lock — the registering child's route
+ * needs it), and activate/loadReplay (called before the reference
+ * install).
+ *
+ * Decision sites (all serialized by the engine lock):
  *  - `poll`: op boundaries, decided by the holder itself (ordinary Cangjie
  *    code with direct coordinator access — no runtime involvement);
- *  - `handleBlockEvent` (via onSyncEnter): the holder is about to park in
- *    a sync primitive; the token must move (or the deadlock is recorded);
- *  - `handleParkEvent` (via onSyncEnter with a future key): the mediated
+ *  - `handleBlockEventLocked` (via onSyncEnter): the holder is about to park
+ *    in a sync primitive; the token must move (or the deadlock is recorded);
+ *  - `handleParkEventLocked` (via onSyncEnter with a future key): the mediated
  *    wait — the holder parks on its own gate instead of the
  *    runtime; the owner's childExit flips it before the completion pick;
  *  - `medAcquire`/`medRelease` (via pctMedAcquire/pctMedUnlock/
@@ -154,6 +178,28 @@ internal class PctExternalWaitError <: Exception {
     }
 }
 
+/**
+ * The wrapper for a user closure's own failure (an acquire probe, a
+ * condition wait's inner lock release) while it runs inside an engine
+ * region: thrown by the closure brackets (medAcquire's probe,
+ * medCondWait's release) so nested regions rethrow it verbatim past the
+ * protocol-failure record — an engine region cannot know whether it is
+ * the outermost one, so the classification must travel with the
+ * exception — and unwrapped back to the original at the dispatch route
+ * (pctRoute, pct_dispatch.cj): the actor's operation must see its own
+ * exception, not a framework failure. Internal on purpose: it exists
+ * only between the brackets and the dispatch boundary; user code never
+ * sees it.
+ */
+internal class PctUserClosureError <: Exception {
+    internal let inner: Exception
+
+    internal init(inner: Exception) {
+        super("${inner}")
+        this.inner = inner
+    }
+}
+
 internal class PctCoordinator {
     // Configuration (one iteration; the schedule-report echo — the live
     // policy state lives in the scheduler).
@@ -161,8 +207,7 @@ internal class PctCoordinator {
     private let actorCount: Int64
     private let pcpBudget0: Int64
 
-    // Protocol state (under `lock`).
-    private let lock = Mutex()
+    // Protocol state (under the engine lock, pct_engine_lock.cj).
     // The per-actor slot storage: identity (tids), gates, protocol state,
     // priority ranks, decision counters, mediated wait registrations (key +
     // edge kind), future identities and the mediated-absorb markers —
@@ -204,7 +249,7 @@ internal class PctCoordinator {
     // lives in the spawn registrar (pct_spawn_registrar.cj).
     // ------------------------------------------------------------------
 
-    private let registrar = PctSpawnRegistrar(coordLock: lock)
+    private let registrar = PctSpawnRegistrar()
     // Set when a wait-for cycle aborts the iteration (the cycle abort).
     // From that point every actor-side coordinator entry throws
     // PctDeadlockError (the abort wave has already woke every actor parked
@@ -218,9 +263,14 @@ internal class PctCoordinator {
     // is Finished.
     private let drainMonitor = Monitor()
 
-    // Dispatch handlers must never throw (their calls sit inside user
-    // frames; a protocol failure must not unwind into user code); a
-    // failure is recorded here and surfaced by buildSchedule.
+    // Dispatch handlers must never throw non-abort exceptions (their calls
+    // sit inside user frames; a protocol failure must not unwind into user
+    // code); a failure is recorded here and surfaced by buildSchedule.
+    // the route does the recording (handleException): any exception
+    // engine region that is neither an engine-control abort nor a wrapped
+    // user-closure failure (PctUserClosureError) lands here, and the
+    // region's caller gets None — its `??` fallback then applies the
+    // degraded value.
     private var protocolFailure: ?Exception = None
     // Dispatch calls absorbed in an unexpected protocol state (a live
     // non-holder actor reaching a dispatch, an exit without its Blocked
@@ -229,6 +279,62 @@ internal class PctCoordinator {
     // must stay zero; non-zero fails the iteration loudly via
     // buildSchedule instead of silently corrupting the schedule.
     private var protocolViolations: Int64 = 0
+
+    /**
+     * The engine's exception policy for one region failure, called by the
+     * dispatch route's catch (pctRoute in pct_dispatch.cj). Engine-control
+     * aborts rethrow — they must unwind user code to the actor boundary;
+     * a wrapped user-closure failure never reaches here (the route
+     * catches the PctUserClosureError marker first and unwraps it);
+     * everything else is a framework-internal failure: recorded into
+     * `protocolFailure` under the engine lock (a fresh region — routes
+     * are only entered from outside, so the failed region has already
+     * released) and surfaced by buildSchedule. The route returns None
+     * for the recorded case; the caller applies its degraded value (the
+     * ABI entries absorb it; the one lifecycle caller that must not
+     * degrade — childEnter's registration, via the spawn closure —
+     * rethrows through recordedFailure).
+     */
+    internal func handleException(e: Exception): Unit {
+        if (e is PctDeadlockError || e is ObstructionDetectedException || e is PctExternalWaitError) {
+            throw e // the engine-control abort must unwind user code
+        }
+        pctOnLocked { => protocolFailure = e }
+    }
+
+    /**
+     * The recorded protocol failure, read under the engine lock (the
+     * spawn closure's childEnter rethrow — see runInitialActor).
+     */
+    internal func recordedFailure(): ?Exception {
+        return pctOnLocked { => protocolFailure }
+    }
+
+    /**
+     * Whether `tid` is bound to one of this window's registered actors —
+     * the dispatch route's lock-free absorb filter (see
+     * pctActiveCoordForActor). Safe without the engine lock only for the
+     * CALLING thread's own tid (its registration is ordered ahead of its
+     * own dispatches — see PctActorTable's single-writer/program-order
+     * note); cross-thread or state-dependent queries must run inside an
+     * engine region.
+     */
+    internal func isActorTid(tid: Int64): Bool {
+        return table.tidToActor(tid).isSome()
+    }
+
+    /**
+     * Test support (same-module tests only — see stdx.concurrent_test_util
+     * and pctInjectProtocolFailureForTest): run one locked region that
+     * throws, so the tests can assert the wrapper records the failure,
+     * releases the lock, and the iteration fails loudly at buildSchedule
+     * instead of hanging. Not a general-purpose API.
+     */
+    internal func debugInjectProtocolFailure(message: String): Unit {
+        // The route's region wraps this; its catch records the throw
+        // (handleException) and the entry discards the None.
+        throw Exception(message)
+    }
 
     internal init(seed!: UInt64, actorCount!: Int64, pcpBudget!: Int64, pcpFireProb!: Float64,
         starvationThreshold!: UInt64 = 10_000u64,
@@ -264,11 +370,19 @@ internal class PctCoordinator {
 
     /**
      * Activate PCT for this coordinator: guard the binary's compilation
-     * contract and the single-active-iteration invariant. Returns 0 on
-     * success, -1 if the binary was not compiled with --cj-pct (blocking
-     * inside actor operations would be invisible to the scheduler), -3 if
-     * a previous iteration is still active (leaked after an exception or
-     * registration timeout).
+     * contract and (advisory) the single-active-iteration invariant.
+     * Returns 0 on success, -1 if the binary was not compiled with
+     * --cj-pct (blocking inside actor operations would be invisible to
+     * the scheduler), -3 if a previous iteration is still active.
+     *
+     * The -3 check here is advisory only: a concurrent scenario run can
+     * slip between this check and the window's install step, so the
+     * authoritative, race-free guard is `pctInstallCurrentIteration`
+     * (pct_dispatch.cj), which serializes the check-and-set on the
+     * iteration guard. A run that loses that race fails its install
+     * loudly instead of silently overwriting the active-window reference
+     * (whose dispatches would then be tid-filtered into absorption — a
+     * near-empty "passing" schedule).
      */
     internal func activate(): Int32 {
         if (!pctInstrumentedBinary) {
@@ -292,16 +406,13 @@ internal class PctCoordinator {
         return table.tidToActor(tid) == Some(holder)
     }
 
-    /** Main thread: give the token to the highest-priority actor and wake it. */
+    /** Main thread: give the token to the highest-priority actor and wake
+     *  it. LOCK HELD (the window's route). */
     internal func releaseFirst(): Unit {
-        lock.lock()
-        let to = sched.initialSwitch()
-        if (to >= 0) {
-            transferLocked(to)
-        }
-        lock.unlock()
-        if (to >= 0) {
-            wake(to)
+        let pick = sched.initialSwitch()
+        if (pick >= 0) {
+            transferLocked(pick)
+            wake(pick) // under the engine lock: a gate open is a non-blocking notify (the woken thread contends until the route's region ends)
         }
     }
 
@@ -309,48 +420,44 @@ internal class PctCoordinator {
      * Actor operation boundary: a PCT decision point between consecutive
      * operations (called by the runner's operation loop). The caller must be
      * the token holder. May switch the token away and park the caller until
-     * it is granted again.
-     *
-     * @throws Exception on a PCT protocol violation: the op boundary was
-     * polled by a non-holder actor.
+     * it is granted again. A non-holder poll is a protocol violation:
+     * recorded (never thrown into the op loop, which would misclassify an
+     * engine failure as the operation's own result) and surfaced by
+     * buildSchedule.
      */
     internal func poll(me: Int64, fromGrid!: Bool = false): Unit {
-        lock.lock()
         throwIfAbortedLocked() // cycle abort: unwind at the op boundary
         if (holder != me) {
-            lock.unlock()
             throw Exception("PCT protocol violation: op boundary polled by non-holder actor ${me}")
         }
         // Deterministic replay key: holder execution is serialized by the
         // token protocol, so per-actor decision counts are schedule-stable.
         table.bumpPoll(me)
         sched.bumpTotalPolls()
+        var to: Int64 = -1
         if (fromGrid && sched.isFairMode()) {
             // Fair scheduling: the grid point is a voluntary yield (budget-
             // free, like blocking; see the scheduler's starvation note).
-            yieldTokenLocked(me)
-            return
-        }
-        let to = sched.opBoundarySwitch(me, fromGrid: fromGrid)
-        if (to < 0) {
-            if (fromGrid) {
+            to = fairYieldLocked(me) // gates me; -1 = nobody to yield to
+        } else {
+            to = sched.opBoundarySwitch(me, fromGrid: fromGrid)
+            if (to >= 0) {
+                table.markGated(me)
+                transferLocked(to)
+            } else if (fromGrid) {
                 // Fast-mode grid continue: the holder keeps the token and
                 // runs on — unless the scheduler's grid-continue streak
                 // trips the obstruction policy (see
                 // applyGridContinuePolicyLocked).
-                if (!applyGridContinuePolicyLocked(me)) {
-                    return
-                }
+                to = applyGridContinuePolicyLocked(me) // gates me on a yield
             }
-            lock.unlock()
-            return
         }
-        table.markGated(me)
-        transferLocked(to)
-        lock.unlock()
-        wake(to)
-        table.park(me) // switch-out park until the token returns
-        // Re-granted: holder == me again.
+        if (to >= 0) {
+            wake(to)
+            table.park(me) // switch-out / fair-yield park until the token returns (the park owns its drain)
+            // Re-granted: holder == me again (the park's drain restored the
+            // region's hold; the route releases it when the body ends).
+        }
     }
 
     /**
@@ -362,26 +469,21 @@ internal class PctCoordinator {
      * schedule, so replay re-triggers at the same decision) and
      * applies the obstruction policy.
      *
-     * Returns true when the holder keeps the token and runs on (the
-     * caller unlocks and returns). Returns false when the policy
-     * yielded the token: the voluntary fair-mode yield fully completes
-     * inside (unlock, wake, park, re-grant) and the caller must simply
-     * return. Throws the obstruction exception that unwinds the
-     * obstructed operation to its per-op capture — the lock is
-     * released first (the actor's next coordinator entry must not
-     * deadlock on it).
+     * Returns -1 when the holder keeps the token and runs on.
+     * Returns the grant target when the policy yielded the token: the
+     * voluntary fair-mode yield's transfer happened inside, and the caller
+     * wakes the target and parks outside the lock. Throws the obstruction
+     * exception that unwinds the obstructed operation to its per-op
+     * capture — the body's wrapper releases the lock (the actor's next
+     * coordinator entry must not deadlock on it).
      */
-    private func applyGridContinuePolicyLocked(me: Int64): Bool {
+    private func applyGridContinuePolicyLocked(me: Int64): Int64 {
         match (sched.noteGridContinue(me)) {
-            case RunOn => ()
-            case YieldNow =>
-                yieldTokenLocked(me)
-                return false
+            case RunOn => -1
+            case YieldNow => fairYieldLocked(me)
             case Obstruct(exc) =>
-                lock.unlock()
                 throw exc
         }
-        return true
     }
 
     /**
@@ -400,105 +502,59 @@ internal class PctCoordinator {
      * voluntary yield.
      */
     internal func onGridPointRw(key: Object, write: Bool): Unit {
-        try {
-            let meOpt = table.tidToActor(Thread.currentThread.id)
-            if (meOpt.isNone()) {
-                return
-            }
-            let me = meOpt.getOrThrow() // cjlint-ignore !G.ERR.03 invariant-guarded extraction: a preceding isNone()/contains() gate (or the ScenarioBuilder contract, see comment) guarantees Some here; None would be a framework bug where throwing is the intended behavior
-            lock.lock()
-            if (table.isFinished(me)) {
-                lock.unlock()
-                return
-            }
-            throwIfAbortedLocked() // cycle abort: unwind at the grid point
-            if (holder != me) {
-                protocolViolations++
-                lock.unlock()
-                return
-            }
-            // The atomic's identity (with its access class) attaches to the
-            // segment this grid decision closes (the scheduler's noteSync
-            // stash; PCT: no-op).
-            sched.noteSync(me, key,
-                if (write) { PctSyncNoteKind.AtomicWrite } else { PctSyncNoteKind.AtomicRead })
-            sched.noteGridPoint()
-            lock.unlock()
-            poll(me, fromGrid: true)
-        } catch (e: Exception) {
-            if (e is PctDeadlockError) {
-                throw e // the cycle abort must unwind user code
-            }
-            if (e is ObstructionDetectedException) {
-                throw e // the DPOR ThrowObstruction recovery must unwind
-                        // user code (the obstructed operation ends as its
-                        // per-op result; swallowing it here would leave the
-                        // spinning poll loop running — the wall re-forms
-                        // every starvationThreshold checks, forever)
-            }
-            protocolFailure = e
+        // LOCK HELD (the entry's route); the poll below runs in the same
+        // region — its park drains and restores the hold.
+        let me = table.tidToActor(Thread.currentThread.id) ?? return ()
+        if (table.isFinished(me)) {
+            return
         }
+        throwIfAbortedLocked() // cycle abort: unwind at the grid point
+        if (holder != me) {
+            protocolViolations++
+            return
+        }
+        // The atomic's identity (with its access class) attaches to the
+        // segment this grid decision closes (the scheduler's noteSync
+        // stash; PCT: no-op).
+        sched.noteSync(me, key,
+            if (write) { PctSyncNoteKind.AtomicWrite } else { PctSyncNoteKind.AtomicRead })
+        sched.noteGridPoint()
+        // The grid decision itself: poll may switch the token away (the
+        // park drains the region's hold) or throw the DPOR
+        // ThrowObstruction recovery — it must unwind user code (the
+        // obstructed operation ends as its per-op result; swallowing it
+        // here would leave the spinning poll loop running — the wall
+        // re-forms every starvationThreshold checks, forever).
+        poll(me, fromGrid: true)
     }
 
     // ------------------------------------------------------------------
     // Sync dispatch entry points (reached through the wrappers'
     // pctSyncEnter/pctSyncExit brackets, on the traversing thread). They
-    // may allocate, take the coordinator lock and log, but MUST NOT
+    // may allocate, take the engine lock and log, but MUST NOT
     // throw; failures are recorded and surfaced by buildSchedule.
     // ------------------------------------------------------------------
-
-    /**
-     * Whether `tid` is bound to a slot of this window's actor table (a
-     * registered actor): the wrappers' path-selection query
-     * (pctCurrentIsActor). Threads outside the window's actor set —
-     * non-actor threads, including threads registered only in a previous
-     * window — are false. Takes `lock` for the consistent table read
-     * (the table's lock-free tid lookup is reserved for a thread's own
-     * entry).
-     */
-    internal func isRegisteredActorTid(tid: Int64): Bool {
-        lock.lock()
-        let registered = table.tidToActor(tid).isSome()
-        lock.unlock()
-        return registered
-    }
 
     /**
      * Sync wrap entry: the calling thread is about to enter a blocking sync
      * intrinsic bracketed by the wrapper package (MCM wait, waitUntil's
      * polling loop, the condition fallback). Non-actor tids are absorbed
-     * (the dispatch fires for every thread in flag-compiled code). For a
-     * registered actor this is a real block iff the actor is the current
-     * holder; anything else would be a protocol violation (impossible;
-     * counted loudly). The runtime park that follows happens inside the
-     * wrapped call; onSyncExit is the unblock.
+     * at the entry's route (pctActiveCoordForActor). For a registered
+     * actor this is a real block iff the actor is the current holder;
+     * anything else would be a protocol violation (impossible; counted
+     * loudly). The runtime park that follows happens inside the wrapped
+     * call; onSyncExit is the unblock. LOCK HELD (the entry's route).
      */
     internal func onSyncEnter(tid: Int64): Unit {
-        let meOpt = table.tidToActor(tid)
-        if (meOpt.isNone()) {
-            return // not a PCT actor (e.g. the main thread's sleep/future polls)
-        }
-        // cjlint-ignore -start !G.VAR.02 the variables below thread state across loop/algorithm iterations (accumulators or framework context); narrowing their scopes would change semantics
-        let me = meOpt.getOrThrow() // cjlint-ignore !G.ERR.03 invariant-guarded extraction: a preceding isNone()/contains() gate (or the ScenarioBuilder contract, see comment) guarantees Some here; None would be a framework bug where throwing is the intended behavior
-        // cjlint-ignore -end
-        try {
-            lock.lock()
-            throwIfAbortedLocked() // cycle abort: unwind before any park
-            if (holder != me) {
-                absorbEnterLocked(me)
-                lock.unlock()
-                return
-            }
+        let me = table.tidToActor(tid) ?? return () // not a PCT actor (e.g. the main thread's sleep/future polls)
+        throwIfAbortedLocked() // cycle abort: unwind before any park
+        if (holder != me) {
+            absorbEnterLocked(me)
+        } else {
             let wakeTarget = handleBlockEventLocked(me)
-            lock.unlock()
             if (wakeTarget >= 0) {
                 wake(wakeTarget)
             }
-        } catch (e: Exception) {
-            if (e is PctDeadlockError) {
-                throw e // the cycle abort must unwind user code
-            }
-            protocolFailure = e
         }
     }
 
@@ -516,52 +572,33 @@ internal class PctCoordinator {
      * rejected before any park).
      */
     internal func onSyncExit(tid: Int64): Unit {
-        let meOpt = table.tidToActor(tid)
-        if (meOpt.isNone()) {
+        let me = table.tidToActor(tid) ?? return ()
+        let st = table.stateOf(me)
+        if (st == Finished) {
             return
         }
-        // cjlint-ignore -start !G.VAR.02 the variables below thread state across loop/algorithm iterations (accumulators or framework context); narrowing their scopes would change semantics
-        let me = meOpt.getOrThrow() // cjlint-ignore !G.ERR.03 invariant-guarded extraction: a preceding isNone()/contains() gate (or the ScenarioBuilder contract, see comment) guarantees Some here; None would be a framework bug where throwing is the intended behavior
-        // cjlint-ignore -end
-        try {
-            lock.lock()
-            let st = table.stateOf(me)
-            if (st == Finished) {
-                lock.unlock()
-                return
-            }
-            if (aborted) {
-                // cycle abort wave: this park (or the runtime park below
-                // it, resolving an owner's exceptional future) returned
-                // without a grant. Claim nothing, park nowhere — the
-                // caller's next coordinator entry throws to finish the
-                // unwind.
-                lock.unlock()
-                return
-            }
-            if (st != Blocked) {
-                protocolViolations++
-                lock.unlock()
-                return
-            }
-            if (holder == -1) {
-                // Deadlock recovery: claim the token (RESUME), no park.
-                sched.recordResumeClaim(me)
-                deadlocked = false
-                transferLocked(me)
-                lock.unlock()
-                return // run as holder
-            }
-            table.markGated(me)
-            lock.unlock()
-            table.park(me) // re-gate park, in managed frames below the user's call
-            // Re-granted: holder == me again.
-        } catch (e: Exception) {
-            if (e is PctDeadlockError) {
-                throw e // the cycle abort must unwind user code
-            }
-            protocolFailure = e
+        if (aborted) {
+            // cycle abort wave: this park (or the runtime park below
+            // it, resolving an owner's exceptional future) returned
+            // without a grant. Claim nothing, park nowhere — the
+            // caller's next coordinator entry throws to finish the
+            // unwind.
+            return
         }
+        if (st != Blocked) {
+            protocolViolations++
+            return
+        }
+        if (holder == -1) {
+            // Deadlock recovery: claim the token (RESUME), no park.
+            sched.recordResumeClaim(me)
+            deadlocked = false
+            transferLocked(me)
+            return // run as holder
+        }
+        table.markGated(me)
+        table.park(me) // re-gate park, in managed frames below the user's call (the park owns its drain)
+        // Re-granted: holder == me again (the park's drain restored the hold).
     }
 
     /**
@@ -574,11 +611,7 @@ internal class PctCoordinator {
      * `poll` on the caller's own slot.
      */
     internal func pollSelf(): Unit {
-        let meOpt = table.tidToActor(Thread.currentThread.id)
-        if (meOpt.isNone()) {
-            return
-        }
-        poll(meOpt.getOrThrow()) // cjlint-ignore !G.ERR.03 invariant-guarded extraction: a preceding isNone()/contains() gate (or the ScenarioBuilder contract, see comment) guarantees Some here; None would be a framework bug where throwing is the intended behavior
+        poll(table.tidToActor(Thread.currentThread.id) ?? return ())
     }
 
     // ------------------------------------------------------------------
@@ -595,7 +628,7 @@ internal class PctCoordinator {
      * A contended acquire by an actor: park on the coordinator gate, keyed
      * by the wrapper object, until the releaser's flip and a token grant
      * make the primitive available; then retry the probe. The probe runs
-     * UNDER the coordinator lock, after the Waiting registration — that
+     * inside the engine region, after the Waiting registration — that
      * ordering closes the lost-wakeup race: a release that landed between
      * the wrapper's failed try-probe and this registration either still
      * holds the lock (probe fails again, we park, the NEXT release flips
@@ -614,99 +647,76 @@ internal class PctCoordinator {
      * The probe is user code (the wrapper's try operation) and may throw
      * (e.g. a semaphore amount out of the permitted range). Such a failure
      * is the actor's own, not an engine dispatch failure: the wait
-     * registration is undone, the coordinator lock released, and the
+     * registration is undone, the engine lock released, and the
      * exception re-thrown so it unwinds the actor's operation (surfacing
      * as that operation's recorded result) while the coordinator stays
      * consistent for every later dispatch.
      */
     internal func medAcquire(key: Object, probe: () -> Bool, semantics: PctAcquireSemantics): Bool { // cjlint-ignore !G.FUN.01 single cohesive algorithm block; splitting it would scatter the invariant across helpers without simplifying any step
-        let meOpt = table.tidToActor(Thread.currentThread.id)
-        if (meOpt.isNone()) {
-            return false // not a PCT actor: the wrapper's fallback applies
-        }
-        let me = meOpt.getOrThrow() // cjlint-ignore !G.ERR.03 invariant-guarded extraction: a preceding isNone()/contains() gate (or the ScenarioBuilder contract, see comment) guarantees Some here; None would be a framework bug where throwing is the intended behavior
+        // LOCK HELD (the entry's route); the non-actor absorb filter
+        // already ran at the entry (pctMedAcquire).
+        let me = table.tidToActor(Thread.currentThread.id) ?? return false // not a PCT actor: the wrapper's fallback applies
         let edgeKind = graph.edgeKindFor(semantics) // cjlint-ignore !G.VAR.02 the variable threads state across loop/algorithm iterations (accumulator or framework context); narrowing its scope would change semantics
-        // Every acquire attempt notes the key (uncontended acquires are
-        // silent — no decision — so the key rides the CURRENT segment's
-        // pending set; two segments touching the same lock are dependent
-        // however the lock traffic resolved).
+        // Every acquire attempt notes the key (uncontended acquires
+        // are silent — no decision — so the key rides the CURRENT
+        // segment's pending set; two segments touching the same lock
+        // are dependent however the lock traffic resolved). Inside
+        // the lock: the scheduler's state is engine-lock-guarded
+        // (every other sched access runs under it), so an unlocked
+        // note here would be the one unsynchronized writer.
         sched.noteSync(me, key, PctSyncNoteKind.Acquire)
-        // Set when the wrapper-supplied probe throws: the error must be
-        // re-thrown past the protocol-failure catch below so it unwinds
-        // the actor's operation instead of being misreported as an engine
-        // dispatch failure (and stalling every later dispatch on a held
-        // lock).
-        var probeError: ?Exception = None
-        try {
-            while (true) {
-                var wakeTarget: Int64 = -1
-                var acquired = false
-                lock.lock()
-                if (table.isFinished(me)) {
-                    lock.unlock()
-                    return false // pooled-cjthread reuse: absorb
-                }
-                throwIfAbortedLocked() // cycle abort: unwind before any park
-                if (holder != me || table.stateOf(me) != Running) {
-                    // Wrapper code runs only on the token holder; anything
-                    // else would be a protocol violation (counted loudly).
-                    protocolViolations++
-                    lock.unlock()
-                    return false
-                }
-                table.markWaiting(me, key, edgeKind)
-                var probeOk = false
-                try {
-                    probeOk = probe()
-                } catch (e: Exception) {
-                    // The probe threw: restore the pre-registration state
-                    // (the actor keeps the token — no transfer happened)
-                    // and release the lock before the error unwinds.
-                    probeError = Some(e)
-                    table.markRunning(me)
-                    lock.unlock()
-                    throw e
-                }
-                if (probeOk) {
-                    // The primitive became available since the wrapper's
-                    // try-probe: take it and keep running (no event).
-                    table.markRunning(me)
-                    graph.holderAdd(key, me) // cycle abort: track the hold
-                    // The successful acquire belongs to THIS segment (the
-                    // attempt note above may have landed in an earlier,
-                    // parked segment — the race reporter's acquire side).
-                    sched.noteSync(me, key, PctSyncNoteKind.Acquire)
-                    acquired = true
-                } else {
-                    // A cycle abort throws from here with the lock already
-                    // released (the unlock below is skipped by the throw).
-                    sched.noteSync(me, key, PctSyncNoteKind.Acquire) // the contended park's key (segment close)
-                    wakeTarget = parkDecisionLocked(me)
-                }
-                lock.unlock()
-                if (acquired) {
-                    return true
-                }
-                if (wakeTarget >= 0) {
-                    wake(wakeTarget)
-                }
-                table.park(me) // mediated park: gated until the releaser's flip + a grant
-                // Granted: holder == me again (a cycle abort wave instead
-                // opens the gate without a grant — the loop top's abort
-                // check throws then). The grant followed a flip, so the
-                // primitive was released; the under-lock probe retries.
+        while (true) {
+            if (table.isFinished(me)) {
+                return false // pooled-cjthread reuse: absorb
             }
-            return false // unreachable: the loop exits only via return
-        } catch (e: Exception) {
-            if (e is PctDeadlockError) {
-                throw e // the cycle abort must unwind user code
+            throwIfAbortedLocked() // cycle abort: unwind before any park
+            if (holder != me || table.stateOf(me) != Running) {
+                // Wrapper code runs only on the token holder; anything
+                // else would be a protocol violation (counted loudly).
+                protocolViolations++
+                return false
             }
-            if (let Some(user) <- probeError) {
-                throw user // the probe's own failure: the actor's error, unwinding its operation
+            table.markWaiting(me, key, edgeKind)
+            var probeOk = false
+            try {
+                // The probe is user code (the wrapper's try operation):
+                // its failure is the actor's own — the wrap makes it
+                // travel past the protocol-failure record (nested
+                // regions rethrow the marker verbatim; the route
+                // unwraps it). The pre-registration state is restored
+                // first (the actor keeps the token — no transfer
+                // happened).
+                probeOk = probe()
+            } catch (e: Exception) {
+                table.markRunning(me)
+                throw PctUserClosureError(e)
             }
-            protocolFailure = e
-            return false
+            if (probeOk) {
+                // The primitive became available since the wrapper's
+                // try-probe: take it and keep running (no event).
+                table.markRunning(me)
+                graph.holderAdd(key, me) // cycle abort: track the hold
+                // The successful acquire belongs to THIS segment (the
+                // attempt note above may have landed in an earlier,
+                // parked segment — the race reporter's acquire side).
+                sched.noteSync(me, key, PctSyncNoteKind.Acquire)
+                return true
+            }
+            // A cycle abort throws from here — the region's unwind
+            // releases the engine lock.
+            sched.noteSync(me, key, PctSyncNoteKind.Acquire) // the contended park's key (segment close)
+            let wakeTarget = parkDecisionLocked(me)
+            if (wakeTarget >= 0) {
+                wake(wakeTarget)
+            }
+            table.park(me) // mediated park: gated until the releaser's flip + a grant (the park owns its drain)
+            // Granted: holder == me again (a cycle abort wave instead
+            // opens the gate without a grant — the loop top's abort
+            // check throws then). The grant followed a flip, so the
+            // primitive was released; the under-lock probe retries
+            // (the park's drain restored the region's hold).
         }
+        return false // unreachable: the loop exits only via return
     }
 
     /**
@@ -724,49 +734,31 @@ internal class PctCoordinator {
      * the park strands at quiescence like any untimed wait.
      */
     internal func medSleep(nanos: Int64): Bool {
-        let meOpt = table.tidToActor(Thread.currentThread.id)
-        if (meOpt.isNone()) {
-            return false // not a PCT actor: the real sleep applies
+        // LOCK HELD (the entry's route); the non-actor absorb filter
+        // already ran at the entry (pctSleep).
+        let me = table.tidToActor(Thread.currentThread.id) ?? return false // not a PCT actor: the real sleep applies
+        if (table.isFinished(me)) {
+            return false // pooled-cjthread reuse: absorb
         }
-        // cjlint-ignore -start !G.VAR.02 the variables below thread state across loop/algorithm iterations (accumulators or framework context); narrowing their scopes would change semantics
-        let me = meOpt.getOrThrow() // cjlint-ignore !G.ERR.03 invariant-guarded extraction: a preceding isNone()/contains() gate (or the ScenarioBuilder contract, see comment) guarantees Some here; None would be a framework bug where throwing is the intended behavior
-        // cjlint-ignore -end
-        try {
-            lock.lock()
-            if (table.isFinished(me)) {
-                lock.unlock()
-                return false // pooled-cjthread reuse: absorb
-            }
-            throwIfAbortedLocked() // cycle abort: unwind before the park
-            if (holder != me || table.stateOf(me) != Running) {
-                protocolViolations++
-                lock.unlock()
-                return false
-            }
-            let key = Object() // per-sleep identity: only its timer can flip it
-            sched.armTimer(me, key, nanos)
-            let wakeTarget = handleParkEventLocked(me, key) // edge: NoEdge (a sleep waits on nothing)
-            lock.unlock()
-            if (wakeTarget >= 0) {
-                wake(wakeTarget)
-            }
-            table.park(me) // the virtual sleep park
-            // Woken: the timer fired (or a cycle abort wave opened the
-            // gate without a grant — the check below throws).
-            lock.lock()
-            throwIfAbortedLocked()
-            if (table.timerFiredOf(me)) {
-                table.setTimerFired(me, false)
-            }
-            lock.unlock()
-            return true
-        } catch (e: Exception) {
-            if (e is PctDeadlockError) {
-                throw e // the cycle abort must unwind user code
-            }
-            protocolFailure = e
+        throwIfAbortedLocked() // cycle abort: unwind before the park
+        if (holder != me || table.stateOf(me) != Running) {
+            protocolViolations++
             return false
         }
+        let key = Object() // per-sleep identity: only its timer can flip it
+        sched.armTimer(me, key, nanos)
+        let wakeTarget = handleParkEventLocked(me, key) // edge: NoEdge (a sleep waits on nothing)
+        if (wakeTarget >= 0) {
+            wake(wakeTarget)
+        }
+        table.park(me) // the virtual sleep park (the park owns its drain)
+        // Woken: the timer fired (or a cycle abort wave opened the
+        // gate without a grant — the check below throws).
+        throwIfAbortedLocked()
+        if (table.timerFiredOf(me)) {
+            table.setTimerFired(me, false)
+        }
+        return true
     }
 
     /**
@@ -795,69 +787,54 @@ internal class PctCoordinator {
      * owner's completing future; the next coordinator entry throws.)
      */
     internal func futureGate(tid: Int64, f: Object, timeout: Int64): Int64 { // cjlint-ignore !G.FUN.01 single cohesive algorithm block; splitting it would scatter the invariant across helpers without simplifying any step
-        let meOpt = table.tidToActor(tid)
-        if (meOpt.isNone()) {
-            return timeout // not a PCT actor (e.g. the main thread's future polls)
+        // LOCK HELD (the entry's route); the non-actor absorb filter
+        // already ran at the entry (pctFutureGate).
+        let me = table.tidToActor(tid) ?? return timeout // not a PCT actor (e.g. the main thread's future polls)
+        throwIfAbortedLocked() // cycle abort: unwind before any park
+        // Ownership first: the actionable diagnostic wins over the
+        // token anomaly below. In the retained handshake a managed
+        // child registers before its spawner proceeds and get()
+        // pre-checks completion, so a future with no live registered
+        // owner here is exactly the genuinely-external class.
+        if (table.liveChildOwner(f).isNone()) {
+            let err = PctExternalWaitError(
+                "PCT protocol violation: actor #${me} waited on a future owned outside the scenario " +
+                "(uninstrumented spawn or stray thread); joins in a PCT scenario must target " +
+                "futures spawned inside the scenario")
+            protocolFailure = err // surfaced by buildSchedule even if user code catches the throw
+            throw err
         }
-        // cjlint-ignore -start !G.VAR.02 the variables below thread state across loop/algorithm iterations (accumulators or framework context); narrowing their scopes would change semantics
-        let me = meOpt.getOrThrow() // cjlint-ignore !G.ERR.03 invariant-guarded extraction: a preceding isNone()/contains() gate (or the ScenarioBuilder contract, see comment) guarantees Some here; None would be a framework bug where throwing is the intended behavior
-        // cjlint-ignore -end
-        try {
-            lock.lock()
-            throwIfAbortedLocked() // cycle abort: unwind before any park
-            // Ownership first: the actionable diagnostic wins over the
-            // token anomaly below. In the retained handshake a managed
-            // child registers before its spawner proceeds and get()
-            // pre-checks completion, so a future with no live registered
-            // owner here is exactly the genuinely-external class.
-            if (table.liveChildOwner(f).isNone()) {
-                let err = PctExternalWaitError(
-                    "PCT protocol violation: actor #${me} waited on a future owned outside the scenario " +
-                    "(uninstrumented spawn or stray thread); joins in a PCT scenario must target " +
-                    "futures spawned inside the scenario")
-                protocolFailure = err
-                lock.unlock()
-                throw err
-            }
-            if (holder != me) {
-                absorbEnterLocked(me)
-                lock.unlock()
-                return timeout
-            }
-            if (timeout != Int64.Max) {
-                // A finite timed join on a live child: the deadline is
-                // a virtual one — arm the timer so the expiry is a
-                // scheduling decision, not a wall-clock wake.
-                sched.armTimer(me, f, timeout)
-            }
-            sched.noteSync(me, f, PctSyncNoteKind.Acquire) // the joined future's key (DPOR segments)
-            let wakeTarget = handleParkEventLocked(me, f, edge: JoinFuture)
-            lock.unlock()
-            if (wakeTarget >= 0) {
-                wake(wakeTarget)
-            }
-            table.park(me) // mediated park: gated until the owner's flip + a grant
-            lock.lock()
-            let fired = table.timerFiredOf(me)
-            if (fired) {
-                table.setTimerFired(me, false)
-            }
-            lock.unlock()
-            if (!fired) {
-                // The completed join (the join edge's acquire side): the
-                // future completed — the note lands in the segment holding
-                // the wait's return. Timed-out joins note nothing (their
-                // budgeted wait is deliberately racy user code).
-                sched.noteSync(me, f, PctSyncNoteKind.Acquire)
-            }
-            return if (fired) { 1 } else { timeout }
-        } catch (e: Exception) {
-            if (e is PctDeadlockError || e is PctExternalWaitError) {
-                throw e // the cycle abort / the external-wait rejection must unwind user code
-            }
-            protocolFailure = e
+        if (holder != me) {
+            absorbEnterLocked(me)
             return timeout
         }
+        if (timeout != Int64.Max) {
+            // A finite timed join on a live child: the deadline is
+            // a virtual one — arm the timer so the expiry is a
+            // scheduling decision, not a wall-clock wake.
+            sched.armTimer(me, f, timeout)
+        }
+        sched.noteSync(me, f, PctSyncNoteKind.Acquire) // the joined future's key (DPOR segments)
+        let wakeTarget = handleParkEventLocked(me, f, edge: JoinFuture)
+        if (wakeTarget >= 0) {
+            wake(wakeTarget)
+        }
+        table.park(me) // mediated park: gated until the owner's flip + a grant (the park owns its drain)
+        var firedNow = table.timerFiredOf(me)
+        if (firedNow) {
+            table.setTimerFired(me, false)
+        }
+        if (!firedNow) {
+            // The completed join (the join edge's acquire side): the
+            // future completed — the note lands in the segment holding
+            // the wait's return. Timed-out joins note nothing (their
+            // budgeted wait is deliberately racy user code).
+            sched.noteSync(me, f, PctSyncNoteKind.Acquire)
+        }
+        if (firedNow) {
+            return 1
+        }
+        return timeout
     }
 
     /**
@@ -874,61 +851,53 @@ internal class PctCoordinator {
      * non-replayable, exactly like a timed-wait expiry.
      */
     internal func medRelease(key: Object, kind: PctEventKind, maxFlips!: Int64 = Int64.Max): Unit {
-        try {
-            let meOpt = table.tidToActor(Thread.currentThread.id)
-            lock.lock()
-            if (aborted) {
-                // cycle abort: the waiters are unwinding (the wave woke
-                // them); no flips, no picks, no revival bookkeeping.
-                lock.unlock()
-                return
-            }
-            if (meOpt.isNone()) {
-                // Non-actor releaser (a thread outside the schedule):
-                // forget the key's tracked holders (sound — releases from
-                // unmanaged threads cannot be attributed to an actor, and
-                // a forgotten holder only misses cycles, never fakes one).
-                graph.holderClear(key)
-                let flipped = table.flipWaiting(key, max: maxFlips)
-                if (flipped > 0 && holder == -1) {
-                    let to = sched.externalRevival()
-                    if (to >= 0) {
-                        deadlocked = false
-                        transferLocked(to)
-                        lock.unlock()
-                        wake(to)
-                        return
-                    }
-                }
-                lock.unlock()
-                return
-            }
-            let me = meOpt.getOrThrow() // cjlint-ignore !G.ERR.03 invariant-guarded extraction: a preceding isNone()/contains() gate (or the ScenarioBuilder contract, see comment) guarantees Some here; None would be a framework bug where throwing is the intended behavior
-            if (table.isFinished(me)) {
-                lock.unlock()
-                return // pooled-cjthread reuse: absorb
-            }
-            if (holder != me) {
-                protocolViolations++ // impossible (only the holder runs); loud
-                lock.unlock()
-                return
-            }
-            graph.holderRemove(key, me) // cycle abort: one (counted) hold dropped
-            // Every release notes the key (a flipless release is silent —
-            // no decision — so the key rides the current segment; see
-            // medAcquire's matching note).
-            sched.noteSync(me, key, PctSyncNoteKind.Release)
-            let to = handleUnlockEventLocked(me, key, kind, maxFlips: maxFlips)
-            lock.unlock()
-            if (to >= 0 && to != me) {
-                wake(to)
-                table.park(me) // yield park until the token returns
-            }
-            // to == me (the releaser won its own yield pick) or -1 (no
-            // waiters): keep running.
-        } catch (e: Exception) {
-            protocolFailure = e
+        // LOCK HELD (the entry's route). The entry deliberately does NOT
+        // filter non-actors: a non-actor release is an external event
+        // the schedule must observe (the external-release revival).
+        let meOpt = table.tidToActor(Thread.currentThread.id)
+        if (aborted) {
+            // cycle abort: the waiters are unwinding (the wave woke
+            // them); no flips, no picks, no revival bookkeeping.
+            return
         }
+        if (meOpt.isNone()) {
+            // Non-actor releaser (a thread outside the schedule):
+            // forget the key's tracked holders (sound — releases from
+            // unmanaged threads cannot be attributed to an actor, and
+            // a forgotten holder only misses cycles, never fakes one).
+            graph.holderClear(key)
+            let flipped = table.flipWaiting(key, max: maxFlips)
+            if (flipped > 0 && holder == -1) {
+                let revived = sched.externalRevival()
+                if (revived >= 0) {
+                    deadlocked = false
+                    transferLocked(revived)
+                    wake(revived)
+                    return
+                }
+            }
+            return
+        }
+        let me = meOpt.getOrThrow() // cjlint-ignore !G.ERR.03 invariant-guarded extraction: a preceding isNone()/contains() gate (or the ScenarioBuilder contract, see comment) guarantees Some here; None would be a framework bug where throwing is the intended behavior
+        if (table.isFinished(me)) {
+            return // pooled-cjthread reuse: absorb
+        }
+        if (holder != me) {
+            protocolViolations++ // impossible (only the holder runs); loud
+            return
+        }
+        graph.holderRemove(key, me) // cycle abort: one (counted) hold dropped
+        // Every release notes the key (a flipless release is silent —
+        // no decision — so the key rides the current segment; see
+        // medAcquire's matching note).
+        sched.noteSync(me, key, PctSyncNoteKind.Release)
+        let to = handleUnlockEventLocked(me, key, kind, maxFlips: maxFlips)
+        if (to >= 0 && to != me) {
+            wake(to)
+            table.park(me) // yield park until the token returns (the park owns its drain)
+        }
+        // to == me (the releaser won its own yield pick) or -1 (no
+        // waiters): keep running.
     }
 
     /**
@@ -939,7 +908,7 @@ internal class PctCoordinator {
      *
      * The whole wait is one merged decision: `release` (the inner lock
      * release, one level — condition waits are a lock-depth-one protocol)
-     * runs under the coordinator lock after the actor checks, the lock's
+     * runs in the engine region after the actor checks, the region's
      * own mediated waiters flip silently (their eligibility IS the release;
      * no Unlock event fires — the wait's park decision subsumes the
      * handoff), and the waiter registers Waiting on `condKey` and parks.
@@ -958,109 +927,77 @@ internal class PctCoordinator {
      * The `release` and `probe` closures are user code (the wrapper's
      * inner lock operations) and may throw (e.g. a condition wait without
      * holding the owner lock). Such a failure is the actor's own, not an
-     * engine dispatch failure: the coordinator lock is released (no state
+     * engine dispatch failure: the engine lock is released (no state
      * has been mutated before the release runs) and the exception is
      * re-thrown so it unwinds the actor's operation, while the coordinator
      * stays consistent for every later dispatch.
      */
     internal func medCondWait(condKey: Object, lockKey: Object, release: () -> Unit, probe: () -> Bool, // cjlint-ignore !G.FUN.01 single cohesive algorithm block; splitting it would scatter the invariant across helpers without simplifying any step
         timeout!: Duration = Duration.Max): ?Bool {
-        let meOpt = table.tidToActor(Thread.currentThread.id)
-        if (meOpt.isNone()) {
-            return None // not a PCT actor: the wrapper's fallback applies
+        // LOCK HELD (the entry's route); the non-actor absorb filter
+        // already ran at the entry (pctCondWait).
+        let me = table.tidToActor(Thread.currentThread.id) ?? return None // not a PCT actor: the wrapper's fallback applies
+        if (table.isFinished(me)) {
+            return None // pooled-cjthread reuse: absorb
         }
-        // cjlint-ignore -start !G.VAR.02 the variables below thread state across loop/algorithm iterations (accumulators or framework context); narrowing their scopes would change semantics
-        let me = meOpt.getOrThrow() // cjlint-ignore !G.ERR.03 invariant-guarded extraction: a preceding isNone()/contains() gate (or the ScenarioBuilder contract, see comment) guarantees Some here; None would be a framework bug where throwing is the intended behavior
-        // cjlint-ignore -end
-        // Set when a wrapper-supplied closure throws (the inner release
-        // here, or the Mesa re-acquire's probe via medAcquire): the error
-        // must be re-thrown past the protocol-failure catch below so it
-        // unwinds the actor's operation instead of being misreported as an
-        // engine dispatch failure.
-        var userError: ?Exception = None
-        try {
-            var wakeTarget: Int64 = -1
-            lock.lock()
-            if (table.isFinished(me)) {
-                lock.unlock()
-                return None // pooled-cjthread reuse: absorb
-            }
-            throwIfAbortedLocked() // cycle abort: unwind before any park
-            if (holder != me || table.stateOf(me) != Running) {
-                // Wrapper code runs only on the token holder; anything
-                // else would be a protocol violation (counted loudly).
-                protocolViolations++
-                lock.unlock()
-                return None
-            }
-            try {
-                release() // the inner lock release (the caller holds it)
-            } catch (e: Exception) {
-                // The release threw (a wait without holding the owner
-                // lock): nothing has been mutated yet, so releasing the
-                // lock and re-throwing leaves the coordinator consistent.
-                userError = Some(e)
-                lock.unlock()
-                throw e
-            }
-            graph.holderRemove(lockKey, me) // cycle abort: the one-level hold drop
-            table.flipWaiting(lockKey) // silent: the park decision below subsumes this handoff
-            sched.armTimer(me, condKey, pctDurationNanos(timeout))
-            // The wait's park decision closes a segment touching both
-            // keys: the condition it parks on (an acquire — the wait) and
-            // the lock it released (Mesa).
-            sched.noteSync(me, condKey, PctSyncNoteKind.Acquire)
-            sched.noteSync(me, lockKey, PctSyncNoteKind.Release)
-            wakeTarget = handleParkEventLocked(me, condKey) // edge: NoEdge (a condition wait)
-            lock.unlock()
-            if (wakeTarget >= 0) {
-                wake(wakeTarget)
-            }
-            table.park(me) // mediated condition park (timer-fired or notified)
-            // Woken: a notify-side flip and grant, or a virtual timer fire
-            // (or a cycle abort wave — the re-acquire's entry check
-            // throws to finish the unwind). Distinguish by the fired
-            // marker before the Mesa re-acquire.
-            lock.lock()
-            var timedOut = false
-            if (table.timerFiredOf(me)) {
-                table.setTimerFired(me, false)
-                timedOut = true
-            }
-            lock.unlock()
-            // Mesa re-acquire, possibly via a second, lock-keyed mediated
-            // wait — for the timed-out path too (the wait returns holding
-            // the lock either way).
-            var reAcquired = false
-            try {
-                reAcquired = medAcquire(lockKey, probe, PctAcquireSemantics.Exclusive)
-            } catch (e: Exception) {
-                // The re-acquire's own user-closure failure (medAcquire
-                // already released its lock and restored its state).
-                userError = Some(e)
-                throw e
-            }
-            if (!reAcquired) {
-                return None
-            }
-            if (!timedOut) {
-                // The completed condition wait (the notify edge's acquire
-                // side): the note lands in the segment containing the wait
-                // return. Timed-out waits note nothing — no notify edge
-                // exists for them.
-                sched.noteSync(me, condKey, PctSyncNoteKind.Acquire)
-            }
-            return Some(!timedOut)
-        } catch (e: Exception) {
-            if (e is PctDeadlockError) {
-                throw e // the cycle abort must unwind user code
-            }
-            if (let Some(user) <- userError) {
-                throw user // a user closure's failure: the actor's error, unwinding its operation
-            }
-            protocolFailure = e
+        throwIfAbortedLocked() // cycle abort: unwind before any park
+        if (holder != me || table.stateOf(me) != Running) {
+            // Wrapper code runs only on the token holder; anything
+            // else would be a protocol violation (counted loudly).
+            protocolViolations++
             return None
         }
+        // The inner release is user code (the wrapper's lock
+        // operation): its failure is the actor's own — the wrap makes
+        // it travel past the protocol-failure record (the route
+        // unwraps it). Nothing has been mutated yet, so re-throwing
+        // leaves the coordinator consistent.
+        try {
+            release()
+        } catch (e: Exception) {
+            throw PctUserClosureError(e)
+        }
+        graph.holderRemove(lockKey, me) // cycle abort: the one-level hold drop
+        table.flipWaiting(lockKey) // silent: the park decision below subsumes this handoff
+        sched.armTimer(me, condKey, pctDurationNanos(timeout))
+        // The wait's park decision closes a segment touching both
+        // keys: the condition it parks on (an acquire — the wait) and
+        // the lock it released (Mesa).
+        sched.noteSync(me, condKey, PctSyncNoteKind.Acquire)
+        sched.noteSync(me, lockKey, PctSyncNoteKind.Release)
+        let wakeTarget = handleParkEventLocked(me, condKey) // edge: NoEdge (a condition wait)
+        if (wakeTarget >= 0) {
+            wake(wakeTarget)
+        }
+        table.park(me) // mediated condition park, timer-fired or notified (the park owns its drain)
+        // Woken: a notify-side flip and grant, or a virtual timer fire
+        // (or a cycle abort wave — the re-acquire's entry check
+        // throws to finish the unwind). Distinguish by the fired
+        // marker before the Mesa re-acquire.
+        var timedOut = false
+        if (table.timerFiredOf(me)) {
+            table.setTimerFired(me, false)
+            timedOut = true
+        }
+        // Mesa re-acquire, possibly via a second, lock-keyed mediated
+        // wait — for the timed-out path too (the wait returns holding
+        // the lock either way). medAcquire is a plain nested call in
+        // the SAME region (its park drains the region's hold and
+        // restores it), so a user-closure failure or an abort from the
+        // re-acquire unwinds through the route's classification
+        // directly.
+        let reAcquired = medAcquire(lockKey, probe, PctAcquireSemantics.Exclusive)
+        if (!reAcquired) {
+            return None
+        }
+        if (!timedOut) {
+            // The completed condition wait (the notify edge's acquire
+            // side): the note lands in the segment containing the wait
+            // return. Timed-out waits note nothing — no notify edge
+            // exists for them.
+            sched.noteSync(me, condKey, PctSyncNoteKind.Acquire)
+        }
+        return Some(!timedOut)
     }
 
     // The mediated unlock/release/notify yield decision. Flips the
@@ -1108,24 +1045,19 @@ internal class PctCoordinator {
     /** Spawn-site bracket: record the expectation (spawning thread).
      * Retained engine-side entry; currently unreachable (no producer). */
     internal func onSpawnSiteBefore(ident: Object, tid: Int64): Unit {
-        try {
-            // Authority-gated: inside a window only the token holder
-            // (the only thread running user code) executes the
-            // spawn-site machinery; anything else is a stray thread (a
-            // pre-window spawn whose body is running user code) — absorb,
-            // and its whole subtree stays unmanaged.
-            if (!isSpawnAuthority(tid)) {
-                return
-            }
-            lock.lock()
+        // A plain engine region (no route — nothing dispatches here
+        // yet); an abort rethrows through pctOnLocked's finally.
+        // Authority-gated: inside a window only the token holder
+        // (the only thread running user code) executes the
+        // spawn-site machinery; anything else is a stray thread (a
+        // pre-window spawn whose body is running user code) — absorb,
+        // and its whole subtree stays unmanaged.
+        if (!isSpawnAuthority(tid)) {
+            return
+        }
+        pctOnLocked { =>
             throwIfAbortedLocked() // cycle abort: unwind before spawning
             registrar.setExpectation(ident)
-            lock.unlock()
-        } catch (e: Exception) {
-            if (e is PctDeadlockError) {
-                throw e // the cycle abort must unwind user code
-            }
-            protocolFailure = e
         }
     }
 
@@ -1141,12 +1073,14 @@ internal class PctCoordinator {
             // deadlock; the bound covers thread-start failures, which
             // surface as a protocol failure here.
             if (!registrar.awaitRegistration()) {
-                protocolFailure = Exception(
-                    "PCT protocol violation: spawned child failed to register within " +
-                    "${PctSpawnRegistrar.REGISTRATION_TIMEOUT_MS}ms (thread creation stalled?)")
+                pctOnLocked { =>
+                    protocolFailure = Exception(
+                        "PCT protocol violation: spawned child failed to register within " +
+                        "${PctSpawnRegistrar.REGISTRATION_TIMEOUT_MS}ms (thread creation stalled?)")
+                }
             }
         } catch (e: Exception) {
-            protocolFailure = e
+            pctOnLocked { => protocolFailure = e }
         }
     }
 
@@ -1169,41 +1103,48 @@ internal class PctCoordinator {
      * spawn order.
      */
     internal func childEnter(ident: ?Object, tid: Int64): Unit {
-        try {
-            lock.lock()
-            if (let Some(id) <- ident) {
-                var matched = false
-                if (let Some(pending) <- registrar.expectation()) {
-                    if (refEq(pending, id)) {
-                        matched = true
-                    }
-                }
-                if (!matched) {
-                    lock.unlock()
-                    return
-                }
-                // Consume the expectation and release the waiting spawner
-                // BEFORE parking: the spawner's wait must never depend on a
-                // token grant.
-                registrar.clearExpectation()
+        // LOCK HELD (the spawn closure's route). A recorded registration
+        // failure (the route returns None) is rethrown by the CALLER —
+        // runInitialActor, via recordedFailure — so the child never falls
+        // through unregistered (the S-08 contract).
+        if (let Some(id) <- ident) {
+            var matched = false
+            if (let Some(pending) <- registrar.expectation() && refEq(pending, id)) {
+                matched = true
             }
-            // The spawn registration decision (replay binds the recorded
-            // slot and priority rank; a missing Spawn event means the code
-            // spawned where the recorded schedule did not — the scheduler
-            // diverges and the registration continues in record mode).
-            let d = sched.spawnDecision()
-            claimSlotLocked(d, tid, ident)
-            // The spawn happens-before edge's spawner side: the token
-            // holder's in-progress segment contains the spawn site (-1 for
-            // the runner's initial actors; PCT: no-op).
-            sched.childRegistered(d.slot, table.runningSlot())
-            registrationPark(d.slot)
-        } catch (e: Exception) {
-            if (e is PctDeadlockError) {
-                throw e // the cycle abort must unwind past the child entry
+            if (!matched) {
+                return
             }
-            protocolFailure = e
+            // Consume the expectation and release the waiting spawner
+            // BEFORE parking: the spawner's wait must never depend on a
+            // token grant.
+            registrar.clearExpectation()
         }
+        // The spawn registration decision (replay binds the recorded
+        // slot and priority rank; a missing Spawn event means the code
+        // spawned where the recorded schedule did not — the scheduler
+        // diverges and the registration continues in record mode).
+        let d = sched.spawnDecision()
+        claimSlotLocked(d, tid, ident)
+        // The spawn happens-before edge's spawner side: the token
+        // holder's in-progress segment contains the spawn site (-1 for
+        // the runner's initial actors; PCT: no-op).
+        sched.childRegistered(d.slot, table.runningSlot())
+        // The registration tail: the waiting spawner is released in a
+        // drained section (notifyRegistered takes spawnMonitor, and the
+        // registrar's waits take the engine lock while holding
+        // spawnMonitor — the documented spawnMonitor -> engine lock
+        // order, which a notify under the engine lock would invert),
+        // then the registration park until the first grant (the park
+        // owns its own drain; the park cannot deadlock — registration
+        // needs no token), then the abort check (a cycle abort wave
+        // opened the gate without a grant, so the body must never run).
+        pctWithTemporarilyUnlocked { =>
+            registrar.notifyRegistered()
+        }
+        table.park(d.slot) // registration park until the first grant
+        // Granted: this slot holds the token; the child entry proceeds.
+        throwIfAbortedLocked()
     }
 
     /**
@@ -1236,24 +1177,6 @@ internal class PctCoordinator {
     }
 
     /**
-     * The shared registration tail (LOCK HELD on entry, released on
-     * return): release the waiting spawner, park at the registration
-     * gate until the first grant (the park cannot deadlock —
-     * registration needs no token), and throw past the child entry on a
-     * cycle abort (the wave opened the gate without a grant, so the
-     * body must never run).
-     */
-    private func registrationPark(slot: Int64): Unit {
-        lock.unlock()
-        registrar.notifyRegistered()
-        table.park(slot) // registration park until the first grant
-        // Granted: this slot holds the token; the child entry proceeds.
-        lock.lock()
-        throwIfAbortedLocked()
-        lock.unlock()
-    }
-
-    /**
      * Child epilogue (finally, on the child's thread): mark the dynamic
      * actor Finished and transfer the token. Never-registered tids absorb
      * (window closed, or the wrapper ran as a no-op stray). `ident` is
@@ -1267,6 +1190,11 @@ internal class PctCoordinator {
      * unmediated fallback (Deadlock + Resume, non-replayable) — loud,
      * not silent.
      *
+     * The drain signal is the EXIT CALLER's tail (runInitialActor, after
+     * its route): it must never run under the engine lock — see
+     * signalDrain. A future producer for the Some route must follow the
+     * same shape (route the body, signal after).
+     *
      * Mediated completion (the Some route): Future.execute completed
      * the future (result set, notifyAll fired) BEFORE this finally, so
      * every actor Waiting on it can be flipped to Gated right here,
@@ -1276,44 +1204,41 @@ internal class PctCoordinator {
      * flipped someone log `Complete` instead of `Done`.
      */
     internal func childExit(ident: ?Object, tid: Int64): Unit {
-        try {
-            let meOpt = table.tidToActor(tid)
-            if (meOpt.isNone()) {
-                return
+        // LOCK HELD (the spawn closure's route). The drain signal does
+        // NOT fire here: the caller (runInitialActor) signals AFTER its
+        // route returns — under the engine lock the signal would invert
+        // the drainActors handshake (drainMonitor -> engine).
+        let me = table.tidToActor(tid) ?? return ()
+        if (table.isFinished(me)) {
+            return
+        }
+        // cycle abort: skip the joiner flip (the wave already woke
+        // every waiter) and let finishLocked's abort branch complete
+        // the exit silently.
+        var flipped = false
+        if (let Some(id) <- ident) {
+            if (!aborted) {
+                flipped = table.flipWaiting(id) > 0
             }
-            let me = meOpt.getOrThrow() // cjlint-ignore !G.ERR.03 invariant-guarded extraction: a preceding isNone()/contains() gate (or the ScenarioBuilder contract, see comment) guarantees Some here; None would be a framework bug where throwing is the intended behavior
-            lock.lock()
-            if (table.isFinished(me)) {
-                lock.unlock()
-                return
-            }
-            // cycle abort: skip the joiner flip (the wave already woke
-            // every waiter) and let finishLocked's abort branch complete
-            // the exit silently.
-            var flipped = false
-            if (let Some(id) <- ident) {
-                if (!aborted) {
-                    flipped = table.flipWaiting(id) > 0
-                }
-                // The exit's decision closes a segment keyed by the child's
-                // future identity (mediated joiners wait on it; the key is
-                // harmless when nobody joined). A Release: the completion
-                // is the join edge's release side.
-                sched.noteSync(me, id, PctSyncNoteKind.Release)
-            }
-            let to = finishLocked(me, completedWaiters: flipped)
-            lock.unlock()
-            if (to >= 0) {
-                wake(to)
-            }
-            signalDrain()
-        } catch (e: Exception) {
-            protocolFailure = e
+            // The exit's decision closes a segment keyed by the child's
+            // future identity (mediated joiners wait on it; the key is
+            // harmless when nobody joined). A Release: the completion
+            // is the join edge's release side.
+            sched.noteSync(me, id, PctSyncNoteKind.Release)
+        }
+        let to = finishLocked(me, completedWaiters: flipped)
+        if (to >= 0) {
+            wake(to)
         }
     }
 
     /**
      * The runner's bounded wait for the initial actor it just spawned:
+     * NOT routed — the registrar's bounded waits (spawnMonitor) must run
+     * without the engine lock held, or the registering child's own route
+     * could never take it (a 10s stall, then a spurious protocol
+     * failure); the registrar's predicate checks take the engine lock
+     * themselves in brief pctOnLocked pairs.
      * registration is token-free (the child parks at its registration
      * gate), so this cannot deadlock; the bound covers thread-start
      * failures, which surface as a protocol failure. One wait per spawn
@@ -1322,9 +1247,11 @@ internal class PctCoordinator {
      */
     internal func awaitRegisteredActors(count: Int64): Unit {
         if (!registrar.awaitSpawnCount(count)) {
-            protocolFailure = Exception(
-                "PCT protocol violation: initial actor failed to register within " +
-                "${PctSpawnRegistrar.REGISTRATION_TIMEOUT_MS}ms (thread creation stalled?)")
+            pctOnLocked { =>
+                protocolFailure = Exception(
+                    "PCT protocol violation: initial actor failed to register within " +
+                    "${PctSpawnRegistrar.REGISTRATION_TIMEOUT_MS}ms (thread creation stalled?)")
+            }
         }
     }
 
@@ -1345,9 +1272,14 @@ internal class PctCoordinator {
      * buildSchedule.
      */
     internal func drainActors(): Unit {
+        // LOCK HELD (the window's route). drainMonitor is held across the
+        // engine re-acquisition of the drained wait (drainMonitor ->
+        // engine) — safe because the drain signal (childExit's callers,
+        // post-route) never takes drainMonitor under the engine; the
+        // drain wait runs drained (the engine lock released, drainMonitor
+        // released by the wait itself).
         drainMonitor.lock()
         while (true) {
-            lock.lock()
             let allDone = table.allFinished()
             var to: Int64 = -1
             if (!allDone && holder == -1 && !aborted) {
@@ -1356,7 +1288,6 @@ internal class PctCoordinator {
                     transferLocked(to)
                 }
             }
-            lock.unlock()
             if (to >= 0) {
                 wake(to)
                 continue
@@ -1364,23 +1295,29 @@ internal class PctCoordinator {
             if (allDone) {
                 break
             }
-            drainMonitor.wait()
+            // the drain wait runs with the engine lock released
+            pctWithTemporarilyUnlocked { =>
+                drainMonitor.wait()
+            }
         }
         drainMonitor.unlock()
         // A crashed spawn site (spawn failure) may leave a stale
         // expectation; no child can register after the drain.
-        lock.lock()
         registrar.clearExpectation()
-        lock.unlock()
     }
 
     // ------------------------------------------------------------------
-    // Private dynamic-actor helpers ("Locked" = coordinator lock held).
+    // Private dynamic-actor helpers ("Locked" = the engine lock is held).
     // ------------------------------------------------------------------
 
-    // Wake the draining thread (call after unlocking; every Finished
-    // transition goes through done/childExit).
-    private func signalDrain(): Unit {
+    /**
+     * Wake the draining thread (the actor-exit callers run this AFTER
+     * their route returns — never under the engine lock: the drainActors
+     * handshake holds drainMonitor across its engine re-acquisition
+     * (drainMonitor -> engine), so a signal under the engine would
+     * invert the order).
+     */
+    internal func signalDrain(): Unit {
         drainMonitor.lock()
         drainMonitor.notify()
         drainMonitor.unlock()
@@ -1395,10 +1332,8 @@ internal class PctCoordinator {
      * Finished; no concurrent writer remains).
      */
     internal func isAborted(): Bool {
-        lock.lock()
-        let a = aborted
-        lock.unlock()
-        return a
+        // LOCK HELD (the window's route).
+        return aborted
     }
 
     /**
@@ -1410,45 +1345,48 @@ internal class PctCoordinator {
      * surfaced.
      */
     internal func buildSchedule(): PCTSchedule {
-        lock.lock()
-        let schedule = PCTSchedule(
-            seed: seed,
-            actorCount: actorCount,
-            pcpBudget: pcpBudget0,
-            events: sched.scheduleEventsSnapshot(),
-            diverged: sched.scheduleDiverged(),
-            deadlocked: deadlocked,
-            pollCount: sched.totalPollCount(),
-            gridPoints: sched.gridPointCount(),
-            starvationSwitches: sched.starvationSwitchCount(),
-            spawnedActors: registrar.spawnCount(),
-            deadlockCycle: deadlockCycle
-        )
-        let violations = protocolViolations // cjlint-ignore !G.VAR.02 the variable threads state across loop/algorithm iterations (accumulator or framework context); narrowing its scope would change semantics
-        lock.unlock()
-        // A cycle abort already fails the iteration with the schedule
-        // (and the abort wave's unusual traversals are expected); the
-        // loud protocol guards would only bury the deadlock diagnosis.
-        if (!aborted) {
-            if (violations != 0) {
-                // Only the token holder executes dispatch-carrying code,
-                // and every wrap exit matches its enter — the gate-park
-                // protocol and the compilation boundary make any other
-                // dispatch-in-state combination impossible. A non-zero
-                // count means one of those invariants broke, and the
-                // schedule semantics can no longer be trusted.
-                throw Exception("PCT protocol violation: ${violations} dispatch event(s) in unexpected state " +
-                    "(instrumented code ran off-token, or an enter/exit bracket mismatched)")
+        // A plain engine region (not a route — plain pctOnLocked): the snapshot has
+        // no park and no user closure, and the throws below are the
+        // SURFACING (they must reach the runner, not be recorded).
+        return pctOnLocked { =>
+            let schedule = PCTSchedule(
+                seed: seed,
+                actorCount: actorCount,
+                pcpBudget: pcpBudget0,
+                events: sched.scheduleEventsSnapshot(),
+                diverged: sched.scheduleDiverged(),
+                deadlocked: deadlocked,
+                pollCount: sched.totalPollCount(),
+                gridPoints: sched.gridPointCount(),
+                starvationSwitches: sched.starvationSwitchCount(),
+                spawnedActors: registrar.spawnCount(),
+                timersHighWater: sched.timersHighWater(),
+                deadlockCycle: deadlockCycle
+            )
+            // A cycle abort already fails the iteration with the schedule
+            // (and the abort wave's unusual traversals are expected); the
+            // loud protocol guards would only bury the deadlock diagnosis.
+            if (!aborted) {
+                if (protocolViolations != 0) {
+                    // Only the token holder executes dispatch-carrying code,
+                    // and every wrap exit matches its enter — the gate-park
+                    // protocol and the compilation boundary make any other
+                    // dispatch-in-state combination impossible. A non-zero
+                    // count means one of those invariants broke, and the
+                    // schedule semantics can no longer be trusted.
+                    throw Exception("PCT protocol violation: ${protocolViolations} dispatch event(s) in unexpected state " +
+                        "(instrumented code ran off-token, or an enter/exit bracket mismatched).")
+                }
+                if (let Some(e) <- protocolFailure) {
+                    throw Exception("PCT protocol dispatch failure: ${e.message}.")
+                }
             }
-            if (let Some(e) <- protocolFailure) {
-                throw Exception("PCT protocol dispatch failure: ${e.message}")
-            }
+            return schedule
         }
-        return schedule
     }
 
     // ------------------------------------------------------------------
-    // Private protocol helpers. "Locked" = the coordinator lock is held; wakes
+    // Private protocol helpers. "Locked" = the engine lock is held; wakes
     // always happen after unlocking (a woken thread is then the only
     // possible lock taker).
     // ------------------------------------------------------------------
@@ -1575,15 +1513,15 @@ internal class PctCoordinator {
 
     /**
      * Abort check for actor-side coordinator entries. LOCK HELD; throws
-     * (with the lock released) once the iteration has aborted.
+     * once the iteration has aborted — the enclosing route
+     * region releases the lock on the unwind.
      *
      * @throws PctDeadlockError when the iteration has aborted after a
      * detected wait-for deadlock.
      */
     private func throwIfAbortedLocked(): Unit {
         if (aborted) {
-            lock.unlock()
-            throw PctDeadlockError("PCT iteration aborted after a detected wait-for deadlock")
+            throw PctDeadlockError("PCT iteration aborted after a detected wait-for deadlock.")
         }
     }
 
@@ -1595,7 +1533,10 @@ internal class PctCoordinator {
      * PctDeadlockError from there, unwinding each actor through its
      * child entry so its future resolves and the runner's drain
      * completes), and throws out of the detector's own park path.
-     * LOCK HELD on entry — released before the throw; never returns.
+     * LOCK HELD on entry; the caller route
+     * releases on the throw; never returns. The wave's wakes run under
+     * the lock — safe: a woken thread only contends on the mutex until
+     * the aborting region ends.
      */
     private func abortIterationLocked(me: Int64, cycle: Array<Int64>): Unit {
         aborted = true
@@ -1611,7 +1552,6 @@ internal class PctCoordinator {
             }
             i++
         }
-        lock.unlock()
         var w: Int64 = 0
         while (w < Int64(waved.size)) {
             wake(waved[w])
@@ -1627,31 +1567,27 @@ internal class PctCoordinator {
             c++
         }
         throw PctDeadlockError("PCT deadlock: wait-for cycle ${cycleStr} " +
-            "(actor ${me}'s park closed it); iteration aborted, every actor unwound")
+            "(actor ${me}'s park closed it); iteration aborted, every actor unwound.")
     }
 
-    // Fair-mode grid point: a voluntary yield. The caller parks on its
-    // gate and the token moves to the longest-gated (oldest park) other
-    // gated actor — park order, not a fixed preference, so >= 2 waiters
-    // cannot starve the parked producer they all spin against.
-    // Like blocking (and unlike a preemption) it consumes no PCP budget,
-    // because the holder gives up the token of its own accord. LOCK HELD;
-    // parks with the lock released.
-    private func yieldTokenLocked(me: Int64): Unit {
+    // Fair-mode yield decision core: gate the holder and pick the
+    // longest-gated (oldest park) other gated actor — park order, not a
+    // fixed preference, so >= 2 waiters cannot starve the parked producer
+    // they all spin against. Like blocking (and unlike a preemption) it
+    // consumes no PCP budget, because the holder gives up the token of
+    // its own accord. LOCK HELD; returns the grant target (the caller
+    // wakes it and parks outside the lock), or -1 when nobody can take
+    // the token (keep running — the deadlock detector covers stuck
+    // cases).
+    private func fairYieldLocked(me: Int64): Int64 {
         table.markGated(me)
         let to = sched.fairYield(me)
         if (to < 0) {
-            // Nobody to yield to (all peers finished or blocked in user
-            // sync): keep running; the deadlock detector covers stuck cases.
             table.markRunning(me)
-            lock.unlock()
-            return
+            return -1
         }
         transferLocked(to)
-        lock.unlock()
-        wake(to)
-        table.park(me) // yield park until the token returns
-        // Re-granted: holder == me again.
+        return to
     }
 
     private func transferLocked(to: Int64): Unit {

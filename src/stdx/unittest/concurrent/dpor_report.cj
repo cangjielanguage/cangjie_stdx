@@ -89,7 +89,8 @@ public struct DporReport {
     internal DporReport(
         /** Schedules actually executed. */
         public let schedulesExplored!: Int64,
-        /** The exploration completed (budget not exhausted). */
+        /** The exploration completed (budget not exhausted, nothing
+         *  dropped as diverged — see `divergedRuns`). */
         public let exhausted!: Bool,
         /** Any explored schedule hit a wait-for deadlock (the wait-for
          *  cycle abort — the diagnosis, reported like PCT's; see
@@ -109,6 +110,15 @@ public struct DporReport {
          *  non-zero value means the race report is incomplete. Zero
          *  without an mtrace runtime. */
         internal let droppedEvents!: UInt64,
+        /** Windows dropped as diverged (determinism-contract violations
+         *  or structural failures): a non-zero value means the
+         *  exploration is incomplete — `exhausted` is false when any
+         *  window diverged. */
+        public let divergedRuns!: Int64,
+        /** Child reversals skipped by the line-7 sleep check (each would
+         *  have completed a sleeping schedule — sound skipping, reported
+         *  for exploration diagnostics). */
+        public let sleepSkippedRuns!: Int64,
         /** Backtrack points were pruned by the configured switch bound
          *  (DporWindowConfig.switchBound): the exploration is incomplete
          *  for that reason — distinct from an unbounded run's
@@ -184,6 +194,28 @@ internal struct DporScheduleOutcome {
 }
 
 /**
+ * Record one window's scanned race pairs into the exploration's
+ * accumulators, deduplicated by race key: the same (actor, pc, addr)
+ * pair recurs within one window's scan (loop iterations re-touch the
+ * same sites), so only the first pair per key is reported. The
+ * exploration stops at the first racing schedule, so keys never
+ * accumulate across schedules.
+ */
+private func dporRecordWindowRaces(windowRaces: Array<DporRacePair>,
+    raceSeen: HashMap<String, Bool>, racePairs: ArrayList<DporRacePair>): Unit {
+    for (pair in windowRaces) {
+        let lo = DporRacePair(actorA: pair.actorA, pcA: pair.pcA, // cjlint-ignore !G.VAR.02 the declaration must span the enclosing branch/loop: the value is assigned (or produced) in one arm and consumed after it, so the live range is already minimal
+            actorB: pair.actorB, pcB: pair.pcB, addr: pair.addr, size: pair.size,
+            locA: pair.locA, locB: pair.locB)
+        let key = "${lo.actorA}|${lo.pcA}|${lo.actorB}|${lo.pcB}|${lo.addr}|${lo.size}" // cjlint-ignore !G.VAR.02 the declaration must span the enclosing branch/loop: the value is assigned (or produced) in one arm and consumed after it, so the live range is already minimal
+        if (!raceSeen.contains(key)) {
+            raceSeen.add(key, true)
+            racePairs.add(lo)
+        }
+    }
+}
+
+/**
  * The stepped DPOR exploration: the package-internal DPOR driver the
  * scenario layer builds `TestMode.DPOR` on. Each schedule is bracketed
  * by caller hooks so the scenario runner can reset its state around it:
@@ -208,7 +240,7 @@ internal struct DporScheduleOutcome {
  * previous window, protocol violations) — actor failures travel in the
  * per-schedule window reports.
  */
-internal func runDporWindowStepped( // cjlint-ignore !G.FUN.01 single cohesive algorithm block; splitting it would scatter the invariant across helpers without simplifying any step
+internal func runDporWindowStepped( // cjlint-ignore !G.FUN.01 cohesive exploration loop: the shared accumulators thread through every step, so only leaf steps (see dporRecordWindowRaces) extract without scattering the invariant
     config!: DporWindowConfig,
     beforeSchedule!: () -> Unit,
     opsFactory!: () -> Array<Array<() -> Unit>>,
@@ -255,10 +287,13 @@ internal func runDporWindowStepped( // cjlint-ignore !G.FUN.01 single cohesive a
                     entries = t.guide
                 case None =>
                     // The stack is empty: genuine exhaustion when no
-                    // child was switch-bound pruned; stranded
-                    // pruned children mean the exploration was
-                    // depth-pruned instead.
-                    exhausted = popDriver.prunedCount() == 0
+                    // child was switch-bound pruned and no window was
+                    // dropped as diverged (a diverged window never pushed
+                    // its children, so the exploration is incomplete —
+                    // claiming exhaustion then would be a false
+                    // completeness claim); stranded pruned children mean
+                    // the exploration was depth-pruned instead.
+                    exhausted = popDriver.prunedCount() == 0 && popDriver.divergedCount() == 0
                     break
             }
             // mtrace lifecycle per window: clean buffers, record during
@@ -303,16 +338,7 @@ internal func runDporWindowStepped( // cjlint-ignore !G.FUN.01 single cohesive a
             // hook, so the racing schedule's own verification outcome is
             // still recorded); its pairs are the report.
             let windowRaces = dporScanRaces(data)
-            for (pair in windowRaces) {
-                let lo = DporRacePair(actorA: pair.actorA, pcA: pair.pcA, // cjlint-ignore !G.VAR.02 the declaration must span the enclosing branch/loop: the value is assigned (or produced) in one arm and consumed after it, so the live range is already minimal
-                    actorB: pair.actorB, pcB: pair.pcB, addr: pair.addr, size: pair.size,
-                    locA: pair.locA, locB: pair.locB)
-                let key = "${lo.actorA}|${lo.pcA}|${lo.actorB}|${lo.pcB}|${lo.addr}|${lo.size}" // cjlint-ignore !G.VAR.02 the declaration must span the enclosing branch/loop: the value is assigned (or produced) in one arm and consumed after it, so the live range is already minimal
-                if (!raceSeen.contains(key)) {
-                    raceSeen.add(key, true)
-                    racePairs.add(lo)
-                }
-            }
+            dporRecordWindowRaces(windowRaces, raceSeen, racePairs)
             popDriver.recordWindow(popTask.getOrThrow(), data) // cjlint-ignore !G.ERR.03 invariant-guarded extraction: a preceding isNone()/contains() gate (or the ScenarioBuilder contract, see comment) guarantees Some here; None would be a framework bug where throwing is the intended behavior
             run += 1
             if (!afterSchedule(DporScheduleOutcome(scheduleIndex: run - 1, windowReport: report))) {
@@ -332,7 +358,7 @@ internal func runDporWindowStepped( // cjlint-ignore !G.FUN.01 single cohesive a
         case None =>
             // maxSchedules == 0: nothing ran; an empty report schedule.
             PCTSchedule(seed: 0u64, actorCount: 0, pcpBudget: 0,
-                events: Array<PctEvent>(0, { _ => PctEvent(kind: Switch) }),
+                events: [],
                 diverged: false, deadlocked: false, pollCount: 0u64, gridPoints: 0u64,
                 starvationSwitches: 0u64, spawnedActors: 0u64, deadlockCycle: None)
     }
@@ -346,6 +372,8 @@ internal func runDporWindowStepped( // cjlint-ignore !G.FUN.01 single cohesive a
         racePairs: racePairs.toArray(),
         stoppedOnRace: stoppedOnRace,
         droppedEvents: droppedEvents,
+        divergedRuns: popDriver.divergedCount(),
+        sleepSkippedRuns: popDriver.sleepSkippedCount(),
         depthPruned: depthPruned,
         stats: stats)
 }

@@ -70,15 +70,11 @@ protected class PermutationNode {
         while (true) {
             let currentOpt = children.load()
             // Fast path: scan the current snapshot for an existing child.
-            match (currentOpt) {
-                case Some(snapshot) =>
-                    let items = snapshot.items
-                    for (i in 0..items.size) { // todo: consider making opId a sequential index to avoid linear scan
-                        if (items[i].operation == Some(opId)) {
-                            return items[i]
-                        }
-                    }
-                case None => ()
+            if (let Some(snapshot) <- currentOpt) {
+                let child = snapshot.items.iterator().filter{ it => it.operation == Some(opId) }.next()
+                if (let Some(child) <- child) {
+                    return child
+                }
             }
             // Not found — build a new snapshot with the candidate appended.
             let candidate = PermutationNode(operation: Some(opId), depth: depth + 1)

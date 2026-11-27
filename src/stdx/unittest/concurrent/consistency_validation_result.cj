@@ -178,8 +178,8 @@ public class ConsistencyValidationResult {
             // "level" so that every operation is shown.
             let opsByActor = HashMap<Int64, ArrayList<OperationInvocation>>()
             for (opId in clique) {
-                let actorId = opId / 1000
-                match (history.getInvocation(actorId, opId % 1000)) {
+                let actorId = operationActorOf(opId)
+                match (history.getInvocation(actorId, operationIndexOf(opId))) {
                     case Some(inv) =>
                         if (!opsByActor.contains(actorId)) {
                             opsByActor[actorId] = ArrayList<OperationInvocation>()
@@ -294,7 +294,7 @@ public class ConsistencyValidationResult {
 
         let actorOps = HashMap<Int64, ArrayList<Int64>>()
         for (opId in topoOrder) {
-            let actorId = opId / 1000
+            let actorId = operationActorOf(opId)
             if (!actorOps.contains(actorId)) {
                 actorOps[actorId] = ArrayList<Int64>()
             }
@@ -310,7 +310,7 @@ public class ConsistencyValidationResult {
                 latest = earliest
             }
 
-            let actorId = opId / 1000
+            let actorId = operationActorOf(opId)
             let opsForActor = actorOps.get(actorId) ?? ArrayList<Int64>()
             let isLastOp = opsForActor.size > 0 && opId == opsForActor[opsForActor.size - 1]
             let isOnlyOp = opsForActor.size == 1

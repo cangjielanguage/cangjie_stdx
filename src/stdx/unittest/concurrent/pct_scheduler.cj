@@ -48,7 +48,7 @@ internal struct PctSpawnDecision {
  * default hook bodies ARE the PCT picks.
  *
  * The RNG (MT19937-64) is not thread-safe, but draws happen only under
- * the coordinator lock, so it is single-threaded by construction. Same
+ * the engine lock, so it is single-threaded by construction. Same
  * seed -> same schedule for deterministic programs, so schedule
  * reproducibility is coupled to std.random's algorithm.
  *

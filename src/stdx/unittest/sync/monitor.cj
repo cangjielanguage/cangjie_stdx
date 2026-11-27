@@ -51,7 +51,7 @@ private class CondKey <: PctSyncKey {
  * failure = read-class — a pure state observation).
  */
 @Deprecated[message: "Use `public class Mutex` instead."]
-public class ReentrantMutex <: Lock & PctSyncKey {
+public open class ReentrantMutex <: Lock & PctSyncKey {
     private let inner: SyncReentrantMutex
     private let pctKey: Int64 = pctNextSyncKeyId()
 
@@ -65,7 +65,12 @@ public class ReentrantMutex <: Lock & PctSyncKey {
         }
     }
 
-    public func lock(): Unit {
+    // The lock-bearing methods are open so the Monitor subclasses can
+    // route them to their own combined lock+condition primitives: std's
+    // Monitor is one native object, the mirror composes std primitives
+    // (see Monitor's class comment), and the overriding keeps every
+    // acquisition on the primitive that owns the condition queue.
+    public open func lock(): Unit {
         if (!pctMedAcquire(this, { => inner.tryLock() }, PctAcquireSemantics.Exclusive)) {
             pctSyncEnter()
             inner.lock()
@@ -73,13 +78,13 @@ public class ReentrantMutex <: Lock & PctSyncKey {
         }
     }
 
-    public func tryLock(): Bool {
+    public open func tryLock(): Bool {
         let ok = inner.tryLock()
         pctGridDispatchRw(this, ok)
         return ok
     }
 
-    public func unlock(): Unit {
+    public open func unlock(): Unit {
         inner.unlock()
         pctMedUnlock(this)
     }
@@ -102,37 +107,39 @@ public class ReentrantMutex <: Lock & PctSyncKey {
  * classified grid check (success = write-class, failure = read-class).
  * Non-actor threads take the runtime park directly, untracked.
  */
-public class Monitor <: Lock & PctSyncKey {
-    private let inner: SyncMonitor
-    private let pctKey: Int64 = pctNextSyncKeyId()
+public class Monitor <: ReentrantMutex {
+    // std's Monitor is one native object — the reentrant lock and the
+    // condition queue share state — while the mirror composes std
+    // primitives. This instance therefore routes every lock-bearing
+    // method to its own combined primitive (a SyncMonitor: lock and
+    // condition in one); the ReentrantMutex primitive constructed by
+    // super() is vestigial here, never used for locking. The subclassing
+    // itself mirrors std's hierarchy (Monitor <: ReentrantMutex), so
+    // `is`/`as` checks behave identically with and without --cj-pct.
+    private let mInner: SyncMonitor
     private let condKey = CondKey()
 
     public init() {
-        inner = SyncMonitor()
+        super()
+        mInner = SyncMonitor()
     }
 
-    public prop syncKeyId: Int64 {
-        get() {
-            pctKey
-        }
-    }
-
-    public func lock(): Unit {
-        if (!pctMedAcquire(this, { => inner.tryLock() }, PctAcquireSemantics.Exclusive)) {
+    public override func lock(): Unit {
+        if (!pctMedAcquire(this, { => mInner.tryLock() }, PctAcquireSemantics.Exclusive)) {
             pctSyncEnter()
-            inner.lock()
+            mInner.lock()
             pctSyncExit()
         }
     }
 
-    public func tryLock(): Bool {
-        let ok = inner.tryLock()
+    public override func tryLock(): Bool {
+        let ok = mInner.tryLock()
         pctGridDispatchRw(this, ok)
         return ok
     }
 
-    public func unlock(): Unit {
-        inner.unlock()
+    public override func unlock(): Unit {
+        mInner.unlock()
         pctMedUnlock(this)
     }
 
@@ -151,17 +158,17 @@ public class Monitor <: Lock & PctSyncKey {
         if (timeout <= Duration.Zero) {
             throw IllegalArgumentException("Timeout cannot be less than or equal to `Duration.Zero`.")
         }
-        match (pctCondWait(condKey, this, { => inner.unlock() }, { => inner.tryLock() }, timeout: timeout)) {
+        match (pctCondWait(condKey, this, { => mInner.unlock() }, { => mInner.tryLock() }, timeout: timeout)) {
             case None =>
                 // Non-actor thread (or no scenario): the real timed wait.
                 if (timeout == Duration.Max) {
                     pctSyncEnter()
-                    inner.wait()
+                    mInner.wait()
                     pctSyncExit()
                     return true
                 }
                 pctSyncEnter()
-                let r = inner.wait(timeout: timeout)
+                let r = mInner.wait(timeout: timeout)
                 pctSyncExit()
                 return r
             // An actor's wait, handled: Some(true) = notified, Some(false)
@@ -172,12 +179,12 @@ public class Monitor <: Lock & PctSyncKey {
     }
 
     public func notify(): Unit {
-        inner.notify()
+        mInner.notify()
         pctMedNotify(condKey)
     }
 
     public func notifyAll(): Unit {
-        inner.notifyAll()
+        mInner.notifyAll()
         pctMedNotifyAll(condKey)
     }
 }
@@ -193,55 +200,54 @@ public class Monitor <: Lock & PctSyncKey {
  * write-class, failure = read-class).
  */
 @Deprecated[message: "Use `public class Mutex` instead."]
-public class MultiConditionMonitor <: Lock & PctSyncKey {
-    private let inner: SyncMultiConditionMonitor
-    private let pctKey: Int64 = pctNextSyncKeyId()
+public class MultiConditionMonitor <: ReentrantMutex {
+    // Like Monitor (see its class comment): the lock-bearing methods
+    // route to this instance's own combined primitive, and the
+    // ReentrantMutex primitive constructed by super() is vestigial; the
+    // subclassing mirrors std's hierarchy so `is`/`as` checks behave
+    // identically with and without --cj-pct.
+    private let mcInner: SyncMultiConditionMonitor
 
     public init() {
-        inner = SyncMultiConditionMonitor()
+        super()
+        mcInner = SyncMultiConditionMonitor()
     }
 
-    public prop syncKeyId: Int64 {
-        get() {
-            pctKey
-        }
-    }
-
-    public func lock(): Unit {
-        if (!pctMedAcquire(this, { => inner.tryLock() }, PctAcquireSemantics.Exclusive)) {
+    public override func lock(): Unit {
+        if (!pctMedAcquire(this, { => mcInner.tryLock() }, PctAcquireSemantics.Exclusive)) {
             pctSyncEnter()
-            inner.lock()
+            mcInner.lock()
             pctSyncExit()
         }
     }
 
-    public func tryLock(): Bool {
-        let ok = inner.tryLock()
+    public override func tryLock(): Bool {
+        let ok = mcInner.tryLock()
         pctGridDispatchRw(this, ok)
         return ok
     }
 
-    public func unlock(): Unit {
-        inner.unlock()
+    public override func unlock(): Unit {
+        mcInner.unlock()
         pctMedUnlock(this)
     }
 
     public func newCondition(): ConditionID {
-        inner.newCondition()
+        mcInner.newCondition()
     }
 
     public func wait(condID: ConditionID, timeout!: Duration = Duration.Max): Bool {
         pctSyncEnter()
-        let r = inner.wait(condID, timeout: timeout)
+        let r = mcInner.wait(condID, timeout: timeout)
         pctSyncExit()
         return r
     }
 
     public func notify(condID: ConditionID): Unit {
-        inner.notify(condID)
+        mcInner.notify(condID)
     }
 
     public func notifyAll(condID: ConditionID): Unit {
-        inner.notifyAll(condID)
+        mcInner.notifyAll(condID)
     }
 }

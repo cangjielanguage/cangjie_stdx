@@ -84,6 +84,22 @@ internal func dporScanRaces(data: DporRunData): Array<DporRacePair> { // cjlint-
     if (n == 0) {
         return Array<DporRacePair>()
     }
+    // Without an mtrace runtime every segment's access list is empty
+    // (collectSegment short-circuits), so a race is impossible: skip the
+    // O(n²) happens-before construction and pairwise scan instead of
+    // paying them per window for a guaranteed-empty result.
+    var anyAccess = false // cjlint-ignore !G.VAR.02 the variable threads state across loop/algorithm iterations (accumulator or framework context); narrowing its scope would change semantics
+    var probe: Int64 = 0
+    while (probe < n) {
+        if (segs[probe].accesses.size > 0) {
+            anyAccess = true
+            break
+        }
+        probe += 1
+    }
+    if (!anyAccess) {
+        return Array<DporRacePair>()
+    }
 
     // --- happens-before adjacency (segment flat indices) ---
     let adj = Array<ArrayList<Int64>>(n, { _ => ArrayList<Int64>() })
@@ -116,13 +132,13 @@ internal func dporScanRaces(data: DporRunData): Array<DporRacePair> { // cjlint-
         let sa = segs[a] // cjlint-ignore !G.VAR.02 the variable threads state across loop/algorithm iterations (accumulator or framework context); narrowing its scope would change semantics
         var b: Int64 = 0
         while (b < n) {
-            if (a != b) {
-                let sb = segs[b]
-                if (sa.actor != sb.actor && sa.decisionIndex < sb.decisionIndex) {
-                    if (dporNotesReleaseAcquire(sa, sb)) {
-                        adj[a].add(b)
-                    }
-                }
+            if (a == b) {
+                b += 1
+                continue  
+            }
+            let sb = segs[b]
+            if (sa.actor != sb.actor && sa.decisionIndex < sb.decisionIndex && dporNotesReleaseAcquire(sa, sb)) {
+                adj[a].add(b)
             }
             b += 1
         }
@@ -192,12 +208,10 @@ internal func dporScanRaces(data: DporRunData): Array<DporRacePair> { // cjlint-
 /** Does `sa` carry a Release note and `sb` a later Acquire note of the
  * same key (identity)? */
 private func dporNotesReleaseAcquire(sa: DporSegmentData, sb: DporSegmentData): Bool {
-    for (na in sa.keyNotes) {
-        if (na.kind == PctSyncNoteKind.Release) {
-            for (nb in sb.keyNotes) {
-                if (nb.kind == PctSyncNoteKind.Acquire && refEq(na.key, nb.key)) {
-                    return true
-                }
+    for (na in sa.keyNotes where na.kind == PctSyncNoteKind.Release) {
+        for (nb in sb.keyNotes) {
+            if (nb.kind == PctSyncNoteKind.Acquire && refEq(na.key, nb.key)) {
+                return true
             }
         }
     }

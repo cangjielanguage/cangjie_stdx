@@ -56,7 +56,7 @@ public class Semaphore <: PctSyncKey {
 
     public func acquire(amount!: Int64 = 1): Unit {
         // The probe must call inner.tryAcquire DIRECTLY: probes run under
-        // the coordinator lock inside medAcquire, and the public
+        // the engine region inside medAcquire, and the public
         // tryAcquire dispatches a grid point (a coordinator re-entry —
         // self-deadlock).
         if (!pctMedAcquire(this, { => inner.tryAcquire(amount: amount) }, PctAcquireSemantics.AnyReleaser)) {

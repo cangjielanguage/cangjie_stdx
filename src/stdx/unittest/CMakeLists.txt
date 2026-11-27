@@ -5,6 +5,8 @@
 #
 # See https://cangjie-lang.cn/pages/LICENSE for license information.
 
-add_subdirectory(concurrent)
+if(NOT CANGJIE_BUILD_WITHOUT_UNITTEST_CONCURRENT)
+    add_subdirectory(concurrent)
+    add_subdirectory(sync)
+endif()
 add_subdirectory(data)
-add_subdirectory(sync)

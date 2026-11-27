@@ -28,7 +28,16 @@ protected class ActorResult {
     }
     
     protected prop duration: Duration {
-        get() { endTime - startTime }
+        get() {
+            // A wall-clock rollback can make the recorded end precede the
+            // start; the report shows a zero span rather than a negative
+            // one (and avgDuration stays a sane calibration input).
+            let span = endTime - startTime
+            if (span < Duration.Zero) {
+                return Duration.Zero
+            }
+            return span
+        }
     }
 
     protected func getExceptionMessage(): String {

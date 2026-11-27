@@ -9,7 +9,6 @@
 package stdx.unittest.concurrent
 
 import std.sync.Monitor
-import std.sync.Mutex
 
 /**
  * The dynamic-spawn registrar of one PCT iteration
@@ -25,12 +24,13 @@ import std.sync.Mutex
  * interception (user-invoked spawns run as unmanaged threads and never
  * register).
  *
- * LOCK STRUCTURE: the expectation is written under the coordinator lock
+ * LOCK STRUCTURE: the expectation is written under the engine lock
  * (the coordinator calls setExpectation/clearExpectation there); the
  * bounded waits hold `spawnMonitor` and check their predicate under the
- * coordinator lock (spawnMonitor -> coordinator lock — the documented
- * ordering), and the child's notify happens under `spawnMonitor` after
- * releasing the coordinator lock, so no wake can be lost.
+ * engine lock (spawnMonitor -> engine lock — the documented ordering),
+ * and the child's notify happens under `spawnMonitor` in a drained
+ * section (the engine lock released, see pct_engine_lock.cj), so no wake
+ * can be lost and the order is never inverted.
  */
 internal class PctSpawnRegistrar {
     // The single outstanding spawn expectation: the future object a
@@ -48,18 +48,12 @@ internal class PctSpawnRegistrar {
     // counts ALL actors.
     private var spawnedActors: UInt64 = 0
 
-    private let coordLock: Mutex
-
     // Bound for the spawn-site registration wait (thread-start latency;
     // the runner's PCT_REGISTER_TIMEOUT_MS peer).
     internal static let REGISTRATION_TIMEOUT_MS: Int64 = 10000
 
-    internal init(coordLock!: Mutex) {
-        this.coordLock = coordLock
-    }
-
     /** Record the spawn expectation (the future object), under the
-     * coordinator lock. */
+     * engine lock. */
     internal func setExpectation(ident: Object): Unit {
         pendingSpawn = Some(ident)
     }
@@ -70,7 +64,7 @@ internal class PctSpawnRegistrar {
     }
 
     /** Consume the expectation (the child registered), under the
-     * coordinator lock. */
+     * engine lock. */
     internal func clearExpectation(): Unit {
         pendingSpawn = None
     }
@@ -88,15 +82,11 @@ internal class PctSpawnRegistrar {
      */
     internal func awaitRegistration(): Bool {
         spawnMonitor.lock()
-        coordLock.lock()
-        var consumed = pendingSpawn.isNone()
-        coordLock.unlock()
+        var consumed = pctOnLocked { => pendingSpawn.isNone() }
         if (!consumed) {
             let notified = spawnMonitor.wait(timeout: Duration.millisecond * REGISTRATION_TIMEOUT_MS)
             if (!notified) {
-                coordLock.lock()
-                consumed = pendingSpawn.isNone()
-                coordLock.unlock()
+                consumed = pctOnLocked { => pendingSpawn.isNone() }
                 if (!consumed) {
                     spawnMonitor.unlock()
                     return false
@@ -116,14 +106,10 @@ internal class PctSpawnRegistrar {
      */
     internal func awaitSpawnCount(count: Int64): Bool {
         spawnMonitor.lock()
-        coordLock.lock()
-        var ok = Int64(spawnedActors) >= count
-        coordLock.unlock()
+        var ok = pctOnLocked { => Int64(spawnedActors) >= count }
         while (!ok) {
             let notified = spawnMonitor.wait(timeout: Duration.millisecond * REGISTRATION_TIMEOUT_MS)
-            coordLock.lock()
-            ok = Int64(spawnedActors) >= count
-            coordLock.unlock()
+            ok = pctOnLocked { => Int64(spawnedActors) >= count }
             if (!notified && !ok) {
                 spawnMonitor.unlock()
                 return false
@@ -134,9 +120,11 @@ internal class PctSpawnRegistrar {
     }
 
     /**
-     * Release the waiting spawner (the child's registration path, AFTER
-     * releasing the coordinator lock: the spawner's wait must never
-     * depend on a token grant).
+     * Release the waiting spawner (the child's registration path, in a
+     * drained section with the engine lock released: the spawner's wait
+     * must never depend on a token grant, and the notify must never run
+     * under the engine lock — the registrar's own waits take the engine
+     * lock while holding spawnMonitor).
      */
     internal func notifyRegistered(): Unit {
         spawnMonitor.lock()

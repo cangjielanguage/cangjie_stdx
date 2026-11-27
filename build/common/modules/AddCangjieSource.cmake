@@ -452,10 +452,14 @@ function(add_cangjie_library target_name
                 COMMAND ${CMAKE_COMMAND} -E make_directory ${output_bc_dir}
                 COMMAND ${CMAKE_COMMAND} -E env ${_cj_bc_compile_env}
                         ${COMPILE_BC_CMD}
-                # ${target_name}_bc depends on ${target_name} so they will not run simultaneously. <target> and <target>_bc
-                # compile the same package, which means they may write the same bc cache file. Running simultaneously
-                # may cause IO error on windows in some cases.
-                DEPENDS ${bc_depends}
+                # ${target_name} serializes the two compiles of this package
+                # (<target> and <target>_bc may write the same bc cache file;
+                # running simultaneously can cause IO error on windows in some
+                # cases) — but as a target name it becomes an order-only
+                # dependency, which never triggers a rebuild. The real rebuild
+                # triggers are therefore the same file inputs as the non-LTO
+                # command above.
+                DEPENDS ${target_name} ${resolved_depends} ${source_files} ${CANGJIELIB_SOURCE_DIR}
                 COMMENT "Generating ${target_name}_bc"
                 VERBATIM)
 

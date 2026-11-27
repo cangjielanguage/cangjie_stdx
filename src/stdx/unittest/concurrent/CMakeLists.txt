@@ -32,6 +32,7 @@ set(UNITTEST_CONCURRENT_SRCS
     pct_clock.cj
     pct_coordinator.cj
     pct_dispatch.cj
+    pct_engine_lock.cj
     pct_schedule.cj
     pct_schedule_log.cj
     pct_scheduler_base.cj

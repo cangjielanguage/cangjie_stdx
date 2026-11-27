@@ -45,7 +45,7 @@ internal enum PctSyncNoteKind <: Equatable<PctSyncNoteKind> {
  * below the threshold or no gated peer to rescue); `YieldNow` — the
  * policy is YieldFairly and this iteration switches to fair scheduling,
  * the caller's response is the voluntary yield; `Obstruct` — the policy
- * is ThrowObstruction, the caller releases the coordinator lock and
+ * is ThrowObstruction, the caller unwinds out of the engine region and
  * throws the carried exception so it unwinds the obstructed operation
  * (see ObstructionDetectedException).
  */
@@ -168,7 +168,7 @@ internal abstract class PctBaseScheduler {
      * condition (and lock) of a condition wait, the future of a mediated
      * join or a completing child), and HOW the segment touched it (see
      * [[PctSyncNoteKind]]). Called BEFORE the decision the event
-     * terminates in, under the coordinator lock. PCT: nothing. DPOR:
+     * terminates in, under the engine lock. PCT: nothing. DPOR:
      * attaches the note to `me`'s closing segment — the key set is the
      * sync partial order's edge set (dependency oracle), the kinds feed
      * the race reporter's release→acquire happens-before edges. (The
@@ -185,7 +185,7 @@ internal abstract class PctBaseScheduler {
      * A child actor registered (its slot claimed, gated at the
      * registration park); `spawner` is the current token holder (-1 for
      * the runner's initial actors — no actor's recorded accesses precede
-     * them). Called under the coordinator lock, BEFORE the registration
+     * them). Called under the engine lock, BEFORE the registration
      * park. PCT: nothing. DPOR: records the spawn happens-before edge —
      * the spawner's in-progress segment (the one containing the spawn
      * site) into the child's first segment. (Routes through the
@@ -325,7 +325,7 @@ internal abstract class PctBaseScheduler {
      * peer to rescue, apply the obstruction policy — YieldFairly switches
      * this iteration to fair scheduling (the caller's response to
      * `YieldNow` is the voluntary yield), ThrowObstruction hands back the
-     * exception the caller must throw (it holds the coordinator lock —
+     * exception the caller must throw (it is inside an engine region —
      * the throw happens after its release, so the actor's next
      * coordinator entry is safe).
      *
@@ -599,24 +599,25 @@ internal abstract class PctBaseScheduler {
         onDecisionEnter(me, exitKind, false)
         onDecisionPoint(me)
         var to: Int64 = -1
-        if (inCleanReplay()) { // cjlint-ignore !G.FUN.01 nesting mirrors the linear match>for>if structure of the validation/exploration algorithm; each level performs one distinct step with an early exit, so flattening would obscure the flow
+        if (inCleanReplay()) {
             // A recorded virtual fire at this exit's strand point (the
             // Timer event precedes the exit event; see blockingTransfer).
-            if (log.peekIsTimer()) {
-                if (fireTimer() < 0) {
-                    diverge()
-                }
+            if (log.peekIsTimer() && fireTimer() < 0) {
+                diverge()
             }
             if (let Some(ev) <- log.tryConsume(Done, altKind: Some(Complete), from: Some(me))) {
                 if (ev.kind != exitKind) {
                     diverge()
                 } else {
                     to = validatedGrant(Int64(ev.to), minusOneOk: true)
-                    if (to == -1 && !log.isDiverged()) {
-                        if (log.tryConsume(Deadlock, from: Some(me)).isSome()) {
-                            () // consumed: the deadlock record replays
-                        }
-                    }
+                }
+                // The trailing recorded Deadlock (a strand with waiters) is
+                // consumed leniently to keep the cursor aligned — only a
+                // faithful strand consumes it: the kind mismatch above, or
+                // a failed grant validation, diverges, and the flag gates
+                // this out.
+                if (to == -1 && !log.isDiverged()) {
+                    let _ = log.tryConsume(Deadlock, from: Some(me))
                 }
             } else {
                 diverge()
@@ -733,6 +734,16 @@ internal abstract class PctBaseScheduler {
     }
 
     /**
+     * The armed-timer list's high-water mark for this window (a
+     * diagnostic carried into the recorded schedule): bounded by the
+     * waiter count after the clock's arm-time purge, unbounded without
+     * it. LOCK HELD (like every clock access).
+     */
+    internal func timersHighWater(): Int64 {
+        return clock.armedHighWater()
+    }
+
+    /**
      * The quiescence fire decision, consulted by the strand paths of the
      * transfer decisions before stranding: when a virtual timer is live,
      * advance the clock to its deadline and fire it — the waiter is
@@ -749,11 +760,7 @@ internal abstract class PctBaseScheduler {
      * Single earliest deadline, ties by lowest slot. LOCK HELD.
      */
     internal func fireTimer(): Int64 {
-        let eOpt = clock.earliestValid(table)
-        if (eOpt.isNone()) {
-            return -1
-        }
-        let e = eOpt.getOrThrow() // cjlint-ignore !G.ERR.03 invariant-guarded extraction: a preceding isNone()/contains() gate (or the ScenarioBuilder contract, see comment) guarantees Some here; None would be a framework bug where throwing is the intended behavior
+        let e = clock.earliestValid(table) ?? return -1
         if (inCleanReplay()) {
             if (log.tryConsume(Timer, from: Some(e.actor)).isNone()) {
                 diverge()

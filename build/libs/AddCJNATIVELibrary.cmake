@@ -271,6 +271,7 @@ add_library(stdx.unittest.data STATIC ${output_cj_object_dir}/stdx/unittest.data
 set_target_properties(stdx.unittest.data PROPERTIES LINKER_LANGUAGE C)
 install(TARGETS stdx.unittest.data DESTINATION ${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx)
 
+if(NOT CANGJIE_BUILD_WITHOUT_UNITTEST_CONCURRENT)
 make_cangjie_lib(
     unittest.concurrent IS_SHARED
     DEPENDS cangjie${BACKEND_TYPE}StdxUnittestConcurrent
@@ -290,7 +291,9 @@ make_cangjie_lib(
 add_library(stdx.unittest.concurrent STATIC ${output_cj_object_dir}/stdx/unittest.concurrent.o)
 set_target_properties(stdx.unittest.concurrent PROPERTIES LINKER_LANGUAGE C)
 install(TARGETS stdx.unittest.concurrent DESTINATION ${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx)
+endif()
 
+if(NOT CANGJIE_BUILD_WITHOUT_UNITTEST_CONCURRENT)
 make_cangjie_lib(
     unittest.sync IS_SHARED
     DEPENDS cangjie${BACKEND_TYPE}StdxUnittestSync
@@ -304,6 +307,7 @@ make_cangjie_lib(
 add_library(stdx.unittest.sync STATIC ${output_cj_object_dir}/stdx/unittest.sync.o)
 set_target_properties(stdx.unittest.sync PROPERTIES LINKER_LANGUAGE C)
 install(TARGETS stdx.unittest.sync DESTINATION ${output_triple_name}_${CJNATIVE_BACKEND}${SANITIZER_SUBPATH}/static/stdx)
+endif()
 
 make_cangjie_lib(
     net IS_SHARED
@@ -1237,6 +1241,7 @@ add_cangjie_library(
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/unittest/data
     DEPENDS ${UNITTEST_DATA_DEPENDENCIES})
 
+if(NOT CANGJIE_BUILD_WITHOUT_UNITTEST_CONCURRENT)
 add_cangjie_library(
     cangjie${BACKEND_TYPE}StdxUnittestConcurrent
     NO_SUB_PKG
@@ -1248,7 +1253,9 @@ add_cangjie_library(
     SOURCES ${UNITTEST_CONCURRENT_SRCS}
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/unittest/concurrent
     DEPENDS ${UNITTEST_CONCURRENT_DEPENDENCIES})
+endif()
 
+if(NOT CANGJIE_BUILD_WITHOUT_UNITTEST_CONCURRENT)
 add_cangjie_library(
     cangjie${BACKEND_TYPE}StdxUnittestSync
     NO_SUB_PKG
@@ -1260,6 +1267,7 @@ add_cangjie_library(
     SOURCES ${UNITTEST_SYNC_SRCS}
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stdx/unittest/sync
     DEPENDS ${UNITTEST_SYNC_DEPENDENCIES})
+endif()
 
 add_cangjie_library(
     cangjie${BACKEND_TYPE}StdxNet

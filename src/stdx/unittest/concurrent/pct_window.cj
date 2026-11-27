@@ -43,29 +43,10 @@ internal struct PctWindowConfig {
 }
 
 /**
- * One actor's outcome after the window closed.
- *
- * `exception` is the actor's propagated exception, if any — deadlock
- * aborts are excluded (they are fully described by the report's
- * `deadlocked`/`deadlockDetail`); everything else (operation failures,
- * `PctExternalWaitError` protocol failures) surfaces here unchanged.
- * `aborted` marks an actor that was unwound by the coordinator's
- * wait-for cycle abort (`PctDeadlockError`).
- */
-internal struct PctActorReport {
-    internal PctActorReport(
-        /** The actor's exception (deadlock aborts excluded), if any. */
-        internal let exception!: ?Exception,
-        /** True when the actor unwound on a PCT deadlock abort. */
-        internal let aborted!: Bool
-    ) {}
-}
-
-/**
- * The outcome of one PCT window: the recorded schedule plus the verdicts
- * of every initial actor. The schedule is present on every non-throwing
- * return — including deadlock-aborted windows (it is the reproduction
- * artifact) — and is replayable through `PctWindowConfig.replaySchedule`.
+ * The outcome of one PCT window: the recorded schedule plus the window's
+ * verdicts. The schedule is present on every non-throwing return —
+ * including deadlock-aborted windows (it is the reproduction artifact) —
+ * and is replayable through `PctWindowConfig.replaySchedule`.
  */
 internal struct PctWindowReport {
     internal PctWindowReport(
@@ -75,22 +56,15 @@ internal struct PctWindowReport {
         internal let deadlocked!: Bool,
         /** The first deadlock-abort message, when one occurred. */
         internal let deadlockDetail!: ?String,
-        /** Per-actor outcomes, in actor order. */
-        internal let actorReports!: Array<PctActorReport>
+        /** The first actor-level exception (deadlock aborts excluded), in
+         *  actor order — `None` when every actor completed normally. It
+         *  fails the whole iteration (the stress path's failure
+         *  semantics — see the runners); the Error family, a hierarchy
+         *  disjoint from Exception in Cangjie, surfaces here as a
+         *  descriptive wrapper (see the drain's Error clause in
+         *  `runWindowInternal`). */
+        internal let firstException!: ?Exception
     ) {}
-
-    /** The first actor exception (deadlock aborts excluded), in actor
-     *  order — `None` when every actor completed normally. */
-    internal prop firstException: ?Exception {
-        get() {
-            for (report in actorReports) {
-                if (let Some(e) <- report.exception) {
-                    return Some(e)
-                }
-            }
-            return None
-        }
-    }
 }
 
 /**
@@ -121,7 +95,7 @@ internal struct PctWindowReport {
  * Throws on framework misuse only (uninstrumented binary, a leaked
  * previous window, a non-replayable replay schedule, protocol
  * violations) — operation failures never throw here, they travel in
- * `actorReports`. The binary must be compiled with `--cj-pct`; code
+ * `firstException` and fail the iteration. The binary must be compiled with `--cj-pct`; code
  * running outside any window is unmanaged, as in uninstrumented builds.
  *
  * @throws Exception when the replay schedule cannot be loaded (schedules
@@ -155,6 +129,59 @@ internal func runPctWindow(
 }
 
 /**
+ * One initial actor's thread body (the spawn closure runWindowInternal
+ * starts each initial actor on): the registration, the op loop with a
+ * scheduling decision before every operation, and the exit — each
+ * coordinator call routed through pctRoute (suppression + one engine
+ * region + the failure policy per call; the parks inside the bodies own
+ * their drains, so the region composes across them).
+ *
+ * COMPLETION INVARIANT: childExit(None, ...) runs in the body's finally,
+ * BEFORE the actor's future completes (Future.execute's epilogue —
+ * result set, notifyAll — runs after the closure returns). The joiner
+ * flip the Some route would perform is skipped here because an initial
+ * actor's future never escapes the window (the futures list is local to
+ * the driver), so no actor can mediated-join it.
+ *
+ * A recorded registration failure rethrows here (S-08): the child must
+ * not fall through unregistered — unmanaged code would run unscheduled
+ * (a vacuum window) and could hang the drain — so the failure rides the
+ * spawn's future.
+ *
+ * mtrace note: suppression is per-call now (each route brackets its own
+ * coordinator traffic); the op-loop machinery between calls is
+ * unsuppressed — a change from the old region-spanning bracket (which
+ * suppressed everything but the op bodies), to revisit at
+ * mtrace-integration time.
+ */
+private func runInitialActor(coord: PctCoordinator, actorOps: Array<() -> Unit>): Unit {
+    let registered = pctRoute(coord, { => coord.childEnter(None, Thread.currentThread.id) })
+    if (registered.isNone()) {
+        // S-08: the recorded registration failure must not fall through
+        // unregistered — rethrow it so the spawn's future carries it.
+        let failure = coord.recordedFailure() ?? Exception("PCT child registration failed.")
+        throw failure
+    }
+    try {
+        for (op in actorOps) {
+            // PCT decision point between operations: the primary
+            // in-actor switch position (optimized builds elide safepoint
+            // polls through inlining).
+            pctRoute(coord, { => coord.pollSelf() })
+            op()
+        }
+    } finally {
+        pctRoute(coord, { => coord.childExit(None, Thread.currentThread.id) })
+        // The drain signal always fires — including when the exit's
+        // region recorded a failure (the route returned None) — because
+        // it runs AFTER the route, outside any engine region (the
+        // drainActors handshake is drainMonitor -> engine; a signal
+        // under the engine would invert it).
+        coord.signalDrain()
+    }
+}
+
+/**
  * The shared window lifecycle (runPctWindow's body after coordinator
  * construction): activation, the sequential initial-actor spawn loop
  * (the deterministic Spawn order), the future drain with deadlock
@@ -171,7 +198,7 @@ internal func runPctWindow(
  * with `--cj-pct` (code -1), a previous iteration is still active after a
  * leak (code -3), or another activation error code is reported.
  */
-internal func runWindowInternal(coord: PctCoordinator, actors: Array<Array<() -> Unit>>): PctWindowReport { // cjlint-ignore !G.FUN.01 single cohesive algorithm block; splitting it would scatter the invariant across helpers without simplifying any step
+internal func runWindowInternal(coord: PctCoordinator, actors: Array<Array<() -> Unit>>): PctWindowReport { // cjlint-ignore !G.FUN.01 single cohesive lifecycle over the length budget: install → spawn → drain → report, every exit path dropping the active-window reference — further splits would scatter that invariant
     // activate() guards the --cj-pct compilation contract and the
     // single-active-window invariant; the dispatch functions route
     // through the active-window reference set below.
@@ -184,18 +211,36 @@ internal func runWindowInternal(coord: PctCoordinator, actors: Array<Array<() ->
         }
         if (activateRet == -3) {
             throw Exception("PCT activation failed: a previous iteration is still active " +
-                "(leaked after an exception or registration timeout)")
+                "(leaked after an exception or registration timeout, or another " +
+                "scenario run is in flight concurrently).")
         }
-        throw Exception("PCT activation failed with code ${activateRet}")
+        throw Exception("PCT activation failed with code ${activateRet}.")
     }
     // The active-window span: everything from the reference install to
     // the return runs inside one try/finally, so the finally drops the
     // active-window reference on every exit path — the return, a
     // spawn/registration failure, a drain failure, a buildSchedule
     // protocol failure; otherwise every later window fails activation
-    // with "a previous iteration is still active".
+    // with "a previous iteration is still active". The clear is OWNED:
+    // only a window whose install succeeded may clear, so a concurrent
+    // loser's unwinding never wipes the winner's just-installed
+    // reference (the winner's dispatches would then absorb into a
+    // near-empty "passing" schedule).
+    var installed = false // cjlint-ignore !G.VAR.02 set after the install inside the try, read by the finally: the declaration must span both so the clear stays ownership-gated
     try {
-        pctSetCurrentIteration(coord)
+        // The authoritative single-active-window install, serialized on
+        // the iteration guard: activate()'s -3 check above is advisory
+        // (a concurrent run can slip between it and this install), but
+        // this one cannot race — the loser fails loudly here, and its
+        // finally leaves the winner's reference in place, instead of
+        // silently overwriting it.
+        let installRet = pctInstallCurrentIteration(coord)
+        if (installRet != 0) {
+            throw Exception("PCT activation failed: a previous iteration is still active " +
+                "(leaked after an exception or registration timeout, or another " +
+                "scenario run is in flight concurrently).")
+        }
+        installed = true
 
         // Initial actors: full dynamic children through this registration
         // route. The window's own spawn sites carry no compiler
@@ -205,64 +250,33 @@ internal func runWindowInternal(coord: PctCoordinator, actors: Array<Array<() ->
         // an actor unconditionally, and the window waits for each
         // registration before the next spawn, so registration order — and
         // with it the recorded Spawn order and the slot order — is this
-        // sequential spawn order (initial actor i takes slot i).
-        //
-        // COMPLETION INVARIANT: childExit(None, ...) runs in the closure's
-        // finally, BEFORE the actor's future completes (Future.execute's
-        // epilogue — result set, notifyAll — runs after the closure
-        // returns). The joiner flip the Some route would perform is skipped
-        // here because an initial actor's future never escapes the window
-        // (the futures list is local), so no actor can mediated-join it.
-        //
-        // mtrace suppression: everything on the actor's thread except the
-        // op() bodies is framework traffic (registration park, the op-loop
-        // brackets, the poll machinery) — suppressed so a DPOR segment's
-        // drained events are exactly its user operations' memory accesses.
-        // The depth is balanced on every unwind path (the outer finally).
+        // sequential spawn order (initial actor i takes slot i). The
+        // spawned thread's body is runInitialActor above.
         let futures = ArrayList<Future<Unit>>()
         for (actorOps in actors) {
             futures.add(spawn {
-                suppressBegin()
-                try {
-                    coord.childEnter(None, Thread.currentThread.id)
-                    try {
-                        for (op in actorOps) {
-                            // PCT decision point between operations: the primary
-                            // in-actor switch position (optimized builds elide
-                            // safepoint polls through inlining). Suppressed:
-                            // the poll/drain machinery is framework traffic.
-                            coord.pollSelf()
-                            suppressEnd()
-                            try {
-                                op()
-                            } finally {
-                                suppressBegin()
-                            }
-                        }
-                    } finally {
-                        coord.childExit(None, Thread.currentThread.id)
-                    }
-                } finally {
-                    suppressEnd()
-                }
+                runInitialActor(coord, actorOps)
             })
             // Token-free (the child parks at its registration gate), so this
             // wait cannot deadlock; the bound covers thread-start failures.
+            // Not routed: the registrar's bounded waits must run without
+            // the engine lock (see awaitRegisteredActors).
             coord.awaitRegisteredActors(futures.size)
         }
-        coord.releaseFirst()
+        pctRoute(coord, { => coord.releaseFirst() })
 
         // Drain all futures (every actor completes: the token keeps flowing
         // through childExit in each actor's finally — or, on a cycle
         // abort, every actor unwinds on the PctDeadlockError the coordinator
         // entries throw, so the futures resolve anyway and the drain
         // completes instead of hanging). Deadlock aborts are classified
-        // into the report's verdict; every other exception is kept per actor.
-        let actorReports = Array<PctActorReport>(actors.size, { _ =>
-            PctActorReport(exception: None, aborted: false)
-        })
+        // into the report's verdict; the first other failure — exception
+        // or Error — is kept window-level as the iteration's failure (the
+        // stress path's semantics: the whole iteration fails on it, no
+        // per-actor partial state).
         var deadlocked = false
         var deadlockDetail: ?String = None
+        var firstException: ?Exception = None
         for (i in 0..futures.size) {
             try {
                 let _ = futures[i].get()
@@ -275,9 +289,22 @@ internal func runWindowInternal(coord: PctCoordinator, actors: Array<Array<() ->
                         deadlockDetail = Some(e.message)
                     }
                     deadlocked = true
-                    actorReports[i] = PctActorReport(exception: None, aborted: true)
-                } else if (actorReports[i].exception.isNone()) {
-                    actorReports[i] = PctActorReport(exception: Some(e), aborted: false)
+                } else if (firstException.isNone()) {
+                    firstException = Some(e)
+                }
+            } catch (e: Error) {
+                // The Error family (StackOverflowError, InternalError, OOM —
+                // a separate type hierarchy from Exception in Cangjie, so the
+                // op-result capture via execResultOf never sees it) escapes
+                // the actor's op wrappers and rejects the future. The stress
+                // path brackets this family at every dispatch point
+                // (runIteration's Error clause); the drain gets the same
+                // bracket: the Error becomes the iteration's failure and
+                // the drain continues — without it, the raw Error would unwind
+                // the drain thread (the token granter), leak every
+                // still-parked actor, and surface as an unclassified abort.
+                if (firstException.isNone()) {
+                    firstException = Some(Exception("actor ${i} aborted by an Error: ${e}."))
                 }
             }
         }
@@ -285,11 +312,11 @@ internal func runWindowInternal(coord: PctCoordinator, actors: Array<Array<() ->
         // Drain registered actors beyond the futures list above (a
         // retained route — no producer registers such actors today:
         // user-invoked spawns never register).
-        coord.drainActors()
+        pctRoute(coord, { => coord.drainActors() })
 
         // The authoritative cycle-abort verdict (op-result capture may
         // have swallowed every PctDeadlockError before the drain).
-        if (coord.isAborted()) {
+        if (pctRoute(coord, { => coord.isAborted() }) ?? false) {
             deadlocked = true
         }
 
@@ -302,9 +329,14 @@ internal func runWindowInternal(coord: PctCoordinator, actors: Array<Array<() ->
             schedule: schedule,
             deadlocked: deadlocked,
             deadlockDetail: deadlockDetail,
-            actorReports: actorReports
+            firstException: firstException
         )
     } finally {
-        pctSetCurrentIteration(None)
+        if (installed) {
+            // Only the installer clears: a failed install (-3) must
+            // leave the winner's reference in place — see the span
+            // comment above.
+            pctInstallCurrentIteration(None)
+        }
     }
 }
