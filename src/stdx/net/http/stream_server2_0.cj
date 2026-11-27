@@ -658,22 +658,33 @@ class HttpEngineConn2 <: HttpEngineConn & InputStream {
     }
 
     /********************************************* construct request *********************************************/
-    func constructRequest(fields: FieldsList): Unit { //read headers
-        var pseudoHeadersNum = 0
-        for ((name, _) in fields) {
-            if (name.startsWith(":")) {
-                pseudoHeadersNum++
-            } else {
-                break
+    /*
+     * read headers and construct the request object
+     *
+     * @throws HttpStreamException, if the request head is malformed: pseudo headers
+     *     not found, duplicated or invalid, or a regular header is invalid.
+     */
+    func constructRequest(fields: FieldsList): Unit {
+        try {
+            var pseudoHeadersNum = 0
+            for ((name, _) in fields) {
+                if (name.startsWith(":")) {
+                    pseudoHeadersNum++
+                } else {
+                    break
+                }
             }
-        }
-        if (pseudoHeadersNum == 0) {
-            throw HttpStreamException(ProtocolError, "Malformed request: pseudo headers not found.")
-        }
-        checkAndSetPseudoHeaders(fields[..pseudoHeadersNum])
-        if (pseudoHeadersNum < fields.size) {
-            checkAndSetRequestHeaders(fields[pseudoHeadersNum..])
-        } else {
+            if (pseudoHeadersNum == 0) {
+                throw HttpStreamException(ProtocolError, "Malformed request: pseudo headers not found.")
+            }
+            checkAndSetPseudoHeaders(fields[..pseudoHeadersNum])
+            if (pseudoHeadersNum < fields.size) {
+                checkAndSetRequestHeaders(fields[pseudoHeadersNum..])
+            }
+        } finally {
+            // the connection read thread parks on headerSyncCounter.waitUntilZero()
+            // when trailers arrive; every exit path of header validation must release
+            // it, otherwise the whole connection would be wedged forever
             headerSyncCounter.dec()
         }
 
@@ -771,26 +782,22 @@ class HttpEngineConn2 <: HttpEngineConn & InputStream {
     private func checkAndSetRequestHeaders(toCheck: ArrayList<(String, String)>): Unit {
         for ((name, value) in toCheck) {
             if (name.startsWith(":")) {
-                headerSyncCounter.dec()
                 throw HttpStreamException(ProtocolError,
                     "Malformed request: HTTP/2 pseudoHeaders '${name}' appears after headers.")
             }
 
             if (name.hasUpper()) {
-                headerSyncCounter.dec()
                 throw HttpStreamException(ProtocolError, "Malformed request: HTTP/2 headers are not lowercase.")
             }
 
             // should not contain connection, proxy-connection, keep-alive, transfer-encoding, upgrade
             if (H2_EXCLUDE_HEADERS.contains(name)) {
-                headerSyncCounter.dec()
                 throw HttpStreamException(ProtocolError, "Malformed request: HTTP/2 headers cannot contain '${name}'.")
             }
 
             // TE header field can exist, value of TE MUST NOT contain any value other than "trailers"
             // te: trailers means client allow server to send trailers
             if (name == "te" && value != "trailers") {
-                headerSyncCounter.dec()
                 throw HttpStreamException(ProtocolError,
                     "Malformed request: TE header field value '${value}' is invalid: only 'trailers' is allowed.")
             }
@@ -798,7 +805,6 @@ class HttpEngineConn2 <: HttpEngineConn & InputStream {
             // if :authority is set, value of Host must be the same with value of :authority
             if (name == "host") {
                 if (!requestAuthority.isEmpty() && requestAuthority != value) {
-                    headerSyncCounter.dec()
                     throw HttpStreamException(ProtocolError,
                         "Malformed request: value of ':authority' and 'host' must be the same.")
                 }
@@ -817,7 +823,6 @@ class HttpEngineConn2 <: HttpEngineConn & InputStream {
 
             if (name == "trailer") {
                 if (!Str(value).splitAllMatch(SYMBOL_COMMA, {v => !trailerNameForbidden(v.trim())})) {
-                    headerSyncCounter.dec()
                     throw HttpStreamException(ProtocolError, "Malformed request: invalid trailer value in header.")
                 }
             }
@@ -827,12 +832,10 @@ class HttpEngineConn2 <: HttpEngineConn & InputStream {
             try {
                 request.headers.add(name, value) // may throw HttpException
             } catch (e: HttpException) {
-                headerSyncCounter.dec()
                 throw HttpStreamException(ProtocolError, "Malformed request: ${e.message}")
             }
         }
 
-        headerSyncCounter.dec()
         try {
             if (let Some(headers) <- request._headers) {
                 stream.reqContentLength = checkCl(headers) ?? -1
@@ -1330,7 +1333,13 @@ func parsePriority(value: String): Int64 {
     }
     if (let Some(u) <- pMap.get("u")) {
         try {
-            urgency = Int64.parse(u) //may throw IllegalArgumentException
+            let parsed = Int64.parse(u) //may throw IllegalArgumentException
+            // RFC 9218: the urgency parameter must be an integer in 0..7; any
+            // out-of-range value is invalid and treated as absent (default 3),
+            // otherwise `MAX_URGENCY - urgency` below may overflow
+            if (parsed >= 0 && parsed <= MAX_URGENCY) {
+                urgency = parsed
+            }
         } catch (e: IllegalArgumentException) {}
     }
 
