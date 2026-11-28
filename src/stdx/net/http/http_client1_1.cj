@@ -46,7 +46,6 @@ class HttpClient1 <: HttpClient {
      *  or the last value of transfer-encoding is not "chunked", or content-length and transfer-encoding are set together.
      * @throws HttpException, if there is a httpBody but neither content-length nor transfer-encoding be set.
      * @throws HttpException, if a field-name is not allowed in the trailers, that is field-name in TRAILER_EXCLUDE_LIST.
-     * @throws HttpException, if too many connections to the same server.
      * @throws HttpException, if too many 1xx responses.
      * @throws HttpException, if the Content-Length is wrong.
      * @throws SocketException or ConnectionException, if something wrong happened in socket.
@@ -288,9 +287,19 @@ class HttpEngine1 {
     let connPool: Array<ConnNodeLinkedList> = [ConnNodeLinkedList(), ConnNodeLinkedList()]
     let connInUse: Array<ConnNodeLinkedList> = [ConnNodeLinkedList(), ConnNodeLinkedList()]
     let connLock: Array<Mutex> = [Mutex(), Mutex()]
-    // total number of connections to one server
+    // number of in-use (active) connections to one server; pooled idle
+    // connections do not consume the limit. connNum is only incremented by
+    // tryReserveSlot (both the pool-take and the create-new paths), so the
+    // number of active connections never exceeds poolSize.
     var connNum = AtomicInt64(0)
-    var isClosed = false
+    // total number of pooled idle connections across both protocol sub-pools;
+    // when it reaches poolSize, a returned connection is closed instead of
+    // being pooled (idle eviction)
+    var idleCount = AtomicInt64(0)
+    // monitor used to wake up requests waiting for a free connection slot,
+    // notified whenever a connection is returned to the pool or closed
+    let connAvailMonitor = Monitor()
+    var isClosed = AtomicBool(false)
 
     HttpEngine1(
         let addrport: AddrPort,
@@ -308,7 +317,11 @@ class HttpEngine1 {
     }
 
     /**
-     * @throws HttpException if too many connections to the same server.
+     * Requests exceeding the per-server connection limit (poolSize) wait for
+     * a free connection instead of being rejected. The waiting phase is not
+     * bounded by readTimeout/writeTimeout; it ends when a connection is
+     * returned or closed, or when the client is closed.
+     *
      * @throws HttpException if too many 1xx responses.
      * @throws SocketException or ConnectionException if something wrong happened in socket.
      */
@@ -368,6 +381,8 @@ class HttpEngine1 {
      * reach the upper limit
      * idx == 0: plain connNode
      * idx == 1: tls connNode
+     * forceNew: skip the pool and establish a brand-new connection; when
+     * the per-server limit is reached, wait for a free slot as well
      */
     private func getConn(request: HttpRequest, index: Int64, isToProxy: Bool, forceNew!: Bool = false,
         isToHttpsProxy!: Bool = false): (ConnNode, Bool) {
@@ -377,20 +392,102 @@ class HttpEngine1 {
         if (let Some(connNode) <- tryGetConnFromPool(index)) {
             return (connNode, true)
         }
-        return (createNewConn(request, index, isToProxy, isToHttpsProxy: isToHttpsProxy), false)
+        // the per-server connection limit is reached: wait for a free
+        // connection instead of rejecting the request (queuing semantics)
+        return waitForConn(request, index, isToProxy, isToHttpsProxy: isToHttpsProxy)
     }
 
-    // get a connection from pool
+    /**
+     * Wait until a pooled connection is free or a connection slot opens up
+     * when the per-server limit (poolSize) is reached, then acquire the
+     * connection. Wakes up whenever a connection is returned to the pool or
+     * closed, so waiting requests are never rejected.
+     */
+    private func waitForConn(request: HttpRequest, index: Int64, isToProxy: Bool,
+        isToHttpsProxy!: Bool = false): (ConnNode, Bool) {
+        while (true) {
+            // a returned connection may already be available in the pool
+            if (let Some(connNode) <- tryGetConnFromPool(index)) {
+                return (connNode, true)
+            }
+            // reserve a slot atomically and create the connection outside
+            // any lock so other waiters can proceed
+            if (waitForSlot(index)) {
+                return (createReservedConn(request, index, isToProxy, isToHttpsProxy: isToHttpsProxy), false)
+            }
+        }
+        throw HttpException("Internal error: unreachable code path.")
+    }
+
+    /**
+     * Try to reserve a connection slot for the given pool index once.
+     * Returns true with a slot reserved by tryReserveSlot; false when all
+     * active slots are in use, after waiting once for a returned or closed
+     * connection - the caller should then retry from its pool or call again.
+     *
+     * connNum counts only in-use (active) connections: pooled idle
+     * connections do not consume the limit. Plain and TLS requests to the
+     * same host:port share one engine and this active-connection limit,
+     * while idle connections are pooled per protocol and never block each
+     * other.
+     */
+    private func waitForSlot(index: Int64): Bool {
+        if (isClosed.load()) {
+            throw HttpException("Client is already closed.")
+        }
+        if (tryReserveSlot()) {
+            return true
+        }
+        // all active slots are in use: sleep until an active connection is
+        // returned to the pool or closed, then let the caller retry
+        synchronized(connAvailMonitor) {
+            if (connNum.load() >= poolSize) {
+                connAvailMonitor.wait(timeout: Duration.millisecond * 100)
+            }
+        }
+        return false
+    }
+
+    // atomically reserve one connection slot if the limit allows
+    private func tryReserveSlot(): Bool {
+        while (true) {
+            let current = connNum.load()
+            if (current >= poolSize) {
+                return false
+            }
+            if (connNum.compareAndSwap(current, current + 1)) {
+                return true
+            }
+        }
+        throw HttpException("Internal error: unreachable code path.")
+    }
+
+    // wake up requests waiting for a free connection slot
+    private func notifyConnAvail(): Unit {
+        synchronized(connAvailMonitor) {
+            connAvailMonitor.notifyAll()
+        }
+    }
+
+    // get a connection from pool; the active-connection quota is reserved
+    // here as well, so both the pool-take and the create-new paths go
+    // through tryReserveSlot and the active count never exceeds poolSize
     private func tryGetConnFromPool(index: Int64): ?ConnNode {
         synchronized(connLock[index]) {
-            if (isClosed) {
+            if (isClosed.load()) {
                 throw HttpException("Client is already closed.")
             }
             if (connPool[index].head.isSome()) {
+                // no free quota: leave the connection in the pool and let
+                // the caller wait for an active connection to be released
+                if (!tryReserveSlot()) {
+                    return None
+                }
                 httpLogDebug(logger, "[HttpEngine1#getConn] Client1_1 get conn from pool")
                 let connNode = connPool[index].prepop().getOrThrow()
-                // add connNode in use into connInUse
+                // add connNode in use into connInUse; it leaves the idle set
                 connInUse[index].prepend(connNode)
+                idleCount.fetchAdd(-1)
                 return connNode
             }
             return None
@@ -398,14 +495,25 @@ class HttpEngine1 {
     }
 
     private func createNewConn(request: HttpRequest, index: Int64, isToProxy: Bool, isToHttpsProxy!: Bool = false): ConnNode {
-        if (isClosed) {
-            throw HttpException("Client is already closed.")
+        // limit the total connection number; when the limit is reached, wait
+        // for a free slot instead of failing, so a reconnect racing with
+        // other waiters for a slot is never rejected with
+        // "Too many connections to the same server."
+        while (true) {
+            if (waitForSlot(index)) {
+                return createReservedConn(request, index, isToProxy, isToHttpsProxy: isToHttpsProxy)
+            }
         }
+        throw HttpException("Internal error: unreachable code path.")
+    }
 
-        // limit the total connection number
-        if (connNum.fetchAdd(1) >= poolSize) {
+    // create a new connection with a slot already reserved by tryReserveSlot
+    private func createReservedConn(request: HttpRequest, index: Int64, isToProxy: Bool,
+        isToHttpsProxy!: Bool = false): ConnNode {
+        if (isClosed.load()) {
             connNum.fetchAdd(-1)
-            throw HttpException("Too many connections to the same server.")
+            notifyConnAvail()
+            throw HttpException("Client is already closed.")
         }
 
         // establish a new connection
@@ -415,14 +523,16 @@ class HttpEngine1 {
             connNode = ConnNode(client, request, this, index != 0, isToProxy, isToHttpsProxy)
         } catch (e: Exception) {
             connNum.fetchAdd(-1)
+            notifyConnAvail()
             throw e
         }
 
         // add connNode in use into connInUse
         synchronized(connLock[index]) {
-            if (isClosed) {
-                connNum.fetchAdd(-1)
+            if (isClosed.load()) {
                 connNode.close()
+                connNum.fetchAdd(-1)
+                notifyConnAvail()
                 throw HttpException("Client is already closed.")
             }
             connInUse[index].prepend(connNode)
@@ -457,11 +567,37 @@ class HttpEngine1 {
         }
         httpLogDebug(logger, "[HttpEngine1#returnConn] Client1_1 return connNode to connPool")
         synchronized(connLock[index]) {
+            if (isClosed.load()) {
+                // the engine was closed concurrently: the pool has been
+                // cleared already, so close this connection instead of
+                // pooling it (socket leak) - unless close() already closed
+                // it and accounted for the count (avoid double decrement).
+                // remove it from connInUse so close()'s in-use loop cannot
+                // decrement the count a second time
+                connInUse[index].remove(connNode)
+                if (!connNode.isClosed.load()) {
+                    closeConn(connNode)
+                }
+                return
+            }
+            // idle eviction: when both protocol sub-pools already hold
+            // poolSize idle connections, close the returned connection
+            // instead of pooling it
+            if (idleCount.fetchAdd(1) >= poolSize) {
+                idleCount.fetchAdd(-1)
+                connInUse[index].remove(connNode)
+                closeConn(connNode)
+                return
+            }
             // delete the connNode from connInUse
             connInUse[index].remove(connNode)
-            // return the connNode in connPool
+            // return the connNode in connPool; it becomes idle and stops
+            // consuming the active-connection limit
             connPool[index].prepend(connNode)
+            connNum.fetchAdd(-1)
         }
+        // a free connection is available again, wake up waiting requests
+        notifyConnAvail()
     }
 
     func connect(request: HttpRequest, isTls: Bool, isToHttpsProxy!: Bool = false): StreamingSocket {
@@ -551,6 +687,8 @@ class HttpEngine1 {
             connInUse[index].remove(connNode)
             connNum.fetchAdd(-1)
         }
+        // a connection slot opened up, wake up waiting requests
+        notifyConnAvail()
         return connNode.conn
     }
 
@@ -561,25 +699,41 @@ class HttpEngine1 {
         }
         connNode.close()
         connNum.fetchAdd(-1)
+        // a connection slot opened up, wake up waiting requests
+        notifyConnAvail()
     }
 
     func close(): Unit {
         httpLogDebug(logger, "[HttpEngine1#close] close_begin_connNum: ${connNum.load()}")
         for (index in 0..2) {
             synchronized(connLock[index]) {
-                // close connNode in pool
+                // close connNode in pool; idle connections already stopped
+                // consuming the active-connection limit, so just close them
+                // and account for the idle count
+                var idleRemoved: Int64 = 0
                 while (let Some(connNode) <- connPool[index].prepop()) {
-                    closeConn(connNode)
+                    connNode.close()
+                    idleRemoved++
                 }
-                // close connNode still in use
+                if (idleRemoved > 0) {
+                    idleCount.fetchAdd(-idleRemoved)
+                }
+                // close connNode still in use; skip connections that were
+                // already closed and decremented by a concurrent returnConn
+                // racing with isClosed being set (keep the decrement
+                // idempotent)
                 while (let Some(connNode) <- connInUse[index].prepop()) {
-                    closeConn(connNode)
+                    if (!connNode.isClosed.load()) {
+                        closeConn(connNode)
+                    }
                     connNode.writeTimer.cancel()
                     connNode.readTimer.cancel()
                 }
-                isClosed = true
+                isClosed.store(true)
             }
         }
+        // wake up waiting requests so they can observe the closed state
+        notifyConnAvail()
         httpLogDebug(logger, "[HttpEngine1#close] close_end_connNum: ${connNum.load()}")
     }
 }
